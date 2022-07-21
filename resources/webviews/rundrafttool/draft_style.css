@@ -1,0 +1,151 @@
+body {
+  margin: 0;
+  line-height: 1.4285;
+  background-color: #fff;
+  color: #000;
+  font-size: 13px;
+  font-family: "Segoe UI", Segoe, Tahoma, Helvetica, Arial, sans-serif;
+}
+
+.container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+}
+
+.container .panel {
+  margin-bottom: 20px;
+  margin-top: 20px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-left-width: 0;
+  border-radius: 4px;
+  box-shadow: 0 2px 1px rgba(0, 0, 0, 0.05);
+}
+
+.critical {
+  margin-top: 20px;
+  border-color: #fef0f1;
+  border-left-width: 4px;
+  padding-left: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  background: #fef0f1;
+  border-radius: 2px;
+}
+
+.container .allocatebody,
+.asooutput .asoform {
+  border-color: #ddd;
+  border-left-width: 4px;
+  padding-left: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.container .panel.data-container {
+  border: 1px solid #c0d3eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+  background-color: DodgerBlue;
+  border: none;
+  color: white;
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Darker background on mouse-over */
+.btn:hover {
+  background-color: RoyalBlue;
+}
+
+table {
+  width: 100%;
+  padding-bottom: 20px;
+}
+
+th {
+  height: 50px;
+  text-align: left;
+}
+
+fieldset {
+  background-color: #f1f1f1;
+  border: none;
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  padding: 0 0.625em;
+}
+
+label {
+  cursor: pointer;
+  display: inline-block;
+  text-align: left;
+  vertical-align: top;
+}
+
+label.setup-gh {
+  width: 200px;
+}
+
+label.generate-workflow {
+  width: 250px;
+}
+
+label.update {
+  width: 230px;
+}
+
+code {
+  word-wrap: break-word;
+  background-color: rgb(230, 230, 230);
+  border-radius: 3px;
+  font-size: 85%;
+  padding: 0.1em 0.2em;
+  color: black;
+  font-weight: bold;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+    cursor: pointer;
+  }
+  
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 300px;
+    background-color: #1E2021;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    font-size: 12px;
+    
+    /* Position the tooltip */
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -150px;
+  }
+  
+  .tooltip .tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1E2021 transparent transparent transparent;
+  }
+
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+  }
