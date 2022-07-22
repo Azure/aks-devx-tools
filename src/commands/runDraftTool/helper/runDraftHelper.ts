@@ -149,12 +149,14 @@ function getBinaryFileName() {
     if (architecture === 'x64') {
         architecture = 'amd64';
     }
+    let draftBinaryFile = `draft-${operatingSystem}-${architecture}`;
 
     if (operatingSystem === 'win32') {
         operatingSystem = 'windows';
+        // Draft release v0.0.22 the file name has exe associated with it.
+        draftBinaryFile = `draft-${operatingSystem}-${architecture}.exe`;
     }
 
-    const draftBinaryFile = `draft-${operatingSystem}-${architecture}`;
     return draftBinaryFile;
 }
 
@@ -177,9 +179,9 @@ export async function runDraftCommand(
 }
 
 export function getDraftConfig(): Errorable<DraftConfig> {
-    const periscopeConfig = vscode.workspace.getConfiguration('aks.draft');
+    const draftConfig = vscode.workspace.getConfiguration('aks.draft');
     const props = combine([
-        getConfigValue(periscopeConfig, 'releaseTag')
+        getConfigValue(draftConfig, 'releaseTag')
     ]);
 
     if (failed(props)) {
