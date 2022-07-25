@@ -1,0 +1,141 @@
+{
+  "name": "aks-devx-tools",
+  "displayName": "Developer Tools for Azure Kubernetes Service (AKS)",
+  "description": "Create deployment files and configure GitHub Actions workflows to deploy applications to Azure Kubernetes Service (AKS).",
+  "publisher": "ms-kubernetes-tools",
+  "version": "v0.0.1",
+  "icon": "resources/aks-devx.png",
+  "preview": true,
+  "engines": {
+    "vscode": "^1.67.0"
+  },
+  "aiKey": "AIF-d9b70cd4-b9f9-4d70-929b-a071c400b217",
+  "license": "MIT",
+  "categories": [
+    "Azure"
+  ],
+  "activationEvents": [
+    "onCommand:aks-draft-extension.runDraftCreate",
+    "onCommand:aks-draft-extension.runDraftSetupGH",
+    "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
+    "onCommand:aks-draft-extension.runDraftUpdate"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "AKS",
+      "properties": {
+        "aks.draft.releaseTag": {
+          "type": "string",
+          "default": "v0.0.22",
+          "title": "Draft repository release tag",
+          "description": "Release tag for the stable Draft tool release."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "aks-draft-extension.runDraftCreate",
+        "title": "Create Deployment Files"
+      },
+      {
+        "command": "aks-draft-extension.runDraftSetupGH",
+        "title": "Set Up GitHub OpenID Connect"
+      },
+      {
+        "command": "aks-draft-extension.runDraftGenerateWorkflow",
+        "title": "Generate Workflow"
+      },
+      {
+        "command": "aks-draft-extension.runDraftUpdate",
+        "title": "Add Web App Routing Annotations"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "explorerResourceIsFolder && view !== kubernetes.cloudExplorer",
+          "submenu": "aksdevx.submenuDraft",
+          "group": "draftnavigation"
+        }
+      ],
+      "aksdevx.submenuDraft": [
+        {
+          "submenu": "aksdevx.aksDraftSubMenu",
+          "group": "draftnavigation"
+        }
+      ],
+      "aksdevx.aksDraftSubMenu": [
+        {
+          "command": "aks-draft-extension.runDraftCreate",
+          "group": "draftnavigation@1"
+        },
+        {
+          "command": "aks-draft-extension.runDraftSetupGH",
+          "group": "draftnavigation@2"
+        },
+        {
+          "command": "aks-draft-extension.runDraftGenerateWorkflow",
+          "group": "draftnavigation@3"
+        },
+        {
+          "command": "aks-draft-extension.runDraftUpdate",
+          "group": "draftnavigation@4"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "aksdevx.submenuDraft",
+        "label": "Run AKS DevX Tool"
+      },
+      {
+        "id": "aksdevx.aksDraftSubMenu",
+        "label": "Draft Tools"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/download": "^8.0.1",
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "14.x",
+    "@types/shelljs": "^0.8.11",
+    "@types/tmp": "^0.2.3",
+    "@types/vscode": "^1.67.0",
+    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "@typescript-eslint/parser": "^5.21.0",
+    "@vscode/test-electron": "^2.1.3",
+    "eslint": "^8.14.0",
+    "glob": "^8.0.1",
+    "mocha": "^9.2.2",
+    "ts-loader": "^9.2.8",
+    "typescript": "^4.6.4",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.9.2"
+  },
+  "dependencies": {
+    "download": "^8.0.0",
+    "handlebars": "^4.7.7",
+    "node-fetch": "^3.2.5",
+    "shelljs": "^0.8.5",
+    "tmp": "^0.2.1",
+    "vscode-extension-telemetry": "^0.1.7",
+    "yaml": "^2.1.1"
+  },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/Azure/aks-devx-tools"
+  }
+}

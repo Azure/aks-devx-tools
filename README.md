@@ -1,15 +1,56 @@
-# Project
+# Azure Kubernetes Service (AKS) DevX (Developer experience) Extension for Visual Studio Code (Preview)
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+The AKS DevX extension for Visual Studio Code (Preview) is an extension focused on enhancing your day-to-day life as a developer on Azure Kubernetes Service. This extension is focused on non-cluster developer experiences. If you are more interested in cluster operations, download the [aks-extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-aks-tools).
 
-As the maintainer of this project, please make a few updates:
+The current list of experiences in this extension are:
+-	[Draft](https://github.com/Azure/draft)
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+## Installation
 
+1. Download and install the [Azure Kubernetes Service DevX Extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-aks-tools) for Visual Studio Code.
+
+2. Wait for the extension to finish installing then reload Visual Studio Code when prompted.
+
+3. Verify that the extension is installed by browsing your installed extensions and finding Azure Kubernetes Service DevX Extension
+
+## Features
+
+### Draft 
+
+Draft makes it easier for developers to get started building apps that run on Kubernetes by taking a non-containerized application and generating the Dockerfiles, Kubernetes manifests, Helm charts, Kustomize configuration, and other artifacts associated with a containerized application. Draft can also generate a GitHub Actions workflow file to quickly build and deploy applications onto an AKS cluster.
+
+To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. 
+
+![Draft commands](https://github.com/Tatsinnit/poc-aks-devx-extension/blob/main/Resources/draft-extension-homepage.png)
+
+
+To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order: 
+- Create Deployment Files
+- Setup GitHub OpenID Connect
+- Generate Workflow.
+
+**Note:** Draft currently has a dependency on [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) and [GitHub CLI](https://cli.github.com/).
+
+
+## Commands  
+
+**Draft Create Deployment Files** adds the minimum required Dockerfile and manifest files for your deployment to the project directory.
+- Supported deployment types: Helm, Kustomize, Kubernetes manifest.
+
+**Draft Set Up GitHub OpenID Connect** automates the GitHub OIDC setup process for your project.
+
+**Draft Generate Workflow** generates a GitHub Actions workflow for automatic build and deploy to a Kubernetes cluster.
+
+**Draft Add Web App Routing Annotations** annotates your Kubernetes service manifest to expose it to the internet through Web App Routing.
+
+
+## Telemetry
+
+This extension collects telemetry data to help us build a better experience for building applications with Azure Kubernetes Service and VS Code. We only collect the following data:
+
+* Which commands are executed.
+
+We do not collect any information about image names, paths, etc. Read our [privacy statement](https://privacy.microsoft.com/privacystatement) to learn more. If you don’t wish to send usage data to Microsoft, you can set the `telemetry.enableTelemetry` setting to `false`. Learn more in our [FAQ](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting).
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
