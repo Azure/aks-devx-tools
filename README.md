@@ -29,6 +29,8 @@ To properly use Draft to containerize your application, create manifest files, a
 - Setup GitHub OpenID Connect
 - Generate Workflow.
 
+**Note:** Draft currently has a dependency on [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) and [GitHub CLI](https://cli.github.com/).
+
 
 ## Commands  
 
