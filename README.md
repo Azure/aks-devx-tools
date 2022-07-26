@@ -7,7 +7,7 @@ The current list of experiences in this extension are:
 
 ## Installation
 
-1. Download and install the [Azure Kubernetes Service DevX Extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-aks-tools) for Visual Studio Code.
+1. Download and install the [Azure Kubernetes Service DevX Extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.aks-devx-tools) for Visual Studio Code.
 
 2. Wait for the extension to finish installing then reload Visual Studio Code when prompted.
 
@@ -21,7 +21,7 @@ Draft makes it easier for developers to get started building apps that run on Ku
 
 To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. 
 
-![Draft commands](https://github.com/Tatsinnit/poc-aks-devx-extension/blob/main/Resources/draft-extension-homepage.png)
+![Draft commands](resources/draft-extension-homepage.png)
 
 
 To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order: 
