@@ -1,9 +1,13 @@
 # Change Log
 
-All notable changes to the "aks-draft-extension" extension will be documented in this file.
+## 0.0.2
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+* Improve docs links and details.
 
-## [Unreleased]
+Thanks to Karen, Quentin
 
-- Initial release
+## 0.0.1
+
+* Draft feature release.
+
+Thanks to Karen Chen, Quentin, Rong, Ahmed, Pete.
