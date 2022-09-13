@@ -49,16 +49,17 @@ function getWebviewContent(
     installationResponse: InstallationResponse,
     getUserInput: boolean
 ): string {
+    const styleUri = getResourceUri(aksExtensionPath, 'rundrafttool', 'draft_style.css');
     const toolkitUri = getUiToolkitUri(webview, aksExtensionPath);
     const templateUri = getResourceUri(aksExtensionPath, 'rundrafttool', `draft_${command}.html`);
 
     const installHtmlResult = getOrganisedInstallResult(clustername, installationResponse);
     const data = {
-        toolkitUri: toolkitUri,
+        cssuri: styleUri,
+        toolkituri: toolkitUri,
         name: clustername,
         mainMessage: installHtmlResult.mainMessage,
         resultLogs: installHtmlResult.logs,
-        isSuccess: installHtmlResult.succeeded,
         output: installHtmlResult.output,
         getUserInput: getUserInput
     };
