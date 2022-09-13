@@ -16,6 +16,7 @@
         // https://code.visualstudio.com/api/extension-guides/webview#passing-messages-from-a-webview-to-an-extension
         const vscode = acquireVsCodeApi();
         const csharp = "csharp";
+        const dockerfile = "dockerfile";
 
         function showDotnetVersion() {
             const language = $('#project-language').val()
@@ -29,13 +30,28 @@
             }
         }
 
+        function showDeploymentFields() {
+            const fileType = $('#file-type').val();
+            const isDockerfile = fileType === dockerfile;
+            if (isDockerfile) {
+                $('#workflow').prop('required', false);
+                $('#app-name').prop('required', false);
+                $('.deployment-field').hide()
+            } else {
+                $('#workflow').prop('required', true);
+                $('#app-name').prop('required', true);
+                $('.deployment-field').show()
+            }
+        }
+
         $(document).ready(function () {
             $('.csharp').hide()
             $('#project-language').change(showDotnetVersion)
+            $('#file-type').change(showDeploymentFields)
             $('#submit').click(function () {
                 const language = $('#project-language').val();
                 const fileType = $('#file-type').val();
-                const isDockerfile = fileType === 'dockerfile';
+                const isDockerfile = fileType === dockerfile;
                 const port = $('#port').val().trim();
                 const appName = $('#app-name').val().trim();
                 const workflow = $('#workflow').val();
@@ -53,7 +69,6 @@
                 if (missingFields.length != 0) {
                     const msg = `Fields missing: ${missingFields.join()}`;
                     $('#missing').text(msg);
-                    console.log(msg);
                     return
                 }
 
@@ -96,6 +111,15 @@
         <h3>Options</h3>
 
         <div>
+            <vscode-radio-group id="file-type" orientation="vertical">
+                <label slot="label">File creation</label>
+                <vscode-radio checked id="dockerfile-deployment" value="dockerfile-deployment">Dockerfile and Deployment Files</vscode-radio>
+                <vscode-radio id="deployment" value="deployment">Deployment Only</vscode-radio>
+                <vscode-radio id="dockerfile" value="dockerfile">Dockerfile Only</vscode-radio>
+            </vscode-radio-group>
+        </div>
+
+        <div>
             <p for="project-language" class="label">Language</p>
             <vscode-dropdown required id="project-language">
                 <vscode-option value="clojure" selected>Clojure</vscode-option>
@@ -119,31 +143,24 @@
         </div>
 
         <div>
-            <vscode-radio-group id="file-type" orientation="vertical">
-                <label slot="label">File creation</label>
-                <vscode-radio checked id="dockerfile-deployment" value="dockerfile-deployment">Dockerfile and Deployment Files</vscode-radio>
-                <vscode-radio id="dockerfile" value="dockerfile">Dockerfile Only</vscode-radio>
-                <vscode-radio id="deployment" value="deployment">Deployment Only</vscode-radio>
-            </vscode-radio-group>
-        </div>
-    
-        <div>
             <vscode-text-field id="port" name="port" value="8080" type="number" onInput="enforcePort(this)" required>
                 Port
             </vscode-text-field>
         </div>
-        
-        <div>
-            <vscode-text-field id="app-name" name="app-name" placeholder="test-app" required>Application name</vscode-text-field>
-        </div>
+            
+        <div class="deployment-field">
+            <div>
+                <vscode-text-field id="app-name" name="app-name" placeholder="test-app" required>Application name</vscode-text-field>
+            </div>
 
-        <div>
-            <p class="label" for="workflow">Deployment type</p>
-            <vscode-dropdown required id="workflow" name="workflow">
-                <vscode-option value="helm" selected>Helm</vscode-option>
-                <vscode-option value="kustomize">Kustomize</vscode-option>
-                <vscode-option value="manifests">Manifests</vscode-option>
-            </vscode-dropdown>
+            <div>
+                <p class="label" for="workflow">Deployment type</p>
+                <vscode-dropdown required id="workflow" name="workflow">
+                    <vscode-option value="helm" selected>Helm</vscode-option>
+                    <vscode-option value="kustomize">Kustomize</vscode-option>
+                    <vscode-option value="manifests">Manifests</vscode-option>
+                </vscode-dropdown>
+            </div>
         </div>
 
         <div>
