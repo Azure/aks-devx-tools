@@ -15,11 +15,12 @@
     <script>
         // https://code.visualstudio.com/api/extension-guides/webview#passing-messages-from-a-webview-to-an-extension
         const vscode = acquireVsCodeApi();
+        const csharp = "csharp";
 
         function showDotnetVersion() {
             const language = $('#project-language').val()
             const fileType = $('input[name="file-type"]:checked').val()
-            if (language === 'csharp' && fileType !== 'deployment') {
+            if (language === csharp && fileType !== 'deployment') {
                 $('.csharp').show()
                 $('#dotnet-version').prop('required', true);
             } else {
@@ -29,36 +30,43 @@
         }
 
         $(document).ready(function () {
-            $('input:radio[name=file-type]').change(function () {
-                const fileType = this.value
-                if (fileType === 'dockerfile') {
-                    $('.deployment').val('').change()
-                    $('.deployment').prop('disabled', true);
-                } else {
-                    $('.deployment').prop('disabled', false);
-                }
-                showDotnetVersion()
-            })
             $('.csharp').hide()
             $('#project-language').change(showDotnetVersion)
             $('#submit').click(function () {
                 const language = $('#project-language').val();
-                const fileType = $('input[name="file-type"]:checked').val();
+                const fileType = $('#file-type').val();
+                const isDockerfile = fileType === 'dockerfile';
                 const port = $('#port').val().trim();
                 const appName = $('#app-name').val().trim();
                 const workflow = $('#workflow').val();
+                const isDotnet = language === csharp;
                 const dotnetVersion = $('#dotnet-version').val().trim();
-                if (language.length > 0 && port > 0 && (fileType === 'dockerfile' || (appName.length > 0 && workflow.length > 0)) && (!$('#dotnet-version').prop('required') || dotnetVersion.length > 0)) {
-                    $('#draftform').hide();
-                    vscode.postMessage({
-                        language: language,
-                        fileType: fileType,
-                        port: port,
-                        appName: appName,
-                        workflow: workflow,
-                        dotnetVersion: dotnetVersion
-                    });
-                }
+
+                console.log('language: ', language);
+                console.log('filetype: ', fileType);
+                console.log('port: ', port);
+                console.log('appName: ', appName);
+                console.log('workflow: ', workflow)
+
+                if (language.length == 0) return;
+                if (fileType.length == 0) return;
+                if (port < 0) return;
+                if (appName.length == 0) return;
+                if (workflow.length == 0) return;
+                if (!isDockerfile && appName.length == 0) return;
+                if (!isDockerfile && workflow.length == 0) return;
+                if (isDotnet && dotnetVersion.length == 0) return;
+
+                console.log('here')
+                $('#draftform').hide();
+                vscode.postMessage({
+                    language: language,
+                    fileType: fileType,
+                    port: port,
+                    appName: appName,
+                    workflow: workflow,
+                    dotnetVersion: dotnetVersion
+                });
             })
 
         });
