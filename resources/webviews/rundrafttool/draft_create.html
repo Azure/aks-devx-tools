@@ -42,22 +42,21 @@
                 const isDotnet = language === csharp;
                 const dotnetVersion = $('#dotnet-version').val().trim();
 
-                console.log('language: ', language);
-                console.log('filetype: ', fileType);
-                console.log('port: ', port);
-                console.log('appName: ', appName);
-                console.log('workflow: ', workflow)
+                const missingFields = [];
+                if (language.length == 0) missingFields.push("language");
+                if (fileType.length == 0) missingFields.push("file creation");
+                if (port < 0) missingFields.push("port");
+                if (!isDockerfile && appName.length == 0) missingFields.push("application name");
+                if (!isDockerfile && workflow.length == 0) missingFields.push("deployment type");
+                if (isDotnet && dotnetVersion.length == 0) missingFields.push(".NET version");
 
-                if (language.length == 0) return;
-                if (fileType.length == 0) return;
-                if (port < 0) return;
-                if (appName.length == 0) return;
-                if (workflow.length == 0) return;
-                if (!isDockerfile && appName.length == 0) return;
-                if (!isDockerfile && workflow.length == 0) return;
-                if (isDotnet && dotnetVersion.length == 0) return;
+                if (missingFields.length != 0) {
+                    const msg = `Fields missing: ${missingFields.join()}`;
+                    $('#missing').text(msg);
+                    console.log(msg);
+                    return
+                }
 
-                console.log('here')
                 $('#draftform').hide();
                 vscode.postMessage({
                     language: language,
@@ -129,7 +128,7 @@
         </div>
     
         <div>
-            <vscode-text-field id="port" name="port" placeholder="8080" type="number" onInput="enforcePort(this)" required>
+            <vscode-text-field id="port" name="port" value="8080" type="number" onInput="enforcePort(this)" required>
                 Port
             </vscode-text-field>
         </div>
@@ -148,7 +147,11 @@
         </div>
 
         <div>
-        <vscode-button class="button" id="submit" type="submit">Submit</vscode-button>
+            <vscode-button class="button" id="submit" type="submit">Submit</vscode-button>
+        </div>
+
+        <div>
+            <p id="missing" class="missing"></p>
         </div>
     </form>
 

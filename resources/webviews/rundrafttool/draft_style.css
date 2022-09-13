@@ -1,8 +1,13 @@
 .label {
     color: var(--foreground); 
-    margin: calc(var(--design-unit) * 1px) 0
+    margin: calc(var(--design-unit) * 1px) 0;
 }
 
 .button {
-    margin: calc(var(--design-unit) * 2px) 0
+    margin: calc(var(--design-unit) * 2px) 0;
+}
+
+.missing {
+    color: var(--vscode-errorForeground);
+    margin: calc(var(--design-unit) * 1px) 0;
 }
