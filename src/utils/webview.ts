@@ -84,7 +84,7 @@ export function getResourceUri(vscodeExtensionPath: string, folder: string, file
         .with({ scheme: 'vscode-resource' });
 }
 
-export function getNodeModuleUri(webview: vscode.Webview, vscodeExtensionPath: string, pathList: string[]): vscode.Uri {
+function getNodeModuleUri(webview: vscode.Webview, vscodeExtensionPath: string, pathList: string[]): vscode.Uri {
     const extensionUri = vscode.Uri.parse(vscodeExtensionPath);
     return webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, ...pathList));
 }

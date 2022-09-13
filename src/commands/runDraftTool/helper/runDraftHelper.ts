@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { InstallationResponse } from '../model/installationResponse';
-import { getRenderedContent, getResourceUri } from '../../../utils/webview';
+import { getRenderedContent, getResourceUri, getUiToolkitUri } from '../../../utils/webview';
 import * as fs from 'fs';
 import fetch from 'node-fetch';
 import * as os from "os";
@@ -33,6 +33,7 @@ export function createDraftWebView(
 ) {
     // For the case of successful run of the tool we render webview with the output information.
     webview.html = getWebviewContent(
+        webview,
         command,
         installationResponse.name,
         extensionPath,
@@ -41,18 +42,19 @@ export function createDraftWebView(
 }
 
 function getWebviewContent(
+    webview: vscode.Webview,
     command: string,
     clustername: string,
     aksExtensionPath: string,
     installationResponse: InstallationResponse,
     getUserInput: boolean
 ): string {
-    const styleUri = getResourceUri(aksExtensionPath, 'rundrafttool', 'draft_style.css');
+    const toolkitUri = getUiToolkitUri(webview, aksExtensionPath);
     const templateUri = getResourceUri(aksExtensionPath, 'rundrafttool', `draft_${command}.html`);
 
     const installHtmlResult = getOrganisedInstallResult(clustername, installationResponse);
     const data = {
-        cssuri: styleUri,
+        toolkitUri: toolkitUri,
         name: clustername,
         mainMessage: installHtmlResult.mainMessage,
         resultLogs: installHtmlResult.logs,
