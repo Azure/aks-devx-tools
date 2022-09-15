@@ -84,19 +84,9 @@ export function getResourceUri(vscodeExtensionPath: string, folder: string, file
         .with({ scheme: 'vscode-resource' });
 }
 
-function getNodeModuleUri(webview: vscode.Webview, vscodeExtensionPath: string, pathList: string[]): vscode.Uri {
-    const extensionUri = vscode.Uri.parse(vscodeExtensionPath);
-    return webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, ...pathList));
-}
-
 export function getUiToolkitUri(webview: vscode.Webview, vscodeExtensionPath: string): vscode.Uri {
-    return getNodeModuleUri(webview, vscodeExtensionPath, [
-        "node_modules",
-        "@vscode",
-        "webview-ui-toolkit",
-        "dist",
-        "toolkit.js",
-    ]);
+    const extensionUri = vscode.Uri.parse(vscodeExtensionPath);
+    return webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", "toolkit.min.js"));
 }
 
 export function getRenderedContent(templateUri: vscode.Uri, data: object): string {

@@ -4,6 +4,7 @@
 
 const path = require('path');
 const { ContextReplacementPlugin } = require('webpack');
+const CopyPlugin = require("copy-webpack-plugin");
 const webpack = require('webpack');
 
 
@@ -32,7 +33,10 @@ const extensionConfig = {
   plugins: [
     new webpack.IgnorePlugin({resourceRegExp: /^electron$/}),
     new webpack.IgnorePlugin({resourceRegExp: /^\.\/handlebars$/}),
-    new ContextReplacementPlugin(/keyv/) // https://stackoverflow.com/questions/59235497/i-get-a-webpack-warning-critical-dependency-the-request-of-a-dependency-is-an-e 
+    new ContextReplacementPlugin(/keyv/), // https://stackoverflow.com/questions/59235497/i-get-a-webpack-warning-critical-dependency-the-request-of-a-dependency-is-an-e 
+    new CopyPlugin(
+      {patterns: [{from: "./node_modules/@vscode/webview-ui-toolkit/dist/toolkit.min.js", to: "./toolkit.min.js"}]}
+    )
   ],
   resolve: {
     // support reading TypeScript and JavaScript files, 📖 -> https://github.com/TypeStrong/ts-loader
