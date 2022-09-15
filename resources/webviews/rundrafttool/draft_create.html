@@ -17,6 +17,7 @@
         const vscode = acquireVsCodeApi();
         const csharp = "csharp";
         const dockerfile = "dockerfile";
+        const deployment = "deployment";
 
         function showDotnetVersion() {
             const language = $('#project-language').val()
@@ -30,56 +31,79 @@
             }
         }
 
+        function showDockerfileFields() {
+            $('#project-language').prop('required', true);
+            showDotnetVersion();
+            $('.dockerfile-field').show();
+        }
+
         function showDeploymentFields() {
+            $('#workflow').prop('required', true);
+            $('#app-name').prop('required', true);
+            $('.deployment-field').show();
+        }
+
+        function showRequiredFields() {
             const fileType = $('#file-type').val();
             const isDockerfile = fileType === dockerfile;
+            const isDeployment = fileType === deployment;
+
             if (isDockerfile) {
                 $('#workflow').prop('required', false);
                 $('#app-name').prop('required', false);
-                $('.deployment-field').hide()
+                $('.deployment-field').hide();
+                showDockerfileFields();
+            } else if(isDeployment) {
+                $('#project-language').prop('required', false);
+                $('#dotnet-version').prop('required', false);
+                $('.dockerfile-field').hide();
+                showDeploymentFields();
             } else {
-                $('#workflow').prop('required', true);
-                $('#app-name').prop('required', true);
-                $('.deployment-field').show()
+                showDockerfileFields();
+                showDeploymentFields();
             }
         }
 
         $(document).ready(function () {
             $('.csharp').hide()
             $('#project-language').change(showDotnetVersion)
-            $('#file-type').change(showDeploymentFields)
+            $('#file-type').change(showRequiredFields)
             $('#submit').click(function () {
-                const language = $('#project-language').val();
-                const fileType = $('#file-type').val();
-                const isDockerfile = fileType === dockerfile;
-                const port = $('#port').val().trim();
-                const appName = $('#app-name').val().trim();
-                const workflow = $('#workflow').val();
-                const isDotnet = language === csharp;
-                const dotnetVersion = $('#dotnet-version').val().trim();
+                const language = $('#project-language');
+                const languageVal = language.val();
+                const fileType = $('#file-type');
+                const fileTypeVal = fileType.val();
+                const port = $('#port');
+                const portVal = port.val().trim();
+                const appName = $('#app-name');
+                const appNameVal = $('#app-name').val().trim();
+                const workflow = $('#workflow');
+                const workflowVal = workflow.val();
+                const dotnetVersion = $('#dotnet-version');
+                const dotnetVersionVal = dotnetVersion.val().trim();
 
                 const missingFields = [];
-                if (language.length == 0) missingFields.push("language");
-                if (fileType.length == 0) missingFields.push("file creation");
-                if (port < 0) missingFields.push("port");
-                if (!isDockerfile && appName.length == 0) missingFields.push("application name");
-                if (!isDockerfile && workflow.length == 0) missingFields.push("deployment type");
-                if (isDotnet && dotnetVersion.length == 0) missingFields.push(".NET version");
+                if (language.prop('required') && languageVal.length == 0) missingFields.push("language");
+                if (fileType.prop('required') && fileTypeVal.length == 0) missingFields.push("file creation");
+                if (port.prop('required') && portVal < 0) missingFields.push("port");
+                if (appName.prop('required') && appNameVal.length == 0) missingFields.push("application name");
+                if (workflow.prop('required') && workflowVal.length == 0) missingFields.push("deployment type");
+                if (dotnetVersion.prop('required') && dotnetVersionVal.length == 0) missingFields.push(".NET version");
 
                 if (missingFields.length != 0) {
-                    const msg = `Fields missing: ${missingFields.join()}`;
+                    const msg = `Fields missing: ${missingFields.join(", ")}`;
                     $('#missing').text(msg);
                     return
                 }
 
                 $('#draftform').hide();
                 vscode.postMessage({
-                    language: language,
-                    fileType: fileType,
-                    port: port,
-                    appName: appName,
-                    workflow: workflow,
-                    dotnetVersion: dotnetVersion
+                    language: languageVal,
+                    fileType: fileTypeVal,
+                    port: portVal,
+                    appName: appNameVal,
+                    workflow: workflowVal,
+                    dotnetVersion: dotnetVersionVal
                 });
             })
 
@@ -119,27 +143,30 @@
             </vscode-radio-group>
         </div>
 
-        <div>
-            <p for="project-language" class="label">Language</p>
-            <vscode-dropdown required id="project-language">
-                <vscode-option value="clojure" selected>Clojure</vscode-option>
-                <vscode-option value="csharp">C#</vscode-option>
-                <vscode-option value="erlang">Erlang</vscode-option>
-                <vscode-option value="go">Go</vscode-option>
-                <vscode-option value="gomodule">Go (Modules)</vscode-option>
-                <vscode-option value="java">Java</vscode-option>
-                <vscode-option value="gradle">Java (Gradle)</vscode-option>
-                <vscode-option value="javascript">Javascript</vscode-option>
-                <vscode-option value="php">PHP</vscode-option>
-                <vscode-option value="python">Python</vscode-option>
-                <vscode-option value="ruby">Ruby</vscode-option>
-                <vscode-option value="rust">Rust</vscode-option>
-                <vscode-option value="swift">Swift</vscode-option>
-            </vscode-dropdown>
-        </div>
 
-        <div class="csharp">
-            <vscode-text-field id="dotnet-version" name="dotnet-version" placeholder="5.0" required>.NET version</vscode-text-field>
+        <div class="dockerfile-field">
+            <div>
+                <p for="project-language" class="label">Language</p>
+                <vscode-dropdown required id="project-language">
+                    <vscode-option value="clojure" selected>Clojure</vscode-option>
+                    <vscode-option value="csharp">C#</vscode-option>
+                    <vscode-option value="erlang">Erlang</vscode-option>
+                    <vscode-option value="go">Go</vscode-option>
+                    <vscode-option value="gomodule">Go (Modules)</vscode-option>
+                    <vscode-option value="java">Java</vscode-option>
+                    <vscode-option value="gradle">Java (Gradle)</vscode-option>
+                    <vscode-option value="javascript">Javascript</vscode-option>
+                    <vscode-option value="php">PHP</vscode-option>
+                    <vscode-option value="python">Python</vscode-option>
+                    <vscode-option value="ruby">Ruby</vscode-option>
+                    <vscode-option value="rust">Rust</vscode-option>
+                    <vscode-option value="swift">Swift</vscode-option>
+                </vscode-dropdown>
+            </div>
+
+            <div class="csharp">
+                <vscode-text-field id="dotnet-version" name="dotnet-version" placeholder="5.0">.NET version</vscode-text-field>
+            </div>
         </div>
 
         <div>
