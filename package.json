@@ -3,7 +3,7 @@
   "displayName": "Developer Tools for Azure Kubernetes Service (AKS)",
   "description": "Create deployment files and configure GitHub Actions workflows to deploy applications to Azure Kubernetes Service (AKS).",
   "publisher": "ms-kubernetes-tools",
-  "version": "0.0.2",
+  "version": "0.0.3-testfoobar",
   "icon": "resources/aks-devx.png",
   "preview": true,
   "engines": {
@@ -15,7 +15,7 @@
     "Azure"
   ],
   "activationEvents": [
-    "onCommand:aks-draft-extension.runDraftCreate",
+    "onCommand:aks-draft-extension.runDraftCreateCmdPalette",
     "onCommand:aks-draft-extension.runDraftSetupGH",
     "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
     "onCommand:aks-draft-extension.runDraftUpdate"
@@ -35,8 +35,8 @@
     },
     "commands": [
       {
-        "command": "aks-draft-extension.runDraftCreate",
-        "title": "Create Deployment Files"
+        "command": "aks-draft-extension.runDraftCreateCmdPalette",
+        "title": "AKS DevX Tool: Create Deployment Files"
       },
       {
         "command": "aks-draft-extension.runDraftSetupGH",
@@ -67,7 +67,7 @@
       ],
       "aksdevx.aksDraftSubMenu": [
         {
-          "command": "aks-draft-extension.runDraftCreate",
+          "command": "aks-draft-extension.runDraftCreateCmdPalette",
           "group": "draftnavigation@1"
         },
         {

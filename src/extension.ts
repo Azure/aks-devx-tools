@@ -1,7 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import runDraftCreate from './commands/runDraftTool/runDraftCreate';
+// import runDraftCreate from './commands/runDraftTool/runDraftCreate';
+import runDraftCreateCmdPalette from './commands/runDraftTool/draftCreateMultiStep/runDraftCreateCmdPalette';
 import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWorkflow';
 import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
 import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
@@ -21,13 +22,16 @@ export function activate(context: vscode.ExtensionContext) {
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 
-	let disposableCreate = vscode.commands.registerCommand('aks-draft-extension.runDraftCreate', async (folder) => {
+	let disposableCreate = vscode.commands.registerCommand('aks-draft-extension.runDraftCreateCmdPalette', async (folder) => {
 		if (reporter) {
-            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftCreate' });
+            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftCreateCmdPalette' });
         }
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		runDraftCreate(context, vscode.Uri.parse(folder).fsPath);
+		const currentWorkspace = vscode.workspace.workspaceFolders![0];
+		runDraftCreateCmdPalette(context, currentWorkspace.uri.fsPath);
+		
+		// runDraftCreateCmdPalette(context, vscode.Uri.parse(folder).fsPath);
 	});
 	let disposableSetupGH = vscode.commands.registerCommand('aks-draft-extension.runDraftSetupGH', async (folder) => {
 		if (reporter) {
