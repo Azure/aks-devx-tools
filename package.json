@@ -3,7 +3,7 @@
   "displayName": "Developer Tools for Azure Kubernetes Service (AKS)",
   "description": "Create deployment files and configure GitHub Actions workflows to deploy applications to Azure Kubernetes Service (AKS).",
   "publisher": "ms-kubernetes-tools",
-  "version": "0.0.3-testfoobar",
+  "version": "0.0.3-testmultiwizard",
   "icon": "resources/aks-devx.png",
   "preview": true,
   "engines": {
@@ -40,7 +40,7 @@
       },
       {
         "command": "aks-draft-extension.runDraftSetupGH",
-        "title": "Set Up GitHub OpenID Connect"
+        "title": "AKS DevX Tool: Set Up GitHub OpenID Connect"
       },
       {
         "command": "aks-draft-extension.runDraftGenerateWorkflow",
