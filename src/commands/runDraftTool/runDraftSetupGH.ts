@@ -7,7 +7,7 @@ import { runDraftCommand } from './helper/runDraftHelper';
 import { reporter } from './../../utils/reporter';
 import { MultiStepInput, shouldResume } from './model/multiStep';
 
-export default async function runDraftCreateCmdPalette(
+export default async function runDraftSetupGH(
     _context: vscode.ExtensionContext,
     destination: string
 ): Promise<void> {
