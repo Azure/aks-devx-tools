@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import runDraftDockerfile from './commands/runDraftTool/runDraftDockerfile';
 import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWorkflow';
-import runDraftSetupGH from './commands/runDraftTool/createDraftSetupGH/runDraftSetupGH';
+import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
 import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
 import { Reporter, reporter } from './utils/reporter';
 

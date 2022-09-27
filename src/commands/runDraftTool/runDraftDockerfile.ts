@@ -7,8 +7,8 @@ import { runDraftCommand } from './helper/runDraftHelper';
 import { reporter } from './../../utils/reporter';
 import { MultiStepInput, validationSleep, shouldResume } from './model/multiStep';
 import * as fs from 'fs';
-import linguist = require('linguist-js');
 import * as path from 'path';
+import linguist = require('linguist-js');
 
 export default async function runDraftDockerfile(
     _context: vscode.ExtensionContext,
@@ -22,7 +22,7 @@ export default async function runDraftDockerfile(
     multiStepInput(_context, destination);
 }
 
-export async function multiStepInput(context: ExtensionContext, destination: string) {
+async function multiStepInput(context: ExtensionContext, destination: string) {
     const title = 'Draft a Dockerfile from source code';
     const languages = ['clojure', 'c#', 'erlang', 'go', 'gomodule', "java", "gradle", "javascript", "php", "python", "rust", "swift"];
 	const languageLabels: QuickPickItem[] = languages.map(label => ({ label }));
@@ -115,7 +115,6 @@ export async function multiStepInput(context: ExtensionContext, destination: str
                 "Swift": "swift"
             };
 
-
             const converted = topLanguage in convert ? convert[topLanguage] : "";
             return languages.includes(converted) ? converted : undefined;
         };
@@ -200,7 +199,6 @@ export async function multiStepInput(context: ExtensionContext, destination: str
         window.showErrorMessage(`Draft Dockerfile Failed - ${err}`);
     }
 }
-
 
 async function validatePort(port: string) {
     await validationSleep();
