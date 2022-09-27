@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import runDraftCreateCmdPalette from './commands/runDraftTool/draftCreateMultiStep/runDraftCreateCmdPalette';
+import runDraftDockerfile from './commands/runDraftTool/runDraftDockerfile';
 import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWorkflow';
 import runDraftSetupGH from './commands/runDraftTool/createDraftSetupGH/runDraftSetupGH';
 import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
@@ -23,13 +23,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const currentWorkspace = vscode.workspace.workspaceFolders![0];
 
-	let disposableCreate = vscode.commands.registerCommand('aks-draft-extension.runDraftCreateCmdPalette', async (folder) => {
+	let disposableDockerfile = vscode.commands.registerCommand('aks-draft-extension.runDraftDockerfile', async (folder) => {
 		if (reporter) {
-            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftCreateCmdPalette' });
+            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftDockerfile' });
         }
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		runDraftCreateCmdPalette(context, currentWorkspace.uri.fsPath);
+		runDraftDockerfile(context, currentWorkspace.uri.fsPath);
 	});
 	let disposableSetupGH = vscode.commands.registerCommand('aks-draft-extension.runDraftSetupGH', async (folder) => {
 		if (reporter) {
@@ -56,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
 		runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
 	});
 
-	context.subscriptions.push(disposableCreate);
+	context.subscriptions.push(disposableDockerfile);
 	context.subscriptions.push(disposableSetupGH);
 	context.subscriptions.push(disposableGenerateWorkflow);
 	context.subscriptions.push(disposableUpdate);

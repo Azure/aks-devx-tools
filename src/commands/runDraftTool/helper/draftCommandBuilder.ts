@@ -52,14 +52,14 @@ export function buildCreateConfig(
         ]
     };
 
-    if (appName.length > 0) {
+    if (appName?.length > 0) {
         data.deployVariables.push({
             name: "APPNAME",
             value: appName
         });
     }
 
-    if (dotnetVersion.length > 0) {
+    if (dotnetVersion?.length > 0) {
         data.languageVariables.push({
             name: "VERSION",
             value: dotnetVersion

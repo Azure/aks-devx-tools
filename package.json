@@ -3,7 +3,7 @@
   "displayName": "Developer Tools for Azure Kubernetes Service (AKS)",
   "description": "Create deployment files and configure GitHub Actions workflows to deploy applications to Azure Kubernetes Service (AKS).",
   "publisher": "ms-kubernetes-tools",
-  "version": "0.0.3-testmultiwizard",
+  "version": "0.0.3-palette",
   "icon": "resources/aks-devx.png",
   "preview": true,
   "engines": {
@@ -15,7 +15,7 @@
     "Azure"
   ],
   "activationEvents": [
-    "onCommand:aks-draft-extension.runDraftCreateCmdPalette",
+    "onCommand:aks-draft-extension.runDraftDockerfile",
     "onCommand:aks-draft-extension.runDraftSetupGH",
     "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
     "onCommand:aks-draft-extension.runDraftUpdate"
@@ -35,12 +35,12 @@
     },
     "commands": [
       {
-        "command": "aks-draft-extension.runDraftCreateCmdPalette",
-        "title": "AKS DevX Tool: Create Deployment Files"
+        "command": "aks-draft-extension.runDraftDockerfile",
+        "title": "AKS Developer: Draft a Dockerfile from source code"
       },
       {
         "command": "aks-draft-extension.runDraftSetupGH",
-        "title": "AKS DevX Tool: Set Up GitHub OpenID Connect"
+        "title": "AKS Developer: Set Up GitHub OpenID Connect"
       },
       {
         "command": "aks-draft-extension.runDraftGenerateWorkflow",
@@ -67,7 +67,7 @@
       ],
       "aksdevx.aksDraftSubMenu": [
         {
-          "command": "aks-draft-extension.runDraftCreateCmdPalette",
+          "command": "aks-draft-extension.runDraftDockerfile",
           "group": "draftnavigation@1"
         },
         {
@@ -128,6 +128,7 @@
   "dependencies": {
     "download": "^8.0.0",
     "handlebars": "^4.7.7",
+    "linguist-js": "^2.5.3",
     "node-fetch": "^3.2.5",
     "shelljs": "^0.8.5",
     "tmp": "^0.2.1",
@@ -135,7 +136,7 @@
     "yaml": "^2.1.1"
   },
   "repository": {
-      "type": "git",
-      "url": "https://github.com/Azure/aks-devx-tools"
+    "type": "git",
+    "url": "https://github.com/Azure/aks-devx-tools"
   }
 }
