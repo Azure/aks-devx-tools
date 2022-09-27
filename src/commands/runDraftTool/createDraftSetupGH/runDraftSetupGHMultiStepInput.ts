@@ -7,7 +7,7 @@ import { QuickPickItem, window, CancellationToken, ExtensionContext } from 'vsco
 import { buildCreateCommand, buildCreateConfig, buildSetupGHCommand } from '../helper/draftCommandBuilder';
 import { runDraftCommand } from '../helper/runDraftHelper';
 import { reporter } from '../../../utils/reporter';
-import { MultiStepInput } from '../../../utils/multiStepWizardWrapper';
+import { MultiStepInput } from '../model/multiStep';
 import { longRunning } from '../../../utils/host';
 
 export async function multiStepInput(context: ExtensionContext, destination: string) {

@@ -1,8 +1,13 @@
-// -------------------------------------------------------
-// Helper code that wraps the API for the multi-step case.
-// -------------------------------------------------------
 import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, QuickInputButtons } from 'vscode';
 
+export const validationSleep = async () => { await new Promise(resolve => setTimeout(resolve, 250)); };
+export const shouldResume = () => {
+	return new Promise<boolean>((resolve, reject) => {
+		// noop
+	});
+};
+
+// From https://github.com/microsoft/vscode-extension-samples/blob/main/quickinput-sample/src/multiStepInput.ts
 
 class InputFlowAction {
 	static back = new InputFlowAction();
