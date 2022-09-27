@@ -48,7 +48,7 @@
       },
       {
         "command": "aks-draft-extension.runDraftUpdate",
-        "title": "Add Web App Routing Annotations"
+        "title": "AKS Developer: Add Web App Routing Annotations"
       }
     ],
     "menus": {
