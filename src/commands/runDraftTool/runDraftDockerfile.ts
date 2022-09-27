@@ -99,7 +99,6 @@ export async function multiStepInput(context: ExtensionContext, destination: str
             }, "");
 
             // convert to expected language form
-            const languages = ['clojure', 'c#', 'erlang', 'go', 'gomodule', "java", "gradle", "javascript", "php", "python", "rust", "swift"];
             // https://github.com/github/linguist/blob/master/lib/linguist/languages.yml for keys
             const convert: {[key: string]: string} = {
                 "Clojure": "clojure",
