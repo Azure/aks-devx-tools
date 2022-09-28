@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { longRunning } from './../../utils/host';
-import { downloadDraftBinary } from './helper/runDraftHelper';
+import { ensureDraftBinary } from './helper/runDraftHelper';
 import { QuickPickItem, window, ExtensionContext } from 'vscode';
 import { buildCreateCommand, buildCreateConfig } from './helper/draftCommandBuilder';
 import { runDraftCommand } from './helper/runDraftHelper';
@@ -14,7 +14,7 @@ export default async function runDraftDockerfile(
     _context: vscode.ExtensionContext,
     destination: string
 ): Promise<void> {
-    const downloadResult = await longRunning(`Downloading Draft.`, () => downloadDraftBinary());
+    const downloadResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
     if (!downloadResult) {
         return undefined;
     }

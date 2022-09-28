@@ -3,7 +3,7 @@ import { getExtensionPath, longRunning } from '../../utils/host';
 import { failed } from '../../utils/errorable';
 import { createWebView } from '../../utils/webview';
 import * as os from 'os';
-import { createDraftWebView, downloadDraftBinary, runDraftCommand } from './helper/runDraftHelper';
+import { createDraftWebView, ensureDraftBinary, runDraftCommand } from './helper/runDraftHelper';
 import { InstallationResponse } from './model/installationResponse';
 import { setFlagsFromString } from 'v8';
 import { buildGenerateWorkflowCommand } from './helper/draftCommandBuilder';
@@ -21,7 +21,7 @@ export default async function runDraftGenerateWorkflow(
     }
 
     // Download Binary first
-    const downladResult = await longRunning(`Downloading Draft.`, () => downloadDraftBinary());
+    const downladResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
     if (!downladResult) {
         return undefined;
     }

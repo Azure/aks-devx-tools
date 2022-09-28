@@ -5,7 +5,7 @@ import { failed } from '../../utils/errorable';
 import { buildUpdateCommand } from './helper/draftCommandBuilder';
 import { reporter } from '../../utils/reporter';
 import { MultiStepInput, shouldResume } from './model/multiStep';
-import { downloadDraftBinary, runDraftCommand } from './helper/runDraftHelper';
+import { ensureDraftBinary, runDraftCommand } from './helper/runDraftHelper';
 
 export default async function runDraftUpdate(
     _context: vscode.ExtensionContext,
@@ -19,7 +19,7 @@ export default async function runDraftUpdate(
     }
 
     // Download Binary first
-    const downladResult = await longRunning(`Downloading Draft.`, () => downloadDraftBinary());
+    const downladResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
     if (!downladResult) {
         return undefined;
     }
