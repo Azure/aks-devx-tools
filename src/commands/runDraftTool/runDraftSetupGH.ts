@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { longRunning } from '../../utils/host';
-import { downloadDraftBinary } from './helper/runDraftHelper';
+import { ensureDraftBinary } from './helper/runDraftHelper';
 import { window, ExtensionContext } from 'vscode';
 import { buildSetupGHCommand } from './helper/draftCommandBuilder';
 import { runDraftCommand } from './helper/runDraftHelper';
@@ -11,7 +11,7 @@ export default async function runDraftSetupGH(
     _context: vscode.ExtensionContext,
     destination: string
 ): Promise<void> {
-    const downladResult = await longRunning(`Downloading Draft.`, () => downloadDraftBinary());
+    const downladResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
     if (!downladResult) {
         return undefined;
     }
