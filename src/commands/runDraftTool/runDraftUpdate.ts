@@ -29,30 +29,98 @@ export default async function runDraftUpdate(
 
 
 async function multiStepInput(context: ExtensionContext, destination: string) {
-    const title = 'Draft Web App Routing Annotations';
+    const title = 'Draft a Kubernetes Ingress';
 
 	interface State {
 		title: string;
 		step: number;
 		totalSteps: number;
+		outputFolder: string;
+		namespace: string;
 		hostName: string;
+		port: string;
+		service: string;
+		useOpenServiceMesh: string;
         keyVaultCert: string;
 	}
 
 	async function collectInputs() {
 		const state = {} as Partial<State>;
-		await MultiStepInput.run(input => inputAppName(input, state, 1));
+		await MultiStepInput.run(input => inputOutputFolder(input, state, 1));
 		return state as State;
 	}
 
-    const totalSteps = 2;
+    const totalSteps = 7;
+	async function inputOutputFolder(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.outputFolder = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.outputFolder === 'string' ? state.outputFolder : '',
+			prompt: 'Select the output folder.',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+        return (input: MultiStepInput) => inputNamespace(input, state, step + 1);
+	}
+	async function inputNamespace(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.namespace = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.namespace === 'string' ? state.namespace : '',
+			prompt: 'Kubernetes namespace (e.g, myapp)',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+        return (input: MultiStepInput) => inputAppName(input, state, step + 1);
+	}
 	async function inputAppName(input: MultiStepInput, state: Partial<State>, step: number) {
 		state.hostName = await input.showInputBox({
 			title,
 			step: step,
 			totalSteps: totalSteps,
 			value: typeof state.hostName === 'string' ? state.hostName : '',
-			prompt: 'Enter the host of the ingress resource',
+			prompt: 'Hostname (e.g, myapp.contoso.com)',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+        return (input: MultiStepInput) => inputPort(input, state, step + 1);
+	}
+
+	async function inputPort(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.port = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.port === 'string' ? state.port : '',
+			prompt: 'Port (e.g, 80)',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+        return (input: MultiStepInput) => inputService(input, state, step + 1);
+	}
+
+	async function inputService(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.service = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.service === 'string' ? state.service : '',
+			prompt: 'Service',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+        return (input: MultiStepInput) => inputOpenServiceMesh(input, state, step + 1);
+	}
+
+	async function inputOpenServiceMesh(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.useOpenServiceMesh = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.useOpenServiceMesh === 'string' &&  state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? 'Y' : 'N',
+			prompt: 'Use Open Service Mesh for mTLS',
 			validate: async() => undefined,
 			shouldResume: shouldResume
 		});
@@ -65,7 +133,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			step: step,
 			totalSteps: totalSteps,
 			value: typeof state.keyVaultCert === 'string' ? state.keyVaultCert : '',
-			prompt: 'Enter Azure resource group name',
+			prompt: 'Select a certificate',
 			validate: async() => undefined,
 			shouldResume: shouldResume
 		});
@@ -73,9 +141,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	const state = await collectInputs();
 
     const host = state.hostName;
+	const namespace = state.namespace;
+	const outputFolder = state.outputFolder;
+	const port = state. port;
     const certificate = state.keyVaultCert;
-
-    const command = buildUpdateCommand(destination, host, certificate);
+	const service = state.service;
+	const useOpenServiceMesh = state.useOpenServiceMesh === 'Y' ? true : false;
+    const command = buildUpdateCommand(outputFolder, host, certificate, port, namespace, service, useOpenServiceMesh);
 
     const result = await runDraftCommand(command);
     const [success, err] = await longRunning(`Adding web app routing annotation.`, () => runDraftCommand(command));
