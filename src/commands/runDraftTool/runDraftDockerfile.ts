@@ -40,7 +40,11 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	}
 
 	async function collectInputs() {
-		const state = {sourceFolder: destination} as Partial<State>;
+		const state = {
+            sourceFolder: destination, 
+            outputFile: `./Dockerfile`,
+            portNumber: `80`,
+        } as Partial<State>;
 		await MultiStepInput.run(input => inputSourceCodeFolder(input, state, 1));
 		return state as State;
 	}
@@ -57,8 +61,8 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
                 await validationSleep();
                 const errMsg = "Input must be an existing directory";
 
-                if (!fs.existsSync(file)) return errMsg;
-                if (!fs.lstatSync(file).isDirectory()) return errMsg;
+                if (!fs.existsSync(file)) {return errMsg;}
+                if (!fs.lstatSync(file).isDirectory()) {return errMsg;}
 
                 return undefined;
             },
@@ -77,7 +81,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             validate: async (path: string) => {
                 await validationSleep();
                 const pathErr = "Destination must be a valid file path";
-                if (path === "") return pathErr;
+                if (path === "") {
+                    return pathErr;
+                }
 
                 return undefined;
             },
@@ -91,7 +97,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         const guessLanguage = async () => {
             const results = (await linguist(state.sourceFolder, { keepVendored: false, quick: true })).languages.results;
             const topLanguage = Object.keys(results).reduce((prev, key) => {
-                if (prev === "") return key
+                if (prev === "") {return key;};
 
                 const prevVal = results[prev].bytes;
                 const currVal = results[key].bytes;
@@ -149,16 +155,47 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	}
 
     async function inputVersion(input: MultiStepInput, state: Partial<State>, step: number) {
-        if (state.language === "c#") {
+        const versions : {[key: string]: string[]} = {
+            "clojure": ["8-jdk-alpine"],
+            "c#": ["6.0","5.0","4.0","3.1"],
+            "erlang": ["3.15"],
+            "go": ["1.19","1.18","1.17","1.16"],
+            "java": ["11-jre-slim"],
+            "gradle": ["11-jre-slim"],
+            "javascript": ["10.16.3", "12.16.3", "14.15.4"],
+            "php": ["7.2-apache", "7.2-fpm", "7.2-cli", "7.3-apache", "7.3-fpm", "7.3-cli", "7.4-apache", "7.4-fpm", "7.4-cli"],
+            "python": ["3.6", "3.7", "3.8"],
+            "rust": ["1.42.0"],
+            "swift": ["5.5","5.4","5.3","5.2"]
+        };
+        const selectedLanguage = state.language as string;
+        const defaultVersion = versions[selectedLanguage][0];
+        const items = versions[selectedLanguage].map((version) => {return {label: version};});
+        items.push({label: "Custom"});
+        
+        state.version = defaultVersion;
+        const pick = await input.showQuickPick({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			placeholder: 'Select the language version',
+			items: items,
+			activeItem: typeof state.version !== 'string' ? state.version : undefined,
+			shouldResume: shouldResume
+		});
+        
+        if (pick.label === "Custom") {
             state.version= await input.showInputBox({
                 title,
                 step: step,
                 totalSteps: totalSteps,
                 value: typeof state.version === 'string' ? state.version: '',
-                prompt: `Version of ${state.language}`,
+                prompt: `Enter a custom version of ${state.language}`,
                 validate: async () => undefined,
                 shouldResume: shouldResume
             });
+        }else{
+            state.version = pick.label;
         }
 
         return (input: MultiStepInput) => inputPortNumber(input, state, step + 1);
@@ -208,9 +245,9 @@ async function validatePort(port: string) {
     const portMax = 65535;
     const portErr = `Port must be in range ${portMin} to ${portMax}`;
 
-    if (Number.isNaN(portNum)) return portErr;
-    if (portNum < portMin) return portErr;
-    if (portNum > portMax) return portErr
+    if (Number.isNaN(portNum)) {return portErr;}
+    if (portNum < portMin) {return portErr;}
+    if (portNum > portMax) {return portErr;};
 
     return undefined;
 }
