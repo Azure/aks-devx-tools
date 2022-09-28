@@ -6,6 +6,9 @@ import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWo
 import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
 import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
 import { Reporter, reporter } from './utils/reporter';
+import type { AzureExtensionApiProvider } from '@microsoft/vscode-azext-utils/api';
+import { AzureAccountExtensionApi } from './utils/azAccount';
+import { Az, AzApi } from './utils/az';
 
 
 // this method is called when your extension is activated
@@ -22,6 +25,10 @@ export function activate(context: vscode.ExtensionContext) {
 	// The commandId parameter must match the command field in package.json
 
 	const currentWorkspace = vscode.workspace.workspaceFolders![0];
+
+	const azureAccount: AzureAccountExtensionApi = (<AzureExtensionApiProvider>vscode.extensions.getExtension('ms-vscode.azure-account')!.exports).getApi('1.0.0');
+	// TODO: pass this into any command function that needs to interact with azure
+	const az: AzApi = new Az(azureAccount);
 
 	let disposableDockerfile = vscode.commands.registerCommand('aks-draft-extension.runDraftDockerfile', async (folder) => {
 		if (reporter) {
