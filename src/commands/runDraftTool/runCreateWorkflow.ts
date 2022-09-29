@@ -318,7 +318,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     const workflowType = state.workflowType;
 
     var templateObj;
-
+    var comment = "";
     if (workflowType === helmWorkflowType) {
       // handle accordingly
     } else {
@@ -329,6 +329,8 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         deploymentStrategy === canaryDeploymentStrategy ||
         deploymentStrategy === bgDeploymentStrategy
       ) {
+        comment =
+          "# add a required approval to this environment https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments \n";
         templateObj = wfTemplates.bgcTemplate;
       } else {
         templateObj = wfTemplates.basicTemplate;
@@ -350,7 +352,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       const asJson = JSON.parse(withValues);
       const asYaml = new yaml.Document();
       asYaml.contents = asJson;
-      asYaml.commentBefore = wfTemplates.comment;
+      asYaml.commentBefore = comment + wfTemplates.comment;
       const yamlString = asYaml.toString({ lineWidth: 0 });
       fs.writeFileSync(outputFilepath, yamlString);
 
