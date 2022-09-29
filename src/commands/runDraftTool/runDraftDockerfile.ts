@@ -33,7 +33,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 		totalSteps: number;
         language: string;
         portNumber: string;
-        outputFile: string;
         sourceFolder: string;
         version: string;
 		runtime: QuickPickItem;
@@ -42,14 +41,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	async function collectInputs() {
 		const state = {
             sourceFolder: destination, 
-            outputFile: `./Dockerfile`,
             portNumber: `80`,
         } as Partial<State>;
 		await MultiStepInput.run(input => inputSourceCodeFolder(input, state, 1));
 		return state as State;
 	}
 
-    const totalSteps = 5;
+    const totalSteps = 4;
     async function inputSourceCodeFolder(input: MultiStepInput, state: Partial<State>, step: number) {
 		state.sourceFolder = await input.showInputBox({
 			title,
@@ -63,27 +61,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
                 if (!fs.existsSync(file)) {return errMsg;}
                 if (!fs.lstatSync(file).isDirectory()) {return errMsg;}
-
-                return undefined;
-            },
-			shouldResume: shouldResume
-		});
-        return (input: MultiStepInput) => inputOutputFile(input, state, step + 1);
-	}
-
-    async function inputOutputFile(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.outputFile = await input.showInputBox({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			value: typeof state.outputFile=== 'string' ? state.outputFile: '',
-			prompt: 'Output file destination (e.g. ./Dockerfile)',
-            validate: async (path: string) => {
-                await validationSleep();
-                const pathErr = "Destination must be a valid file path";
-                if (path === "") {
-                    return pathErr;
-                }
 
                 return undefined;
             },
@@ -215,7 +192,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
 	const state = await collectInputs();
     const source = state.sourceFolder;
-    const output = state.outputFile; // TODO: make output actually do something or remove
     const language = state.language;
     const dotnetVersion = state.version;
     const port = state.portNumber;
