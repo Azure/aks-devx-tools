@@ -170,7 +170,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       validate: async (imageName: string) => {
         await validationSleep();
         const imgNameErr =
-          "Invalid container image name. Must be lowercase alphanumeric";
+          "Invalid container image name. Must be lowercase alphanumeric and start with a letter or number, with following parts separated by one period, one or two underscores and multiple dashes";
         const lowercaseErr = "Invalid container image name. Must be lowercase";
         if (imageName === "") {
           return imgNameErr;
@@ -178,7 +178,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         if (imageName.toLowerCase() !== imageName) {
           return lowercaseErr;
         }
-        if (!/^[a-z0-9]+$/gi.test(imageName)) {
+        if (!/[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?/gi.test(imageName)) {
           return imgNameErr;
         }
 
@@ -368,13 +368,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 }
 
 function getResourceGroups(): string[] {
-  return ["resourceGroup1", "resourceGroup2", "resourceGroup3"];
+  return ["jkatariyatest", "resourceGroup2", "resourceGroup3"];
 }
 
 function getAKSClusters(): string[] {
-  return ["cluster1", "cluster2", "cluster3"];
+  return ["jkatariyatest", "cluster2", "cluster3"];
 }
 
 function getContainerRegistries(): string[] {
-  return ["registry1", "registry2", "registry3"];
+  return ["jkatariyatest", "registry2", "registry3"];
 }
