@@ -271,6 +271,89 @@ export const bgcTemplate = {
   },
 };
 
+export const helmTemplate = {
+  name: "Build and deploy an app to AKS with Helm",
+  on: {
+    push: {
+      branches: null,
+    },
+    workflow_dispatch: null,
+  },
+  env: {
+    AZURE_CONTAINER_REGISTRY: "your-azure-container-registry",
+    CONTAINER_NAME: "your-container-image-name",
+    RESOURCE_GROUP: "your-resource-group",
+    CLUSTER_NAME: "your-cluster-name",
+    BRANCH_NAME: "your-branch-name",
+    HELM_DEPLOY_COMMAND: "your-helm-command",
+  },
+  jobs: {
+    buildImage: {
+      permissions: {
+        contents: "read",
+        "id-token": "write",
+      },
+      "runs-on": "ubuntu-latest",
+      steps: [
+        {
+          uses: "actions/checkout@v3",
+          with: {
+            ref: "${{ env.BRANCH_NAME }}",
+          },
+        },
+        {
+          name: "Azure login",
+          uses: "azure/login@v1.4.3",
+          with: {
+            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+          },
+        },
+        {
+          name: "Build and push image to ACR",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.ACR_RESOURCE_GROUP }} .\n",
+        },
+      ],
+    },
+    deploy: {
+      permissions: {
+        actions: "read",
+        contents: "read",
+        "id-token": "write",
+      },
+      "runs-on": "ubuntu-latest",
+      needs: ["buildImage"],
+      steps: [
+        {
+          uses: "actions/checkout@v3",
+        },
+        {
+          name: "Azure login",
+          uses: "azure/login@v1.4.3",
+          with: {
+            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+          },
+        },
+        {
+          name: "Get K8s context",
+          uses: "azure/aks-set-context@v3",
+          with: {
+            "resource-group": "${{ env.CLUSTER_RESOURCE_GROUP }}",
+            "cluster-name": "${{ env.CLUSTER_NAME }}",
+          },
+        },
+        {
+          name: "Deploy application",
+          run: "${{ env.HELM_DEPLOY_COMMAND }}",
+        },
+      ],
+    },
+  },
+};
+
 export const comment = `
 # This workflow will build and push an application to a Azure Kubernetes Service (AKS) cluster when you push your code
 #

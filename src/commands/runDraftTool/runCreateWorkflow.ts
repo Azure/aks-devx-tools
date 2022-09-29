@@ -32,6 +32,7 @@ const clusterPlaceholder = "your-cluster-name";
 const manifestPathPlaceholder = "your-deployment-manifest-path";
 const deploymentStrategyPlaceholder = "your-deployment-strategy";
 const branchPlaceholder = "your-branch-name";
+const helmCmdPlaceholder = "your-helm-command";
 
 export default async function runCreateWorkflow(
   _context: vscode.ExtensionContext,
@@ -61,6 +62,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     branch: string;
     manifestsLocation: string;
     workflowType: string;
+    chartPath: string;
+    chartsOverridePaths: string;
+    chartOverrideValues: string;
   }
 
   async function collectInputs() {
@@ -69,7 +73,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     return state as State;
   }
 
-  const totalSteps = 8;
+  var totalSteps = 8;
 
   // @ts-ignore recursive function
   async function selectResourceGroup(
@@ -189,7 +193,165 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       },
       shouldResume: shouldResume,
     });
-    return (input: MultiStepInput) => selectStrategy(input, state, step + 1);
+    return (input: MultiStepInput) => inputBranch(input, state, step + 1);
+  }
+
+  async function inputBranch(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    state.branch = await input.showInputBox({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value: typeof state.branch === "string" ? state.branch : "",
+      prompt: "GitHub branch (e.g. main)",
+      validate: async (branch: string) => {
+        await validationSleep();
+        const branchNameErr = "GitHub branch name must not be blank";
+        if (branch === "") return branchNameErr;
+
+        return undefined;
+      },
+      shouldResume: shouldResume,
+    });
+
+    return (input: MultiStepInput) =>
+      selectWorkflowType(input, state, step + 1);
+  }
+  //-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------
+
+  // @ts-ignore recursive function
+  async function selectWorkflowType(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    const workflowTypes = [kubeWorkflowType, helmWorkflowType];
+    const items: QuickPickItem[] = workflowTypes.map((label) => ({ label }));
+
+    const pick = await input.showQuickPick({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      placeholder: "Workflow type",
+      items: items,
+      activeItem:
+        typeof state.workflowType !== "string" ? state.workflowType : undefined,
+      shouldResume: shouldResume,
+    });
+
+    state.workflowType = pick.label;
+
+    if (state.workflowType === helmWorkflowType) {
+      totalSteps = 9;
+      return (input: MultiStepInput) => inputChartPath(input, state, step + 1);
+    } else {
+      return (input: MultiStepInput) => selectStrategy(input, state, step + 1);
+    }
+  }
+
+  async function inputChartPath(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    state.chartPath = await input.showInputBox({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value: typeof state.chartPath === "string" ? state.chartPath : "",
+      prompt: "Path to your Helm chart (e.g. src/chart.yaml)",
+      validate: async (file: string) => {
+        await validationSleep();
+        const errMsg =
+          "Input must be an existing YAML file (ending in .yml or .yaml)";
+        const fullWsPath = path.join(wsPath, file);
+        if (!fs.existsSync(fullWsPath)) return errMsg;
+        if (!file.endsWith(".yaml") && !file.endsWith(".yml")) return errMsg;
+
+        return undefined;
+      },
+      shouldResume: shouldResume,
+    });
+
+    return (input: MultiStepInput) =>
+      inputChartOverridePath(input, state, step + 1);
+  }
+
+  async function inputChartOverridePath(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    state.manifestsLocation = await input.showInputBox({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value:
+        typeof state.chartsOverridePaths === "string"
+          ? state.chartsOverridePaths
+          : "",
+      prompt:
+        "Optional: Helm override file paths separated by a space (e.g. src/a.yaml src/b.yaml)",
+      validate: async (paths: string) => {
+        await validationSleep();
+
+        if (paths === "") return undefined;
+
+        const errMsg =
+          "All files in input must exist or be valid URLs (leave blank if none)";
+        const files = paths.split(" ");
+        var isValid = true;
+        files.forEach((file) => {
+          isValid =
+            isValid &&
+            (file.startsWith("http://") ||
+              file.startsWith("https://") ||
+              fs.existsSync(path.join(wsPath, file)));
+        });
+        if (!isValid) return errMsg;
+
+        return undefined;
+      },
+      shouldResume: shouldResume,
+    });
+    return (input: MultiStepInput) =>
+      inputChartOverrideValues(input, state, step + 1);
+  }
+
+  async function inputChartOverrideValues(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    state.chartOverrideValues = await input.showInputBox({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value:
+        typeof state.chartOverrideValues === "string"
+          ? state.chartOverrideValues
+          : "",
+      prompt:
+        "Optional: Helm override value strings separated by a space (e.g. a=b c=d)",
+      validate: async (values: string) => {
+        await validationSleep();
+        if (values === "") return undefined;
+        var isValid = true;
+        values.split(" ").forEach((value) => {
+          isValid = isValid && value.split("=").length === 2;
+        });
+        const valuesErr = "Override values must be formatted as a=b c=d etc.";
+        if (!isValid) return valuesErr;
+
+        return undefined;
+      },
+      shouldResume: shouldResume,
+    });
   }
 
   // @ts-ignore recursive function
@@ -219,30 +381,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     });
 
     state.deploymentStrategy = pick.label;
-
-    return (input: MultiStepInput) => inputBranch(input, state, step + 1);
-  }
-
-  async function inputBranch(
-    input: MultiStepInput,
-    state: Partial<State>,
-    step: number
-  ) {
-    state.branch = await input.showInputBox({
-      title,
-      step: step,
-      totalSteps: totalSteps,
-      value: typeof state.branch === "string" ? state.branch : "",
-      prompt: "GitHub branch (e.g. main)",
-      validate: async (branch: string) => {
-        await validationSleep();
-        const branchNameErr = "GitHub branch name must not be blank";
-        if (branch === "") return branchNameErr;
-
-        return undefined;
-      },
-      shouldResume: shouldResume,
-    });
 
     return (input: MultiStepInput) =>
       inputManifestsLocation(input, state, step + 1);
@@ -274,31 +412,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       },
       shouldResume: shouldResume,
     });
-    return (input: MultiStepInput) =>
-      selectWorkflowType(input, state, step + 1);
-  }
-
-  // @ts-ignore recursive function
-  async function selectWorkflowType(
-    input: MultiStepInput,
-    state: Partial<State>,
-    step: number
-  ) {
-    const workflowTypes = [kubeWorkflowType, helmWorkflowType];
-    const items: QuickPickItem[] = workflowTypes.map((label) => ({ label }));
-
-    const pick = await input.showQuickPick({
-      title,
-      step: step,
-      totalSteps: totalSteps,
-      placeholder: "Workflow type",
-      items: items,
-      activeItem:
-        typeof state.workflowType !== "string" ? state.workflowType : undefined,
-      shouldResume: shouldResume,
-    });
-
-    state.workflowType = pick.label;
   }
 
   try {
@@ -317,14 +430,21 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     const manifestsLocation = state.manifestsLocation;
     const workflowType = state.workflowType;
 
-    var templateObj;
+    var templateObj: any;
+    var withValues: string;
+    var outputFilepath: fs.PathLike;
+    var helmCommand = "helm upgrade --wait -i";
     var comment = "";
     if (workflowType === helmWorkflowType) {
-      // handle accordingly
+      templateObj = wfTemplates.helmTemplate;
+      if (state.chartsOverridePaths !== undefined) {
+        helmCommand += " -f " + state.chartsOverridePaths + " ";
+      }
+      if (state.chartOverrideValues !== undefined) {
+        helmCommand += " -v " + state.chartOverrideValues + " ";
+      }
+      helmCommand += "automated-deployment " + state.chartPath;
     } else {
-      console.log(
-        `currently at ${__dirname} and have files ${fs.readdirSync(__dirname)}`
-      );
       if (
         deploymentStrategy === canaryDeploymentStrategy ||
         deploymentStrategy === bgDeploymentStrategy
@@ -335,35 +455,35 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       } else {
         templateObj = wfTemplates.basicTemplate;
       }
-
-      const templateString = JSON.stringify(templateObj);
-      const withValues = templateString
-        .replace(rgPlaceholder, resourceGroup)
-        .replace(clusterPlaceholder, aksClusterName)
-        .replace(containerRegistryPlaceholder, containerRegistry)
-        .replace(containerImagePlaceholder, containerImageName)
-        .replace(manifestPathPlaceholder, manifestsLocation)
-        .replace(deploymentStrategyPlaceholder, deploymentStrategy)
-        .replace(branchPlaceholder, branch);
-
-      const outputFilename = deploymentStrategy + ".yaml";
-      const outputFilepath = path.join(workflowPath, outputFilename);
-
-      const asJson = JSON.parse(withValues);
-      const asYaml = new yaml.Document();
-      asYaml.contents = asJson;
-      asYaml.commentBefore = comment + wfTemplates.comment;
-      const yamlString = asYaml.toString({ lineWidth: 0 });
-      fs.writeFileSync(outputFilepath, yamlString);
-
-      reporter.sendTelemetryEvent("generateworkflowResult", {
-        generateworkflowResult: `${true}`,
-      });
-
-      window.showInformationMessage(
-        `Generate Github Actions workflow succeeded - output to '${outputFilepath}'`
-      );
     }
+    const templateString = JSON.stringify(templateObj);
+    withValues = templateString
+      .replace(rgPlaceholder, resourceGroup)
+      .replace(clusterPlaceholder, aksClusterName)
+      .replace(containerRegistryPlaceholder, containerRegistry)
+      .replace(containerImagePlaceholder, containerImageName)
+      .replace(manifestPathPlaceholder, manifestsLocation)
+      .replace(deploymentStrategyPlaceholder, deploymentStrategy)
+      .replace(branchPlaceholder, branch)
+      .replace(helmCmdPlaceholder, helmCommand);
+
+    const outputFilename = deploymentStrategy + ".yaml";
+    const outputFilepath = path.join(workflowPath, outputFilename);
+
+    const asJson = JSON.parse(withValues);
+    const asYaml = new yaml.Document();
+    asYaml.contents = asJson;
+    asYaml.commentBefore = comment + wfTemplates.comment;
+    const yamlString = asYaml.toString({ lineWidth: 0 });
+    fs.writeFileSync(outputFilepath, yamlString);
+
+    reporter.sendTelemetryEvent("generateworkflowResult", {
+      generateworkflowResult: `${true}`,
+    });
+
+    window.showInformationMessage(
+      `Generate Github Actions workflow succeeded - output to '${outputFilepath}'`
+    );
   } catch (err) {
     reporter.sendTelemetryEvent("generateworkflowResult", {
       generateworkflowResult: `${err}`,
