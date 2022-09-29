@@ -36,7 +36,7 @@ export const basicTemplate = {
         },
         {
           name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DEPLOYMENT_MANIFEST_PATH }}",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
         },
       ],
     },
@@ -74,9 +74,9 @@ export const basicTemplate = {
           uses: "Azure/k8s-deploy@v4",
           with: {
             action: "deploy",
-            manifests: "\n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
+            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
             images:
-              "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
+              "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}\n",
           },
         },
       ],
@@ -123,7 +123,7 @@ export const bgcTemplate = {
         },
         {
           name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DEPLOYMENT_MANIFEST_PATH }}",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
         },
       ],
     },
@@ -163,7 +163,7 @@ export const bgcTemplate = {
             strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
             "traffic-split-method": "pod",
             action: "deploy",
-            manifests: "\n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
+            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
@@ -217,7 +217,7 @@ export const bgcTemplate = {
             strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
             "traffic-split-method": "pod",
             action: "promote",
-            manifests: "\n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
+            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
@@ -261,7 +261,7 @@ export const bgcTemplate = {
             strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
             "traffic-split-method": "pod",
             action: "reject",
-            manifests: "\n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
+            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
