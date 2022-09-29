@@ -178,8 +178,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
           return imgNameErr;
         }
         if (
-          !/^[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?$/gi.test(imageName)
-          // [a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?
+          !/^[a-z0-9]+(?:(?:(?:[._]|__|[-]|__|[/_]*)[a-z0-9]+)+)?$/gi.test(
+            imageName
+          )
         ) {
           return imgNameErr;
         }
