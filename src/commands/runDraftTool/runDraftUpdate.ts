@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { window, ExtensionContext } from 'vscode';
+import { window, ExtensionContext, QuickPickItem } from 'vscode';
 import { getExtensionPath, longRunning } from '../../utils/host';
 import { failed } from '../../utils/errorable';
 import { buildUpdateCommand } from './helper/draftCommandBuilder';
@@ -111,32 +111,38 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			validate: async() => undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => inputOpenServiceMesh(input, state, step + 1);
+        return (input: MultiStepInput) => pickOpenServiceMesh(input, state, step + 1);
 	}
 
-	async function inputOpenServiceMesh(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.useOpenServiceMesh = await input.showInputBox({
+	async function pickOpenServiceMesh(input: MultiStepInput, state: Partial<State>, step: number) {
+		const options = ['Use Open Service Mesh for mTLS', 'No Open Service Mesh'];
+		const optionsLabels: QuickPickItem[] = options.map(label => ({ label }));
+		const pick = await input.showQuickPick({
 			title,
 			step: step,
 			totalSteps: totalSteps,
-			value: typeof state.useOpenServiceMesh === 'string' &&  state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? 'Y' : 'N',
-			prompt: 'Use Open Service Mesh for mTLS',
-			validate: async() => undefined,
+			placeholder: 'Select an option',
+			items: [...optionsLabels],
+			activeItem: typeof state.useOpenServiceMesh !== 'string' ? state.useOpenServiceMesh : undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => inputKeyVaultCert(input, state, step + 1);
+		state.useOpenServiceMesh = pick.label;
+        return (input: MultiStepInput) => pickKeyVaultCert(input, state, step + 1);
 	}
 
-    async function inputKeyVaultCert(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.keyVaultCert = await input.showInputBox({
+    async function pickKeyVaultCert(input: MultiStepInput, state: Partial<State>, step: number) {
+		const options = ['Azure Key Vault', 'Provide Azure Key Vault Certificate URI'];
+		const optionsLabels: QuickPickItem[] = options.map(label => ({ label }));
+		const pick = await input.showQuickPick({
 			title,
 			step: step,
 			totalSteps: totalSteps,
-			value: typeof state.keyVaultCert === 'string' ? state.keyVaultCert : '',
-			prompt: 'Select a certificate',
-			validate: async() => undefined,
+			placeholder: 'Select a certificate',
+			items: [...optionsLabels],
+			activeItem: typeof state.keyVaultCert !== 'string' ? state.keyVaultCert : undefined,
 			shouldResume: shouldResume
 		});
+		state.keyVaultCert = pick.label;
 	}
 	const state = await collectInputs();
 
@@ -146,7 +152,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	const port = state. port;
     const certificate = state.keyVaultCert;
 	const service = state.service;
-	const useOpenServiceMesh = state.useOpenServiceMesh === 'Y' ? true : false;
+	const useOpenServiceMesh = state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? true : false;
     const command = buildUpdateCommand(outputFolder, host, certificate, port, namespace, service, useOpenServiceMesh);
 
     const result = await runDraftCommand(command);
@@ -160,6 +166,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
     if (isSuccess) {
 	    window.showInformationMessage("Web app routing annotation succeeded");
+		window.showInformationMessage("Deploy using the draft generated files");
     } else {
         window.showErrorMessage(`Web app routing annotation succeeded failed - ${err}`);
     }
