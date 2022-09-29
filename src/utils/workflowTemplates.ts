@@ -74,7 +74,7 @@ export const basicTemplate = {
           uses: "Azure/k8s-deploy@v4",
           with: {
             action: "deploy",
-            manifests: ["${{ env.DEPLOYMENT_MANIFEST_PATH }}"],
+            manifests: "| \n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
@@ -163,7 +163,7 @@ export const bgcTemplate = {
             strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
             "traffic-split-method": "pod",
             action: "deploy",
-            manifests: ["${{ env.DEPLOYMENT_MANIFEST_PATH }}"],
+            manifests: "| \n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
@@ -217,7 +217,7 @@ export const bgcTemplate = {
             strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
             "traffic-split-method": "pod",
             action: "promote",
-            manifests: ["${{ env.DEPLOYMENT_MANIFEST_PATH }}"],
+            manifests: "| \n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
@@ -261,7 +261,7 @@ export const bgcTemplate = {
             strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
             "traffic-split-method": "pod",
             action: "reject",
-            manifests: ["${{ env.DEPLOYMENT_MANIFEST_PATH }}"],
+            manifests: "| \n${{ env.DEPLOYMENT_MANIFEST_PATH }}",
             images:
               "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
           },
