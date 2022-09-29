@@ -261,7 +261,8 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         typeof state.manifestsLocation === "string"
           ? state.manifestsLocation
           : "",
-      prompt: "Folder with your deployment manifests (e.g. src/manifests)",
+      prompt:
+        "Folder with your Dockerfile and deployment manifests (e.g. src/manifests)",
       validate: async (file: string) => {
         await validationSleep();
         const errMsg = "Input must be an existing directory";
