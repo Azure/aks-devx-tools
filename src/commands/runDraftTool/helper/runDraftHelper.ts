@@ -93,7 +93,7 @@ function getOrganisedInstallResult(
     return installResults;
 }
 
-async function getLatestDraftReleaseTag() {
+async function getTargetDraftReleaseTag() {
     const draftConfig = getDraftConfig();
     if (failed(draftConfig)) {
         vscode.window.showErrorMessage(draftConfig.error);
@@ -107,31 +107,28 @@ function checkIfDraftBinaryExist(destinationFile: string) : boolean {
     return fs.existsSync(destinationFile);
 }
 
-export async function downloadDraftBinary() {
+export async function ensureDraftBinary() {
     // 0. Get latest release tag.
     // 1: check if file already exist.
     // 2: if not Download latest.
-    const latestReleaseTag = await getLatestDraftReleaseTag();
+    const latestReleaseTag = await getTargetDraftReleaseTag();
 
     if (!latestReleaseTag) {
         return;
     }
 
-    const draftBinaryFile = getBinaryFileName();
+    const draftBinaryFileName = getBinaryFileName();
 
     // example latest release location: https://github.com/Azure/draft/releases/tag/v0.0.20
     // Note: We need to carefully revisit this, because the way release files are named vs how frequent release will be.
     // How do we know that the existing binary is latest or not?
-    let destinationFile = path.join(baseInstallFolder(), latestReleaseTag, draftBinaryFile);
-    if (shell.isWindows()) {
-        destinationFile = `${destinationFile}.exe`;
-    }
+    let destinationFile = path.join(baseInstallFolder(), latestReleaseTag, draftBinaryFileName);
 
     if (checkIfDraftBinaryExist(destinationFile)) {
         return { succeeded: true };
     }
 
-    const draftDownloadUrl = `https://github.com/Azure/draft/releases/download/${latestReleaseTag}/${draftBinaryFile}`;
+    const draftDownloadUrl = `https://github.com/Azure/draft/releases/download/${latestReleaseTag}/${draftBinaryFileName}`;
     const downloadResult = await download.once(draftDownloadUrl, destinationFile);
 
     if (failed(downloadResult)) {
@@ -154,7 +151,7 @@ function getBinaryFileName() {
     if (operatingSystem === 'win32') {
         operatingSystem = 'windows';
         // Draft release v0.0.22 the file name has exe associated with it.
-        draftBinaryFile = `draft-${operatingSystem}-${architecture}.exe`;
+        draftBinaryFile = `draft-${operatingSystem}-${architecture}`;
     }
 
     return draftBinaryFile;
@@ -163,7 +160,7 @@ function getBinaryFileName() {
 export async function runDraftCommand(
     command: string
 ) : Promise<[string, string]> {
-    const latestReleaseTag = await getLatestDraftReleaseTag();
+    const latestReleaseTag = await getTargetDraftReleaseTag();
     if (!latestReleaseTag) {
         return [ "", ""];
     }
@@ -190,7 +187,7 @@ export function getDraftConfig(): Errorable<DraftConfig> {
 
     const config = {
         releaseTag: props.result[0]
-    }
+    };
 
     return { succeeded: true, result: config };
 }
@@ -198,11 +195,11 @@ export function getDraftConfig(): Errorable<DraftConfig> {
 function getConfigValue(config: vscode.WorkspaceConfiguration, key: string): Errorable<string> {
     const value = config.get(key);
     if (value === undefined) {
-        return { succeeded: false, error: `${key} not defined.` }
+        return { succeeded: false, error: `${key} not defined.` };
     }
     const result = value as string;
     if (result === undefined) {
-        return { succeeded: false, error: `${key} value has type: ${typeof value}; expected string.` }
+        return { succeeded: false, error: `${key} value has type: ${typeof value}; expected string.` };
     }
     return { succeeded: true, result: result };
 }

@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
+import { window, ExtensionContext } from 'vscode';
 import { getExtensionPath, longRunning } from '../../utils/host';
 import { failed } from '../../utils/errorable';
-import { createWebView } from '../../utils/webview';
-import { createDraftWebView, downloadDraftBinary, runDraftCommand } from './helper/runDraftHelper';
-import { InstallationResponse } from './model/installationResponse';
 import { buildUpdateCommand } from './helper/draftCommandBuilder';
 import { reporter } from '../../utils/reporter';
+import { MultiStepInput, shouldResume } from './model/multiStep';
+import { ensureDraftBinary, runDraftCommand } from './helper/runDraftHelper';
 
 export default async function runDraftUpdate(
     _context: vscode.ExtensionContext,
@@ -19,41 +19,76 @@ export default async function runDraftUpdate(
     }
 
     // Download Binary first
-    const downladResult = await longRunning(`Downloading Draft.`, () => downloadDraftBinary());
+    const downladResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
     if (!downladResult) {
         return undefined;
     }
+    
+    multiStepInput(_context, destination);
+}
 
-    // Create webview with user input required.
-    // Abstract - Long running Tasks:
-    // Webview to take all inputs necessary
-    // Get user input upfront. Then start the installation process.
-    const webview = createWebView('AKS Draft Tool', `Draft Enable Web Application Routing`);
-    const installationResponse: InstallationResponse = { name: "test" };
-    createDraftWebView('update', webview, extensionPath.result, installationResponse, true);
 
-    // After the download of the exe or equivalent if first time
-    // ---> Ground up work for this is 80 percetn done and checkout the helper methods: in the project.
-    // Once the submit for them webview is successfull we handle rest of the installation process for Azure Service Operator.
-    webview.onDidReceiveMessage(
-        async (message) => {
-            if (message.host && message.certificate) {
-                const host = message.host;
-                const certificate = message.certificate;
+async function multiStepInput(context: ExtensionContext, destination: string) {
+    const title = 'Draft Web App Routing Annotations';
 
-                const command = buildUpdateCommand(destination, host, certificate);
+	interface State {
+		title: string;
+		step: number;
+		totalSteps: number;
+		hostName: string;
+        keyVaultCert: string;
+	}
 
-                const result = await runDraftCommand(command);
-                const createResponse: InstallationResponse = { name: "update", stdout: result[0], stderr: result[1] };
-                if (reporter) {
-                    const resultSuccessOrFailure = result[1]?.length === 0 && result[0]?.length !== 0;
-                    reporter.sendTelemetryEvent("updateDraftResult", { updateDraftResult: `${resultSuccessOrFailure}` });
-                }
-                createDraftWebView('update', webview, extensionPath.result, createResponse, false);
-            }
-            return undefined;
-        },
-        undefined
-    );
-    // Step 3: Report it back in the webview with outcome.
+	async function collectInputs() {
+		const state = {} as Partial<State>;
+		await MultiStepInput.run(input => inputAppName(input, state, 1));
+		return state as State;
+	}
+
+    const totalSteps = 2;
+	async function inputAppName(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.hostName = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.hostName === 'string' ? state.hostName : '',
+			prompt: 'Enter the host of the ingress resource',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+        return (input: MultiStepInput) => inputKeyVaultCert(input, state, step + 1);
+	}
+
+    async function inputKeyVaultCert(input: MultiStepInput, state: Partial<State>, step: number) {
+		state.keyVaultCert = await input.showInputBox({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			value: typeof state.keyVaultCert === 'string' ? state.keyVaultCert : '',
+			prompt: 'Enter Azure resource group name',
+			validate: async() => undefined,
+			shouldResume: shouldResume
+		});
+	}
+	const state = await collectInputs();
+
+    const host = state.hostName;
+    const certificate = state.keyVaultCert;
+
+    const command = buildUpdateCommand(destination, host, certificate);
+
+    const result = await runDraftCommand(command);
+    const [success, err] = await longRunning(`Adding web app routing annotation.`, () => runDraftCommand(command));
+    const isSuccess = err?.length === 0 && success?.length !== 0;
+
+    if (reporter) {
+        const resultSuccessOrFailure = result[1]?.length === 0 && result[0]?.length !== 0;
+        reporter.sendTelemetryEvent("updateDraftResult", { updateDraftResult: `${resultSuccessOrFailure}` });
+    }
+
+    if (isSuccess) {
+	    window.showInformationMessage("Web app routing annotation succeeded");
+    } else {
+        window.showErrorMessage(`Web app routing annotation succeeded failed - ${err}`);
+    }
 }
