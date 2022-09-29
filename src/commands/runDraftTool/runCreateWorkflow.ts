@@ -23,7 +23,7 @@ const helmWorkflowType = "Helm";
 const kubeWorkflowType = "Kube";
 const basicDeploymentStrategy = "Basic";
 const canaryDeploymentStrategy = "Canary";
-const bgDeploymentStrategy = "Blue-green";
+const bgDeploymentStrategy = "Blue/green";
 
 const containerRegistryPlaceholder = "your-azure-container-registry";
 const containerImagePlaceholder = "your-container-image-name";
@@ -499,7 +499,8 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       .replace(branchPlaceholder, branch)
       .replace(helmCmdPlaceholder, helmCommand)
       .replace(dockerfilePathPlaceholder, dockerfileLocation);
-    const outputFilepath = path.join(workflowPath, deploymentStrategy);
+    const outputFilename = deploymentStrategy.replace("/", "-") + ".yaml";
+    const outputFilepath = path.join(workflowPath, outputFilename);
 
     const asJson = JSON.parse(withValues);
     const asYaml = new yaml.Document();
