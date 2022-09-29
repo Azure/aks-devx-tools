@@ -330,7 +330,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         deploymentStrategy === bgDeploymentStrategy
       ) {
         comment =
-          "# add a required approval to this environment https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments \n";
+          "# add a required approval to the promote environment https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments \n";
         templateObj = wfTemplates.bgcTemplate;
       } else {
         templateObj = wfTemplates.basicTemplate;
