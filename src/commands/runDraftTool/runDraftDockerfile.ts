@@ -117,12 +117,12 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
         if (pick.label === autoDetectLabel) {
             const guess = await guessLanguage();
-            console.log(guess);
             if (guess === undefined) {
                 window.showErrorMessage("Language can't be auto-detected");
                 // @ts-ignore recursive function
                 return (input: MultiStepInput) => selectLanguage(input, state, step);
             }
+            window.showInformationMessage(`${guess} detected`);
             state.language = guess;
         } else {
 		    state.language = pick.label;
@@ -139,9 +139,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             "go": ["1.19","1.18","1.17","1.16"],
             "java": ["11-jre-slim"],
             "gradle": ["11-jre-slim"],
-            "javascript": ["10.16.3", "12.16.3", "14.15.4"],
-            "php": ["7.2-apache", "7.2-fpm", "7.2-cli", "7.3-apache", "7.3-fpm", "7.3-cli", "7.4-apache", "7.4-fpm", "7.4-cli"],
-            "python": ["3.6", "3.7", "3.8"],
+            "javascript": ["14.15.4", "12.16.3", "10.16.3"],
+            "php": ["7.4-apache", "7.4-fpm", "7.4-cli", "7.3-apache", "7.3-fpm", "7.3-cli", "7.2-apache", "7.2-fpm", "7.2-cli",],
+            "python": ["3.8", "3.7", "3.6"],
             "rust": ["1.42.0"],
             "swift": ["5.5","5.4","5.3","5.2"]
         };
@@ -205,9 +205,15 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       reporter.sendTelemetryEvent("dockerfileDraftResult", { dockerfileDraftResult: `${isSuccess}` });
     }
 
-    const outputPath = path.join(source, "Dockerfile");
     if (isSuccess) {
-	    window.showInformationMessage(`Draft Dockerfile Succeeded - Output to '${outputPath}'`);
+        const buildContainer = "Build container";
+        const outputPath = path.join(source, "Dockerfile");
+        const vsPath = vscode.Uri.file(outputPath);
+        vscode.workspace.openTextDocument(vsPath).then(doc => vscode.window.showTextDocument(doc));
+	    window.showInformationMessage(`Draft Dockerfile Succeeded`, buildContainer)
+            .then(option => {
+                if (option === buildContainer) {}
+            });
     } else {
         window.showErrorMessage(`Draft Dockerfile Failed - ${err}`);
     }
