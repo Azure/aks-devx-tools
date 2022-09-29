@@ -488,6 +488,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         templateObj = wfTemplates.basicTemplate;
       }
     }
+    const formatted = deploymentStrategy.replace("/", "-");
+    const outputFilename = formatted + ".yaml";
+
     const templateString = JSON.stringify(templateObj);
     withValues = templateString
       .replace(rgPlaceholder, resourceGroup)
@@ -495,11 +498,10 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       .replace(containerRegistryPlaceholder, containerRegistry)
       .replace(containerImagePlaceholder, containerImageName)
       .replace(manifestPathPlaceholder, manifestsLocation)
-      .replace(deploymentStrategyPlaceholder, deploymentStrategy)
+      .replace(deploymentStrategyPlaceholder, formatted)
       .replace(branchPlaceholder, branch)
       .replace(helmCmdPlaceholder, helmCommand)
       .replace(dockerfilePathPlaceholder, dockerfileLocation);
-    const outputFilename = deploymentStrategy.replace("/", "-") + ".yaml";
     const outputFilepath = path.join(workflowPath, outputFilename);
 
     const asJson = JSON.parse(withValues);
