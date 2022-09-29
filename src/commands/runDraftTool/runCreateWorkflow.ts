@@ -23,13 +23,14 @@ const helmWorkflowType = "Helm";
 const kubeWorkflowType = "Kube";
 const basicDeploymentStrategy = "Basic";
 const canaryDeploymentStrategy = "Canary";
-const bgDeploymentStrategy = "Blue/green";
+const bgDeploymentStrategy = "Blue Green";
 
 const containerRegistryPlaceholder = "your-azure-container-registry";
 const containerImagePlaceholder = "your-container-image-name";
 const rgPlaceholder = "your-resource-group";
 const clusterPlaceholder = "your-cluster-name";
 const manifestPathPlaceholder = "your-deployment-manifest-path";
+const dockerfilePathPlaceholder = "your-dockerfile-folder-path";
 const deploymentStrategyPlaceholder = "your-deployment-strategy";
 const branchPlaceholder = "your-branch-name";
 const helmCmdPlaceholder = "your-helm-command";
@@ -60,6 +61,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     containerImageName: string;
     deploymentStrategy: string;
     branch: string;
+    dockerfileLocation: string;
     manifestsLocation: string;
     workflowType: string;
     chartPath: string;
@@ -218,6 +220,36 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     });
 
     return (input: MultiStepInput) =>
+      inputDockerfileLocation(input, state, step + 1);
+  }
+
+  async function inputDockerfileLocation(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    state.dockerfileLocation = await input.showInputBox({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value:
+        typeof state.dockerfileLocation === "string"
+          ? state.dockerfileLocation
+          : "",
+      prompt: "Path to folder with your Dockerfile (e.g. src/docker)",
+      validate: async (file: string) => {
+        await validationSleep();
+        const errMsg = "Input must be an existing directory";
+        const fullWsPath = path.join(wsPath, file);
+        if (!fs.existsSync(fullWsPath)) return errMsg;
+        if (!fs.lstatSync(fullWsPath).isDirectory()) return errMsg;
+
+        return undefined;
+      },
+      shouldResume: shouldResume,
+    });
+
+    return (input: MultiStepInput) =>
       selectWorkflowType(input, state, step + 1);
   }
   //-------------------------------------------------------------------------------------
@@ -247,7 +279,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     state.workflowType = pick.label;
 
     if (state.workflowType === helmWorkflowType) {
-      totalSteps = 9;
+      totalSteps = 10;
       return (input: MultiStepInput) => inputChartPath(input, state, step + 1);
     } else {
       return (input: MultiStepInput) => selectStrategy(input, state, step + 1);
@@ -287,7 +319,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     state: Partial<State>,
     step: number
   ) {
-    state.manifestsLocation = await input.showInputBox({
+    state.chartsOverridePaths = await input.showInputBox({
       title,
       step: step,
       totalSteps: totalSteps,
@@ -399,8 +431,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         typeof state.manifestsLocation === "string"
           ? state.manifestsLocation
           : "",
-      prompt:
-        "Folder with your Dockerfile and deployment manifests (e.g. src/manifests)",
+      prompt: "Folder with your deployment manifests (e.g. src/manifests)",
       validate: async (file: string) => {
         await validationSleep();
         const errMsg = "Input must be an existing directory";
@@ -425,22 +456,23 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     const aksClusterName = state.aksClusterName;
     const containerRegistry = state.containerRegistry;
     const containerImageName = state.containerImageName;
-    const deploymentStrategy = state.deploymentStrategy;
+    var deploymentStrategy = state.deploymentStrategy;
     const branch = state.branch;
     const manifestsLocation = state.manifestsLocation;
     const workflowType = state.workflowType;
+    const dockerfileLocation = state.dockerfileLocation;
 
     var templateObj: any;
     var withValues: string;
-    var outputFilepath: fs.PathLike;
     var helmCommand = "helm upgrade --wait -i";
     var comment = "";
     if (workflowType === helmWorkflowType) {
       templateObj = wfTemplates.helmTemplate;
-      if (state.chartsOverridePaths !== undefined) {
+      deploymentStrategy = "helm";
+      if (state.chartsOverridePaths !== "") {
         helmCommand += " -f " + state.chartsOverridePaths + " ";
       }
-      if (state.chartOverrideValues !== undefined) {
+      if (state.chartOverrideValues !== "") {
         helmCommand += " -v " + state.chartOverrideValues + " ";
       }
       helmCommand += "automated-deployment " + state.chartPath;
@@ -465,8 +497,8 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       .replace(manifestPathPlaceholder, manifestsLocation)
       .replace(deploymentStrategyPlaceholder, deploymentStrategy)
       .replace(branchPlaceholder, branch)
-      .replace(helmCmdPlaceholder, helmCommand);
-
+      .replace(helmCmdPlaceholder, helmCommand)
+      .replace(dockerfilePathPlaceholder, dockerfileLocation);
     const outputFilename = deploymentStrategy + ".yaml";
     const outputFilepath = path.join(workflowPath, outputFilename);
 

@@ -10,6 +10,7 @@ export const basicTemplate = {
     CLUSTER_NAME: "your-cluster-name",
     DEPLOYMENT_MANIFEST_PATH: "your-deployment-manifest-path",
     BRANCH_NAME: "your-branch-name",
+    DOCKERFILE_LOCATION: "your-dockerfile-folder-path",
   },
   jobs: {
     buildImage: {
@@ -36,7 +37,7 @@ export const basicTemplate = {
         },
         {
           name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
         },
       ],
     },
@@ -97,6 +98,7 @@ export const bgcTemplate = {
     DEPLOYMENT_MANIFEST_PATH: "your-deployment-manifest-path",
     DEPLOYMENT_STRATEGY: "your-deployment-strategy",
     BRANCH_NAME: "your-branch-name",
+    DOCKERFILE_LOCATION: "your-dockerfile-folder-path",
   },
   jobs: {
     buildImage: {
@@ -123,7 +125,7 @@ export const bgcTemplate = {
         },
         {
           name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
         },
       ],
     },
@@ -274,9 +276,6 @@ export const bgcTemplate = {
 export const helmTemplate = {
   name: "Build and deploy an app to AKS with Helm",
   on: {
-    push: {
-      branches: null,
-    },
     workflow_dispatch: null,
   },
   env: {
@@ -286,6 +285,7 @@ export const helmTemplate = {
     CLUSTER_NAME: "your-cluster-name",
     BRANCH_NAME: "your-branch-name",
     HELM_DEPLOY_COMMAND: "your-helm-command",
+    DOCKERFILE_LOCATION: "your-dockerfile-folder-path",
   },
   jobs: {
     buildImage: {
@@ -312,7 +312,7 @@ export const helmTemplate = {
         },
         {
           name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.ACR_RESOURCE_GROUP }} .\n",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
         },
       ],
     },
@@ -341,7 +341,7 @@ export const helmTemplate = {
           name: "Get K8s context",
           uses: "azure/aks-set-context@v3",
           with: {
-            "resource-group": "${{ env.CLUSTER_RESOURCE_GROUP }}",
+            "resource-group": "${{ env.RESOURCE_GROUP }}",
             "cluster-name": "${{ env.CLUSTER_NAME }}",
           },
         },

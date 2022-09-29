@@ -16,7 +16,7 @@
   ],
   "activationEvents": [
     "onCommand:aks-draft-extension.runDraftDockerfile",
-    "onCommand:aks-draft-extension.runGenerateGitHubActionsWorkflow",
+    "onCommand:aks-draft-extension.runCreateWorkflow",
     "onCommand:aks-draft-extension.runDraftSetupGH",
     "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
     "onCommand:aks-draft-extension.runDraftUpdate"
@@ -40,7 +40,7 @@
         "title": "AKS Developer: Draft a Dockerfile from source code"
       },
       {
-        "command": "aks-draft-extension.runGenerateGitHubActionsWorkflow",
+        "command": "aks-draft-extension.runCreateWorkflow",
         "title": "AKS Developer: Draft a CI/CD workflow using GitHub Actions"
       },
       {
@@ -76,20 +76,24 @@
           "group": "draftnavigation@1"
         },
         {
-          "command": "aks-draft-extension.runGenerateGitHubActionsWorkflow",
+          "command": "aks-draft-extension.runCreateWorkflow",
           "group": "draftnavigation@2"
         },
         {
-          "command": "aks-draft-extension.runDraftSetupGH",
+          "command": "aks-draft-extension.runGenerateGitHubActionsWorkflow",
           "group": "draftnavigation@3"
         },
         {
-          "command": "aks-draft-extension.runDraftGenerateWorkflow",
+          "command": "aks-draft-extension.runDraftSetupGH",
           "group": "draftnavigation@4"
         },
         {
-          "command": "aks-draft-extension.runDraftUpdate",
+          "command": "aks-draft-extension.runDraftGenerateWorkflow",
           "group": "draftnavigation@5"
+        },
+        {
+          "command": "aks-draft-extension.runDraftUpdate",
+          "group": "draftnavigation@6"
         }
       ]
     },
