@@ -151,7 +151,7 @@ function getBinaryFileName() {
     if (operatingSystem === 'win32') {
         operatingSystem = 'windows';
         // Draft release v0.0.22 the file name has exe associated with it.
-        draftBinaryFile = `draft-${operatingSystem}-${architecture}`;
+        draftBinaryFile = `draft-${operatingSystem}-${architecture}.exe`;
     }
 
     return draftBinaryFile;
