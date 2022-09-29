@@ -1,9 +1,6 @@
 export const basicTemplate = {
   name: "Build and deploy an app to AKS",
   on: {
-    push: {
-      branches: null,
-    },
     workflow_dispatch: null,
   },
   env: {

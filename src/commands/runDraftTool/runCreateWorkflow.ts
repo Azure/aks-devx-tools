@@ -343,8 +343,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         .replace(deploymentStrategyPlaceholder, deploymentStrategy)
         .replace(branchPlaceholder, branch);
 
-      const outputFilename =
-        containerImageName + "_" + deploymentStrategy + ".yaml";
+      const outputFilename = deploymentStrategy + ".yaml";
       const outputFilepath = path.join(workflowPath, outputFilename);
 
       const asJson = JSON.parse(withValues);

@@ -28,8 +28,6 @@
 name: Build and deploy an app to AKS
 
 on:
-  push:
-    branches:
   workflow_dispatch:
 
 env:
