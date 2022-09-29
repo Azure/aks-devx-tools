@@ -54,7 +54,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			step: step,
 			totalSteps: totalSteps,
 			value: typeof state.sourceFolder === 'string' ? state.sourceFolder : '',
-			prompt: 'Folder with your source code e.g. ./src)',
+			prompt: 'Folder with your source code (e.g. ./src)',
             validate: async (file: string) => {
                 await validationSleep();
                 const errMsg = "Input must be an existing directory";
