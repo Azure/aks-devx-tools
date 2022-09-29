@@ -33,7 +33,7 @@ export function buildCreateConfig(
     port: string,
     appName: string,
     workflow: string,
-    dotnetVersion: string
+    languageVersion: string
 ): string {
     let data = {
         deployType: workflow,
@@ -59,10 +59,10 @@ export function buildCreateConfig(
         });
     }
 
-    if (dotnetVersion?.length > 0) {
+    if (languageVersion?.length > 0) {
         data.languageVariables.push({
             name: "VERSION",
-            value: dotnetVersion
+            value: languageVersion
         });
     }
 
