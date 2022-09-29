@@ -193,10 +193,10 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	const state = await collectInputs();
     const source = state.sourceFolder;
     const language = state.language;
-    const dotnetVersion = state.version;
+    const version = state.version;
     const port = state.portNumber;
 
-    const configPath = buildCreateConfig(language, port, "", "", dotnetVersion);
+    const configPath = buildCreateConfig(language, port, "", "", version);
     const command = buildCreateCommand(source, "dockerfile", configPath);
 
     const [success, err] = await runDraftCommand(command);
@@ -215,7 +215,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
                 if (option === buildContainer) {}
             });
     } else {
-        window.showErrorMessage(`Draft Dockerfile Failed - ${err}`);
+        window.showErrorMessage(`Draft Dockerfile Failed - '${err}'`);
     }
 }
 
