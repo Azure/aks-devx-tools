@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
+import * as yaml from "yaml";
 import { longRunning } from "./../../utils/host";
+import * as wfTemplates from "./../../utils/workflowTemplates";
 import { QuickPickItem, window, ExtensionContext } from "vscode";
 import { reporter } from "./../../utils/reporter";
 import {
@@ -13,7 +15,6 @@ import linguist = require("linguist-js");
 import { Exception, template } from "handlebars";
 
 const wsPath = vscode.workspace.workspaceFolders![0].uri.fsPath;
-
 const githubFolderName = ".github";
 const workflowsFolderName = "workflows";
 const workflowPath = path.join(wsPath, githubFolderName, workflowsFolderName);
@@ -23,10 +24,6 @@ const kubeWorkflowType = "Kube";
 const basicDeploymentStrategy = "Basic";
 const canaryDeploymentStrategy = "Canary";
 const bgDeploymentStrategy = "Blue/green";
-
-const templateDir = path.join(".", "resources");
-const bgcFilename = "bc_c_template.yaml";
-const basicFilename = "basic_template.yaml";
 
 const containerRegistryPlaceholder = "your-azure-container-registry";
 const containerImagePlaceholder = "your-container-image-name";
@@ -144,13 +141,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       placeholder: "Select Azure Container Registry",
       items: items,
       activeItem:
-        typeof state.aksClusterName !== "string"
-          ? state.aksClusterName
+        typeof state.containerRegistry !== "string"
+          ? state.containerRegistry
           : undefined,
       shouldResume: shouldResume,
     });
 
-    state.aksClusterName = pick.label;
+    state.containerRegistry = pick.label;
 
     return (input: MultiStepInput) =>
       inputContainerImageName(input, state, step + 1);
@@ -316,7 +313,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     const manifestsLocation = state.manifestsLocation;
     const workflowType = state.workflowType;
 
-    var templateFile;
+    var templateObj;
 
     if (workflowType === helmWorkflowType) {
       // handle accordingly
@@ -328,13 +325,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         deploymentStrategy === canaryDeploymentStrategy ||
         deploymentStrategy === bgDeploymentStrategy
       ) {
-        templateFile = bgcFilename;
+        templateObj = wfTemplates.bgcTemplate;
       } else {
-        templateFile = basicFilename;
+        templateObj = wfTemplates.basicTemplate;
       }
-      templateFile = path.join(templateDir, templateFile);
-      const fileString = fs.readFileSync(templateFile).toString("utf-8");
-      const withValues = fileString
+
+      const templateString = JSON.stringify(templateObj);
+      const withValues = templateString
         .replace(rgPlaceholder, resourceGroup)
         .replace(clusterPlaceholder, aksClusterName)
         .replace(containerRegistryPlaceholder, containerRegistry)
@@ -343,10 +340,16 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         .replace(deploymentStrategyPlaceholder, deploymentStrategy)
         .replace(branchPlaceholder, branch);
 
-      const outputFilename = containerImageName + "_" + deploymentStrategy;
+      const outputFilename =
+        containerImageName + "_" + deploymentStrategy + ".yaml";
       const outputFilepath = path.join(workflowPath, outputFilename);
 
-      fs.writeFileSync(outputFilepath, withValues);
+      const asJson = JSON.parse(withValues);
+      const asYaml = new yaml.Document();
+      asYaml.contents = asJson;
+      asYaml.commentBefore = wfTemplates.comment;
+      const yamlString = asYaml.toString({ lineWidth: 0 });
+      fs.writeFileSync(outputFilepath, yamlString);
 
       reporter.sendTelemetryEvent("generateworkflowResult", {
         generateworkflowResult: `${true}`,
