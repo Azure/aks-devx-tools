@@ -176,7 +176,7 @@ export const bgcTemplate = {
       environment: "promote",
       steps: [
         {
-          run: "echo requested approval (approve to promote, deny to reject)",
+          run: "echo 'requested approval (approve to promote, deny to reject)'",
         },
       ],
     },
