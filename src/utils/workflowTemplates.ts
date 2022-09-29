@@ -6,8 +6,7 @@ export const basicTemplate = {
   env: {
     AZURE_CONTAINER_REGISTRY: "your-azure-container-registry",
     CONTAINER_NAME: "your-container-image-name",
-    CLUSTER_RESOURCE_GROUP: "your-resource-group",
-    ACR_RESOURCE_GROUP: "your-resource-group",
+    RESOURCE_GROUP: "your-resource-group",
     CLUSTER_NAME: "your-cluster-name",
     DEPLOYMENT_MANIFEST_PATH: "your-deployment-manifest-path",
     BRANCH_NAME: "your-branch-name",
@@ -37,7 +36,7 @@ export const basicTemplate = {
         },
         {
           name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.ACR_RESOURCE_GROUP }} .",
+          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} .",
         },
       ],
     },
@@ -66,7 +65,7 @@ export const basicTemplate = {
           name: "Get K8s context",
           uses: "azure/aks-set-context@v3",
           with: {
-            "resource-group": "${{ env.CLUSTER_RESOURCE_GROUP }}",
+            "resource-group": "${{ env.RESOURCE_GROUP }}",
             "cluster-name": "${{ env.CLUSTER_NAME }}",
           },
         },
