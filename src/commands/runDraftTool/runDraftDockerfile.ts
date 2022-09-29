@@ -33,7 +33,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 		totalSteps: number;
         language: string;
         portNumber: string;
-        outputFile: string;
         sourceFolder: string;
         version: string;
 		runtime: QuickPickItem;
@@ -42,14 +41,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	async function collectInputs() {
 		const state = {
             sourceFolder: destination, 
-            outputFile: `./Dockerfile`,
             portNumber: `80`,
         } as Partial<State>;
 		await MultiStepInput.run(input => inputSourceCodeFolder(input, state, 1));
 		return state as State;
 	}
 
-    const totalSteps = 5;
+    const totalSteps = 4;
     async function inputSourceCodeFolder(input: MultiStepInput, state: Partial<State>, step: number) {
 		state.sourceFolder = await input.showInputBox({
 			title,
@@ -63,27 +61,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
                 if (!fs.existsSync(file)) {return errMsg;}
                 if (!fs.lstatSync(file).isDirectory()) {return errMsg;}
-
-                return undefined;
-            },
-			shouldResume: shouldResume
-		});
-        return (input: MultiStepInput) => inputOutputFile(input, state, step + 1);
-	}
-
-    async function inputOutputFile(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.outputFile = await input.showInputBox({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			value: typeof state.outputFile=== 'string' ? state.outputFile: '',
-			prompt: 'Output file destination (e.g. ./Dockerfile)',
-            validate: async (path: string) => {
-                await validationSleep();
-                const pathErr = "Destination must be a valid file path";
-                if (path === "") {
-                    return pathErr;
-                }
 
                 return undefined;
             },
@@ -140,12 +117,12 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
         if (pick.label === autoDetectLabel) {
             const guess = await guessLanguage();
-            console.log(guess);
             if (guess === undefined) {
                 window.showErrorMessage("Language can't be auto-detected");
                 // @ts-ignore recursive function
                 return (input: MultiStepInput) => selectLanguage(input, state, step);
             }
+            window.showInformationMessage(`${guess} detected`);
             state.language = guess;
         } else {
 		    state.language = pick.label;
@@ -162,9 +139,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             "go": ["1.19","1.18","1.17","1.16"],
             "java": ["11-jre-slim"],
             "gradle": ["11-jre-slim"],
-            "javascript": ["10.16.3", "12.16.3", "14.15.4"],
-            "php": ["7.2-apache", "7.2-fpm", "7.2-cli", "7.3-apache", "7.3-fpm", "7.3-cli", "7.4-apache", "7.4-fpm", "7.4-cli"],
-            "python": ["3.6", "3.7", "3.8"],
+            "javascript": ["14.15.4", "12.16.3", "10.16.3"],
+            "php": ["7.4-apache", "7.4-fpm", "7.4-cli", "7.3-apache", "7.3-fpm", "7.3-cli", "7.2-apache", "7.2-fpm", "7.2-cli",],
+            "python": ["3.8", "3.7", "3.6"],
             "rust": ["1.42.0"],
             "swift": ["5.5","5.4","5.3","5.2"]
         };
@@ -215,12 +192,11 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
 	const state = await collectInputs();
     const source = state.sourceFolder;
-    const output = state.outputFile; // TODO: make output actually do something or remove
     const language = state.language;
-    const dotnetVersion = state.version;
+    const version = state.version;
     const port = state.portNumber;
 
-    const configPath = buildCreateConfig(language, port, "", "", dotnetVersion);
+    const configPath = buildCreateConfig(language, port, "", "", version);
     const command = buildCreateCommand(source, "dockerfile", configPath);
 
     const [success, err] = await runDraftCommand(command);
@@ -229,11 +205,17 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       reporter.sendTelemetryEvent("dockerfileDraftResult", { dockerfileDraftResult: `${isSuccess}` });
     }
 
-    const outputPath = path.join(source, "Dockerfile");
     if (isSuccess) {
-	    window.showInformationMessage(`Draft Dockerfile Succeeded - Output to '${outputPath}'`);
+        const buildContainer = "Build container";
+        const outputPath = path.join(source, "Dockerfile");
+        const vsPath = vscode.Uri.file(outputPath);
+        vscode.workspace.openTextDocument(vsPath).then(doc => vscode.window.showTextDocument(doc));
+	    window.showInformationMessage(`Draft Dockerfile Succeeded`, buildContainer)
+            .then(option => {
+                if (option === buildContainer) {}
+            });
     } else {
-        window.showErrorMessage(`Draft Dockerfile Failed - ${err}`);
+        window.showErrorMessage(`Draft Dockerfile Failed - '${err}'`);
     }
 }
 
