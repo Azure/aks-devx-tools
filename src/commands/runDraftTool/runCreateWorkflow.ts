@@ -171,14 +171,16 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         await validationSleep();
         const imgNameErr =
           "Invalid container image name. Must be lowercase alphanumeric and start with a letter or number, with following parts separated by one period, one or two underscores and multiple dashes";
-        const lowercaseErr = "Invalid container image name. Must be lowercase";
         if (imageName === "") {
           return imgNameErr;
         }
         if (imageName.toLowerCase() !== imageName) {
-          return lowercaseErr;
+          return imgNameErr;
         }
-        if (!/[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?/gi.test(imageName)) {
+        if (
+          !/^[a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?$/gi.test(imageName)
+          // [a-z0-9]+(?:(?:(?:[._]|__|[-]*)[a-z0-9]+)+)?
+        ) {
           return imgNameErr;
         }
 
