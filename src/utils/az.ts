@@ -10,7 +10,7 @@ export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
   getResourceGroups(subscription: Subscription): Promise<Errorable<ResourceGroup[]>>;
   getAksClusterNames(subscription: Subscription): Promise<Errorable<ManagedCluster[]>>;
-  getAcrRegistries(subscription: Subscription): Promise<Errorable<Array<string>>>;
+  getAcrRegistries(endpoint:string): Promise<Errorable<string[]>>;
 }
 
 // TODO: add any needed az interactions
@@ -73,7 +73,7 @@ export class Az {
     return { succeeded: true, result: clusters };
   }
 
-  async getAcrRegistries(endpoint: string): Promise<Errorable<Array<string>>> {
+  async getAcrRegistries(endpoint: string): Promise<Errorable<string[]>> {
     // endpoint should be in the form of "https://myregistryname.azurecr.io"
     // where "myregistryname" is the actual name of your registry
     let repositoryLists = new Array();
