@@ -16,6 +16,7 @@
   ],
   "activationEvents": [
     "onCommand:aks-draft-extension.runDraftDockerfile",
+    "onCommand:aks-draft-extension.runDraftDeployment",
     "onCommand:aks-draft-extension.runDraftSetupGH",
     "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
     "onCommand:aks-draft-extension.runDraftUpdate"
@@ -37,6 +38,10 @@
       {
         "command": "aks-draft-extension.runDraftDockerfile",
         "title": "AKS Developer: Draft a Dockerfile from source code"
+      },
+      {
+        "command": "aks-draft-extension.runDraftDeployment",
+        "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
       },
       {
         "command": "aks-draft-extension.runDraftSetupGH",
@@ -68,6 +73,10 @@
       "aksdevx.aksDraftSubMenu": [
         {
           "command": "aks-draft-extension.runDraftDockerfile",
+          "group": "draftnavigation@1"
+        },
+        {
+          "command": "aks-draft-extension.runDraftDeployment",
           "group": "draftnavigation@1"
         },
         {

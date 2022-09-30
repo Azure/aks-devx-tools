@@ -10,6 +10,7 @@ import type { AzureExtensionApiProvider } from '@microsoft/vscode-azext-utils/ap
 import { AzureAccountExtensionApi } from './utils/azAccount';
 import { Az, AzApi } from './utils/az';
 import { API as GitAPI, GitExtension, APIState } from './utils/git';
+import runDraftDeployment from './commands/runDraftTool/runDraftDeployment';
 
 
 // this method is called when your extension is activated
@@ -40,6 +41,13 @@ export function activate(context: vscode.ExtensionContext) {
 		runDraftDockerfile(context, currentWorkspace.uri.fsPath);
 	});
 
+	let disposableDeployment = vscode.commands.registerCommand('aks-draft-extension.runDraftDeployment', async (folder) => {
+		if (reporter) {
+            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftDeployment' });
+        }
+		runDraftDeployment(context, currentWorkspace.uri.fsPath);
+	});
+
 	let disposableSetupGH = vscode.commands.registerCommand('aks-draft-extension.runDraftSetupGH', async (folder) => {
 		if (reporter) {
             reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftSetupGH' });
@@ -62,6 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(disposableDockerfile);
+	context.subscriptions.push(disposableDeployment);
 	context.subscriptions.push(disposableSetupGH);
 	context.subscriptions.push(disposableGenerateWorkflow);
 	context.subscriptions.push(disposableUpdate);
