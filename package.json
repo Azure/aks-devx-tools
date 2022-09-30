@@ -78,7 +78,7 @@
         {
           "command": "aks-draft-extension.runCreateWorkflow",
           "group": "draftnavigation@2"
-        }
+        },
         {
           "command": "aks-draft-extension.runDraftDeployment",
           "group": "draftnavigation@3"
