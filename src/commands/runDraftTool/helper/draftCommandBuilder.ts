@@ -93,9 +93,13 @@ export function buildGenerateWorkflowCommand(
 }
 
 export function buildUpdateCommand(
-    destination: string,
+    outputFolder: string,
     host: string,
-    certificate: string
+    certificate: string,
+    port: string,
+    namespace: string,
+    service: string,
+    useOpenServiceMesh: boolean
 ): string {
-    return `update -a ${host} -s ${certificate} -d ${destination}`;
+    return `update -d ${outputFolder} -a webapp_routing --variable ingress-use-osm-mtls=${useOpenServiceMesh} --variable ingress-host=${host} --variable ingress-tls-cert-keyvault-uri=${certificate} --variable ingress-port=${port} --variable ingress-service=${service} --variable ingress-namespace=${namespace}`;
 }
