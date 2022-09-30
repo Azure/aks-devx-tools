@@ -24,12 +24,16 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     const title = 'Draft a Kubernetes Deployment and Service';
     const formats = ['Manifests', 'Helm', 'Kustomize'];
 	const formatLabels: QuickPickItem[] = formats.map(label => ({ label }));
+    const azureContainerRegistry = 'Azure Container Registry';
+    const imageTypes = [azureContainerRegistry, 'Other'];
+    const imageTypeLabels: QuickPickItem[] = imageTypes.map(label => ({label}));
 
 	interface State {
         outputFolder: string;
         format: string;
         namespace: string;
         name: string;
+        imageType: string;
         image: string;
         port: string;
 		runtime: QuickPickItem;
@@ -108,19 +112,54 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             shouldResume: shouldResume
         });
 
-        return (input: MultiStepInput) => inputImage(input, state, step + 1);
+        return (input: MultiStepInput) => inputImageType(input, state, step + 1);
     }
 
+    async function inputImageType(input: MultiStepInput, state: Partial<State>, step: number) {
+        const pick = await input.showQuickPick({
+            title,
+            step: step,
+            totalSteps: totalSteps,
+            placeholder: "Image type",
+            items: imageTypeLabels,
+            activeItem: typeof state.imageType !== 'string' ? state.imageType : undefined,
+            shouldResume: shouldResume
+        });
+        state.imageType = pick.label;
+
+
+        if (state.imageType === azureContainerRegistry) 
+            return (input: MultiStepInput) => inputAcrImage(input, state, step);
+
+        return (input: MultiStepInput) => inputImage(input, state, step);
+	}
+
+    async function inputAcrImage(input: MultiStepInput, state: Partial<State>, step: number) {
+        state.image = await input.showInputBox({
+            title,
+            step: step,
+            totalSteps: totalSteps,
+            value: typeof state.image === 'string' ? state.image : '',
+            prompt: 'ACR Image',
+            // TODO: add image validation
+            validate: async() => undefined,
+            shouldResume: shouldResume
+        });
+
+        return (input: MultiStepInput) => inputPortNumber(input, state, step + 1);
+	}
+
     async function inputImage(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.image = await input.showInputBox({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			value: typeof state.image === 'string' ? state.image : '',
-			prompt: 'Select a container registry',
-			validate: async() => undefined,
-			shouldResume: shouldResume
-		});
+        state.image = await input.showInputBox({
+            title,
+            step: step,
+            totalSteps: totalSteps,
+            value: typeof state.image === 'string' ? state.image : '',
+            prompt: 'Image',
+            // TODO: add image validation
+            validate: async() => undefined,
+            shouldResume: shouldResume
+        });
 
         return (input: MultiStepInput) => inputPortNumber(input, state, step + 1);
 	}
