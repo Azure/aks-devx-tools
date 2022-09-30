@@ -2,15 +2,15 @@ import { AzureAccountExtensionApi } from "./azAccount";
 import { commands } from "vscode";
 import { Errorable } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
+import { longRunning } from "./host";
 import { ResourceManagementClient, ResourceGroup } from '@azure/arm-resources';
 import { ContainerRegistryManagementClient, Registry } from '@azure/arm-containerregistry';
 import { ContainerServiceClient, ManagedCluster } from '@azure/arm-containerservice';
 
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
-  getResourceGroups(subscription: Subscription): Promise<Errorable<ResourceGroup[]>>;
-  getAcrRegistriesByResourceGroup(resourceGroup: ResourceGroup, subscription: Subscription): Promise<Errorable<Registry[]>>;
-  getAksClusterNames(subscription: Subscription, resourceGroup: ResourceGroup): Promise<Errorable<ManagedCluster[]>>
+  getResourceGroups(subscriptionId: string): Promise<Errorable<ResourceGroup[]>>;
+  getAcrs(subscriptionId: string, resourceGroupId: string): Promise<Errorable<Registry[]>> 
 }
 
 // TODO: add any needed az interactions
@@ -19,12 +19,20 @@ export interface AzApi {
 export class Az {
   constructor(private azAccount: AzureAccountExtensionApi) { }
 
-  async getSubscriptions(): Promise<Errorable<Subscription[]>> {
+  async checkLoginAndFilters(): Promise<Errorable<void>> {
     if (!(await this.azAccount.waitForLogin())) {
       commands.executeCommand("azure-account.askForLogin");
       return { succeeded: false, error: "failed to login" };
     }
     await this.azAccount.waitForFilters();
+    return { succeeded: true, result: undefined };
+  }
+
+  async getSubscriptions(): Promise<Errorable<Subscription[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
 
     const subs: Subscription[] = [];
     for (const session of this.azAccount.sessions) {
@@ -32,33 +40,67 @@ export class Az {
       const subscriptionClient = new SubscriptionClient(credentials);
 
       // TODO: turn this logic into a generic
-      const subscriptionPages = subscriptionClient.subscriptions
-        .list()
-        .byPage();
-      for await (const page of subscriptionPages) {
-        subs.push(...page);
-      }
+      await longRunning(`Fetching Azure Subscriptions`, async () => {
+
+        const subscriptionPages = subscriptionClient.subscriptions
+            .list()
+            .byPage();
+
+        for await (const page of subscriptionPages) {
+          subs.push(...page);
+        }
+        return;
+      });
     }
 
     return { succeeded: true, result: subs };
   }
 
-  // this method considers getSubscriptions() is called first.
-  async getResourceGroups(subscription: Subscription): Promise<Errorable<ResourceGroup[]>> {
-    if (!(await this.azAccount.waitForLogin())) {
-      commands.executeCommand("azure-account.askForLogin");
-      return { succeeded: false, error: "failed to login" };
-    }
-    await this.azAccount.waitForFilters();
-    const resourceGrps: ResourceGroup[] = [];
+  async getResourceGroups(subscriptionID: string): Promise<Errorable<ResourceGroup[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    } 
+    const rgs: ResourceGroup[] = [];
     for (const session of this.azAccount.sessions) {
-      const resources = new ResourceManagementClient(session.credentials2, subscription.subscriptionId!);
-      const resourceGrpPages = resources.resourceGroups.list().byPage();
-      for await (const page of resourceGrpPages) {
-        resourceGrps.push(...page);
-      }
+      const credentials = session.credentials2;
+      const resourceManagementClient: ResourceManagementClient = new ResourceManagementClient(credentials, subscriptionID);
+
+      // TODO: turn this logic into a generic
+      await longRunning(`Fetching Resource Groups`, async () => {
+      
+        const resourceGroupPages = resourceManagementClient.resourceGroups 
+            .list()
+            .byPage();
+
+        for await (const page of resourceGroupPages) {
+          rgs.push(...page);
+        }
+      });
     }
-    return { succeeded: true, result: resourceGrps };
+
+    return { succeeded: true, result: rgs };
+  }
+
+  async getAcrs(subscriptionId: string, resourceGroupId: string): Promise<Errorable<Registry[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
+
+    const acrs: Registry[] = [];
+    for (const session of this.azAccount.sessions) {
+      const creds = session.credentials2;
+      const  client = new ContainerRegistryManagementClient(creds, subscriptionId);
+
+      await longRunning("Fetching ACRs",async () => {
+        const pages = client.registries.listByResourceGroup(resourceGroupId).byPage();
+        for await (const page of pages) acrs.push(...page);
+      });
+
+    }
+
+    return { succeeded: true, result: acrs };
   }
 
   //this method considers getSubscriptions() and getResourceGroups() are called first
@@ -83,5 +125,5 @@ export class Az {
       }
     }
     return { succeeded: true, result: registries };
-  }
+  } 
 }
