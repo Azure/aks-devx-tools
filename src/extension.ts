@@ -9,6 +9,7 @@ import { Reporter, reporter } from './utils/reporter';
 import type { AzureExtensionApiProvider } from '@microsoft/vscode-azext-utils/api';
 import { AzureAccountExtensionApi } from './utils/azAccount';
 import { Az, AzApi } from './utils/az';
+import { API as GitAPI, GitExtension, APIState } from './utils/git';
 
 
 // this method is called when your extension is activated
@@ -30,36 +31,33 @@ export function activate(context: vscode.ExtensionContext) {
 	// TODO: pass this into any command function that needs to interact with azure
 	const az: AzApi = new Az(azureAccount);
 
+	const git:GitAPI = <GitAPI>vscode.extensions.getExtension('vscode.git')!.exports.getAPI(1);
+
 	let disposableDockerfile = vscode.commands.registerCommand('aks-draft-extension.runDraftDockerfile', async (folder) => {
 		if (reporter) {
             reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftDockerfile' });
         }
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
 		runDraftDockerfile(context, currentWorkspace.uri.fsPath);
 	});
+
 	let disposableSetupGH = vscode.commands.registerCommand('aks-draft-extension.runDraftSetupGH', async (folder) => {
 		if (reporter) {
             reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftSetupGH' });
         }
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		runDraftSetupGH(context, currentWorkspace.uri.fsPath);
+		runDraftSetupGH(context, currentWorkspace.uri.fsPath,az,git);
 	});
+
 	let disposableGenerateWorkflow = vscode.commands.registerCommand('aks-draft-extension.runDraftGenerateWorkflow', async (folder) => {
 		if (reporter) {
             reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftGenerateWorkflow' });
         }
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
 		runDraftGenerateWorkflow(context, vscode.Uri.parse(folder).fsPath);
 	});
+
 	let disposableUpdate = vscode.commands.registerCommand('aks-draft-extension.runDraftUpdate', async (folder) => {
 		if (reporter) {
             reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftUpdate' });
         }
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
 		runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
 	});
 
