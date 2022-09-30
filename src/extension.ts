@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (reporter) {
             reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftDeployment' });
         }
-		runDraftDeployment(context, currentWorkspace.uri.fsPath);
+		runDraftDeployment(context, currentWorkspace.uri.fsPath, az);
 	});
 
 	let disposableSetupGH = vscode.commands.registerCommand('aks-draft-extension.runDraftSetupGH', async (folder) => {

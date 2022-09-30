@@ -9,6 +9,7 @@ import { longRunning } from "./host";
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
   getResourceGroups(subscriptionId: string): Promise<Errorable<ResourceGroup[]>>;
+  getAcrs(subscriptionId: string, resourceGroupId: string): Promise<Errorable<Registry[]>> 
 }
 
 // TODO: add any needed az interactions

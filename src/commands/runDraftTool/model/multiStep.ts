@@ -179,4 +179,11 @@ export class MultiStepInput {
 			disposables.forEach(d => d.dispose());
 		}
 	}
+
+	async wait<T>(callback: () => Promise<T>): Promise<T> {
+		if (this.current) this.current.busy = true;
+		const ret = await callback();
+		if (this.current) this.current.busy = false;
+		return ret;
+	}
 }
