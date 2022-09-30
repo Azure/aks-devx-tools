@@ -3,14 +3,14 @@ import { commands } from "vscode";
 import { Errorable } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { ResourceManagementClient, ResourceGroup } from '@azure/arm-resources';
-import { ManagedCluster, ContainerServiceClient } from '@azure/arm-containerservice';
-import { ContainerRegistryClient, KnownContainerRegistryAudience } from '@azure/container-registry';
+import { ContainerRegistryManagementClient, Registry } from '@azure/arm-containerregistry';
+import { ContainerServiceClient, ManagedCluster } from '@azure/arm-containerservice';
 
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
   getResourceGroups(subscription: Subscription): Promise<Errorable<ResourceGroup[]>>;
-  getAksClusterNames(subscription: Subscription): Promise<Errorable<ManagedCluster[]>>;
-  getAcrRegistries(endpoint:string): Promise<Errorable<string[]>>;
+  getAcrRegistriesByResourceGroup(resourceGroup: ResourceGroup, subscription: Subscription): Promise<Errorable<Registry[]>>;
+  getAksClusterNames(subscription: Subscription, resourceGroup: ResourceGroup): Promise<Errorable<ManagedCluster[]>>
 }
 
 // TODO: add any needed az interactions
@@ -62,43 +62,26 @@ export class Az {
   }
 
   //this method considers getSubscriptions() and getResourceGroups() are called first
-  async getAksClusterNames(subscription: Subscription): Promise<Errorable<ManagedCluster[]>> {
+  async getAksClusterNames(subscription: Subscription, resourceGroup: ResourceGroup): Promise<Errorable<ManagedCluster[]>> {
     const clusters: ManagedCluster[] = [];
     for (const session of this.azAccount.sessions) {
       const client = new ContainerServiceClient(session.credentials2, subscription.subscriptionId!);
-      for await (const item of client.managedClusters.list().byPage()) {
+      for await (const item of client.managedClusters.listByResourceGroup(resourceGroup.name!).byPage()) {
         clusters.push(...item);
       }
     }
     return { succeeded: true, result: clusters };
   }
 
-  async getAcrRegistries(endpoint: string): Promise<Errorable<string[]>> {
-    // endpoint should be in the form of "https://myregistryname.azurecr.io"
-    // where "myregistryname" is the actual name of your registry
-    let repositoryLists = new Array();
+  async getAcrRegistriesByResourceGroup(resourceGroup: ResourceGroup, subscription: Subscription): Promise<Errorable<Registry[]>> {
+    const registries: Registry[] = [];
     for (const session of this.azAccount.sessions) {
-      const client = new ContainerRegistryClient(endpoint, session.credentials2, {
-        audience: KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
-      });
-      const iterator = client.listRepositoryNames();
-      for await (const repository of iterator) {
-        repositoryLists.push(repository);
+      const client = new ContainerRegistryManagementClient(session.credentials2, subscription.subscriptionId!);
+      const items = client.registries.listByResourceGroup(resourceGroup.name!);
+      for await (const item of items) {
+        registries.push(item);
       }
-      // if needed write methods to get artifact names by tagName
-      // Obtain a RegistryArtifact object to get access to image operations
-      // const image = client.getArtifact("library/hello-world", "latest");
-
-      // List the set of tags on the hello_world image tagged as "latest"
-      // const tagIterator = image.listTagProperties();
-
-      // Iterate through the image's tags, listing the tagged alias for the image
-      // console.log(`${image.fullyQualifiedReference}  has the following aliases:`);
-      // for await (const tag of tagIterator) {
-      //   console.log(`  ${tag.registryLoginServer}/${tag.repositoryName}:${tag.name}`);
-      // }
     }
-
-    return { succeeded: true, result: repositoryLists };
+    return { succeeded: true, result: registries };
   }
 }
