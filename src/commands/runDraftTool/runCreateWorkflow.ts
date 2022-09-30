@@ -524,13 +524,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 }
 
 function getResourceGroups(): string[] {
-  return ["jkatariyatest", "resourceGroup2", "resourceGroup3"];
+  return ["resourceGroup1", "resourceGroup2", "resourceGroup3"];
 }
 
 function getAKSClusters(): string[] {
-  return ["jkatariyatest", "cluster2", "cluster3"];
+  return ["cluster1", "cluster2", "cluster3"];
 }
 
 function getContainerRegistries(): string[] {
-  return ["jkatariyatest", "registry2", "registry3"];
+  return ["registry1", "registry2", "registry3"];
 }
