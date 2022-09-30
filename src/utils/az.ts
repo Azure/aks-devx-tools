@@ -3,6 +3,7 @@ import { commands } from "vscode";
 import { Errorable } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { ResourceManagementClient, ResourceGroup } from '@azure/arm-resources';
+import { Registry, ContainerRegistryManagementClient } from '@azure/arm-containerregistry';
 import { longRunning } from "./host";
 
 export interface AzApi {
@@ -37,7 +38,7 @@ export class Az {
       const subscriptionClient = new SubscriptionClient(credentials);
 
       // TODO: turn this logic into a generic
-      const downloadResult = await longRunning(`Fetching Azure Subscriptions`, async () => {
+      await longRunning(`Fetching Azure Subscriptions`, async () => {
 
         const subscriptionPages = subscriptionClient.subscriptions
             .list()
@@ -63,9 +64,8 @@ export class Az {
       const credentials = session.credentials2;
       const resourceManagementClient: ResourceManagementClient = new ResourceManagementClient(credentials, subscriptionID);
 
-      resourceManagementClient.resourceGroups;
       // TODO: turn this logic into a generic
-      const resourceGroups = await longRunning(`Fetching Resource Groups`, async () => {
+      await longRunning(`Fetching Resource Groups`, async () => {
       
         const resourceGroupPages = resourceManagementClient.resourceGroups 
             .list()
@@ -74,11 +74,30 @@ export class Az {
         for await (const page of resourceGroupPages) {
           rgs.push(...page);
         }
-        return;
       });
     }
 
     return { succeeded: true, result: rgs };
   }
 
+  async getAcrs(subscriptionId: string, resourceGroupId: string): Promise<Errorable<Registry[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
+
+    const acrs: Registry[] = [];
+    for (const session of this.azAccount.sessions) {
+      const creds = session.credentials2;
+      const  client = new ContainerRegistryManagementClient(creds, subscriptionId);
+
+      await longRunning("Fetching ACRs",async () => {
+        const pages = client.registries.listByResourceGroup(resourceGroupId).byPage();
+        for await (const page of pages) acrs.push(...page);
+      });
+
+    }
+
+    return { succeeded: true, result: acrs };
+  }
 }

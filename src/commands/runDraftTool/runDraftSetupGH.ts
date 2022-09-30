@@ -116,6 +116,7 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 			activeItem: typeof state.resourceGroup !== 'string' ? state.resourceGroup : undefined,
 			shouldResume
 		});
+		state.resourceGroup = selectedItem.label;
         return (input: MultiStepInput) => inputAppName(input, state, step + 1);
 	}
 
