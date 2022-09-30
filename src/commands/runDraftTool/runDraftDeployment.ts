@@ -7,20 +7,24 @@ import { runDraftCommand } from './helper/runDraftHelper';
 import { reporter } from './../../utils/reporter';
 import { MultiStepInput, validationSleep, shouldResume } from './model/multiStep';
 import { validatePort } from '../../utils/validation';
+import { AzApi } from '../../utils/az';
+import { failed } from '../../utils/errorable';
+import { ResourceGroup } from '@azure/arm-resources';
 
 export default async function runDraftDeployment(
     _context: vscode.ExtensionContext,
-    destination: string
+    destination: string,
+    az: AzApi
 ): Promise<void> {
     const downloadResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
     if (!downloadResult) {
         return undefined;
     }
 
-    multiStepInput(_context, destination);
+    multiStepInput(_context, destination, az);
 }
 
-async function multiStepInput(context: ExtensionContext, destination: string) {
+async function multiStepInput(context: ExtensionContext, destination: string, az: AzApi) {
     const title = 'Draft a Kubernetes Deployment and Service';
     const formats = ['Manifests', 'Helm', 'Kustomize'];
 	const formatLabels: QuickPickItem[] = formats.map(label => ({ label }));
@@ -34,6 +38,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         namespace: string;
         name: string;
         imageType: string;
+        subscriptionId: string;
+        resourceGroup: string;
+        acr: string;
         image: string;
         port: string;
 		runtime: QuickPickItem;
@@ -135,16 +142,70 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	}
 
     async function inputAcrImage(input: MultiStepInput, state: Partial<State>, step: number) {
-        state.image = await input.showInputBox({
-            title,
-            step: step,
-            totalSteps: totalSteps,
-            value: typeof state.image === 'string' ? state.image : '',
-            prompt: 'ACR Image',
-            // TODO: add image validation
-            validate: async() => undefined,
-            shouldResume: shouldResume
-        });
+        const subsResult = await az.getSubscriptions();
+        if (failed(subsResult)) {
+            window.showErrorMessage(`Failed to get Subscriptions: ${subsResult.error}`);
+            return;
+        }
+        const subs = subsResult.result;
+
+        const subItems = subs.map((subscription) => {
+			return {
+				label: `${subscription.displayName}`,
+				description: subscription.subscriptionId,
+			};
+		});
+        const selectedSub = await input.showQuickPick({
+			title,
+			step,
+			totalSteps,
+			placeholder: 'Select an Azure Subscription',
+			items: subItems,
+			activeItem: typeof state.subscriptionId !== 'string' ? state.subscriptionId : undefined,
+			shouldResume
+		});
+        state.subscriptionId = selectedSub.description;
+
+		const rgResult = await az.getResourceGroups(state.subscriptionId as string);
+        if (failed(rgResult)) {
+			window.showErrorMessage(`Failed to get ResourceGroups: ${rgResult.error}`);
+            return;
+        }
+        const rgs = rgResult.result;
+        const rgItems: QuickPickItem[] = rgs.map((resourceGroup: ResourceGroup) => {
+			return {
+				label: `${resourceGroup.name}`,
+				description: resourceGroup.location,
+			};
+		});
+		const selectedRg = await input.showQuickPick({
+			title,
+			step,
+			totalSteps,
+			placeholder: 'Select an Azure Resource Group',
+			items: rgItems,
+			activeItem: typeof state.resourceGroup !== 'string' ? state.resourceGroup : undefined,
+			shouldResume
+		});
+        state.resourceGroup = selectedRg.label;
+
+        const acrResult = await az.getAcrs(state.subscriptionId as string, state.resourceGroup as string);
+        if (failed(acrResult)) {
+            window.showErrorMessage(`Failed to get Azure Container Registries: ${acrResult.error}`);
+            return;
+        }
+        const acrs = acrResult.result;
+        const acrItems: QuickPickItem[] = acrs.map(acr => ({label: acr.name as string}));
+		const selectedAcr = await input.showQuickPick({
+			title,
+			step,
+			totalSteps,
+			placeholder: 'Select an Azure Container Registry',
+			items: acrItems,
+			activeItem: typeof state.acr !== 'string' ? state.acr : undefined,
+			shouldResume
+		});
+        state.acr = selectedAcr.label;
 
         return (input: MultiStepInput) => inputPortNumber(input, state, step + 1);
 	}

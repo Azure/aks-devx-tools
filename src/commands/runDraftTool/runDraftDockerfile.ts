@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import linguist = require('linguist-js');
 import { validatePort } from '../../utils/validation';
+import { Errorable, failed } from '../../utils/errorable';
 
 export default async function runDraftDockerfile(
     _context: vscode.ExtensionContext,
@@ -72,7 +73,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 
     // @ts-ignore recursive function
 	async function selectLanguage(input: MultiStepInput, state: Partial<State>, step: number) {
-        const guessLanguage = async () => {
+        async function guessLanguage(): Promise<Errorable<string>> {
             const results = (await linguist(state.sourceFolder, { keepVendored: false, quick: true })).languages.results;
             const topLanguage = Object.keys(results).reduce((prev, key) => {
                 if (prev === "") {return key;};
@@ -100,7 +101,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             };
 
             const converted = topLanguage in convert ? convert[topLanguage] : "";
-            return languages.includes(converted) ? converted : undefined;
+            if (!languages.includes(converted)) return { succeeded: false, error: "failed to detect language" };
+
+            return { succeeded: true, result: converted };
         };
 
         const autoDetectLabel = "Auto-detect";
@@ -117,12 +120,14 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 		});
 
         if (pick.label === autoDetectLabel) {
-            const guess = await guessLanguage();
-            if (guess === undefined) {
+            const guessResult = await input.wait(() => guessLanguage());
+            if (failed(guessResult)) {
                 window.showErrorMessage("Language can't be auto-detected");
                 // @ts-ignore recursive function
                 return (input: MultiStepInput) => selectLanguage(input, state, step);
             }
+
+            const guess = guessResult.result;
             window.showInformationMessage(`${guess} detected`);
             state.language = guess;
         } else {
