@@ -75,7 +75,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     return state as State;
   }
 
-  var totalSteps = 8;
+  var totalSteps = 9;
 
   // @ts-ignore recursive function
   async function selectResourceGroup(
@@ -252,9 +252,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     return (input: MultiStepInput) =>
       selectWorkflowType(input, state, step + 1);
   }
-  //-------------------------------------------------------------------------------------
-  //-------------------------------------------------------------------------------------
-  //-------------------------------------------------------------------------------------
 
   // @ts-ignore recursive function
   async function selectWorkflowType(
