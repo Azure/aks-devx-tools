@@ -466,10 +466,14 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     if (workflowType === helmWorkflowType) {
       deploymentStrategy = "helm";
       if (state.chartsOverridePaths !== "") {
-        helmCommand += " -f " + state.chartsOverridePaths + " ";
+        state.chartsOverridePaths.split(" ").forEach((arg) => {
+          helmCommand += " -f " + arg + " ";
+        });
       }
       if (state.chartOverrideValues !== "") {
-        helmCommand += " -v " + state.chartOverrideValues + " ";
+        state.chartOverrideValues.split(" ").forEach((value) => {
+          helmCommand += " --set " + value + " ";
+        });
       }
       helmCommand += "automated-deployment " + state.chartPath;
 
@@ -511,27 +515,14 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         );
       }
     }
-    const formatted = deploymentStrategy.replace("/", "-");
-    const outputFilename = `${formatted}.yaml`;
-
-    const templateString = JSON.stringify(templateObj);
-    withValues = templateString
-      .replace(rgPlaceholder, resourceGroup)
-      .replace(clusterPlaceholder, aksClusterName)
-      .replace(containerRegistryPlaceholder, containerRegistry)
-      .replace(containerImagePlaceholder, containerImageName)
-      .replace(manifestPathPlaceholder, manifestsLocation)
-      .replace(deploymentStrategyPlaceholder, formatted)
-      .replace(branchPlaceholder, branch)
-      .replace(helmCmdPlaceholder, helmCommand)
-      .replace(dockerfilePathPlaceholder, dockerfileLocation);
-    const outputFilepath = path.join(workflowPath, outputFilename);
-
-    const asJson = JSON.parse(withValues);
+    deploymentStrategy = deploymentStrategy.replace("/", "-");
     const asYaml = new yaml.Document();
-    asYaml.contents = asJson;
+    asYaml.contents = templateObj;
     asYaml.commentBefore = comment + wfTemplates.comment;
     const yamlString = asYaml.toString({ lineWidth: 0 });
+
+    const outputFilename = `${deploymentStrategy}.yaml`;
+    const outputFilepath = path.join(workflowPath, outputFilename);
     fs.writeFileSync(outputFilepath, yamlString);
 
     reporter.sendTelemetryEvent("generateworkflowResult", {
