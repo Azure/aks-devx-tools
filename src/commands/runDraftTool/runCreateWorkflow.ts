@@ -486,7 +486,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       }
     }
     const formatted = deploymentStrategy.replace("/", "-");
-    const outputFilename = formatted + ".yaml";
+    const outputFilename = `${formatted}.yaml`;
 
     const templateString = JSON.stringify(templateObj);
     withValues = templateString

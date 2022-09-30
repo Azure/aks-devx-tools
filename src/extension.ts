@@ -3,7 +3,6 @@
 import * as vscode from "vscode";
 import runDraftDockerfile from "./commands/runDraftTool/runDraftDockerfile";
 import runCreateWorkflow from "./commands/runDraftTool/runCreateWorkflow";
-import runDraftGenerateWorkflow from "./commands/runDraftTool/runDraftGenerateWorkflow";
 import runDraftSetupGH from "./commands/runDraftTool/runDraftSetupGH";
 import runDraftUpdate from "./commands/runDraftTool/runDraftUpdate";
 import { Reporter, reporter } from "./utils/reporter";
@@ -72,19 +71,6 @@ export function activate(context: vscode.ExtensionContext) {
       runDraftSetupGH(context, currentWorkspace.uri.fsPath);
     }
   );
-  let disposableGenerateWorkflow = vscode.commands.registerCommand(
-    "aks-draft-extension.runDraftGenerateWorkflow",
-    async (folder) => {
-      if (reporter) {
-        reporter.sendTelemetryEvent("command", {
-          command: "aks-draft-extension.runDraftGenerateWorkflow",
-        });
-      }
-      // The code you place here will be executed every time your command is executed
-      // Display a message box to the user
-      runDraftGenerateWorkflow(context, vscode.Uri.parse(folder).fsPath);
-    }
-  );
   let disposableUpdate = vscode.commands.registerCommand(
     "aks-draft-extension.runDraftUpdate",
     async (folder) => {
@@ -102,7 +88,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposableDockerfile);
   context.subscriptions.push(disposableWorkflow);
   context.subscriptions.push(disposableSetupGH);
-  context.subscriptions.push(disposableGenerateWorkflow);
   context.subscriptions.push(disposableUpdate);
 }
 

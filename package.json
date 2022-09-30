@@ -18,7 +18,6 @@
     "onCommand:aks-draft-extension.runDraftDockerfile",
     "onCommand:aks-draft-extension.runCreateWorkflow",
     "onCommand:aks-draft-extension.runDraftSetupGH",
-    "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
     "onCommand:aks-draft-extension.runDraftUpdate"
   ],
   "main": "./dist/extension.js",
@@ -46,10 +45,6 @@
       {
         "command": "aks-draft-extension.runDraftSetupGH",
         "title": "AKS Developer: Set Up GitHub OpenID Connect"
-      },
-      {
-        "command": "aks-draft-extension.runDraftGenerateWorkflow",
-        "title": "Generate Workflow"
       },
       {
         "command": "aks-draft-extension.runDraftUpdate",
@@ -86,10 +81,6 @@
         {
           "command": "aks-draft-extension.runDraftSetupGH",
           "group": "draftnavigation@4"
-        },
-        {
-          "command": "aks-draft-extension.runDraftGenerateWorkflow",
-          "group": "draftnavigation@5"
         },
         {
           "command": "aks-draft-extension.runDraftUpdate",
