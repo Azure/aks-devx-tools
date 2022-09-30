@@ -1,358 +1,394 @@
-export const basicTemplate = {
-  name: "Build and deploy an app to AKS",
-  on: {
-    workflow_dispatch: null,
-  },
-  env: {
-    AZURE_CONTAINER_REGISTRY: "your-azure-container-registry",
-    CONTAINER_NAME: "your-container-image-name",
-    RESOURCE_GROUP: "your-resource-group",
-    CLUSTER_NAME: "your-cluster-name",
-    DEPLOYMENT_MANIFEST_PATH: "your-deployment-manifest-path",
-    BRANCH_NAME: "your-branch-name",
-    DOCKERFILE_LOCATION: "your-dockerfile-folder-path",
-  },
-  jobs: {
-    buildImage: {
-      permissions: {
-        contents: "read",
-        "id-token": "write",
-      },
-      "runs-on": "ubuntu-latest",
-      steps: [
-        {
-          uses: "actions/checkout@v3",
-          with: {
-            ref: "${{ env.BRANCH_NAME }}",
-          },
-        },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-          },
-        },
-        {
-          name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
-        },
-      ],
+export function getBasicTemplate(
+  azureContainerRegistry: string,
+  containerImageName: string,
+  resourceGroup: string,
+  clusterName: string,
+  deploymentManifestPath: string,
+  branchName: string,
+  dockerfileLocation: string
+): any {
+  const basicTemplate = {
+    name: "Build and deploy an app to AKS",
+    on: {
+      workflow_dispatch: null,
     },
-    deploy: {
-      permissions: {
-        actions: "read",
-        contents: "read",
-        "id-token": "write",
-      },
-      "runs-on": "ubuntu-latest",
-      needs: ["buildImage"],
-      steps: [
-        {
-          uses: "actions/checkout@v3",
-        },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-          },
-        },
-        {
-          name: "Get K8s context",
-          uses: "azure/aks-set-context@v3",
-          with: {
-            "resource-group": "${{ env.RESOURCE_GROUP }}",
-            "cluster-name": "${{ env.CLUSTER_NAME }}",
-          },
-        },
-        {
-          name: "Deploys application",
-          uses: "Azure/k8s-deploy@v4",
-          with: {
-            action: "deploy",
-            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
-            images:
-              "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}\n",
-          },
-        },
-      ],
+    env: {
+      AZURE_CONTAINER_REGISTRY: azureContainerRegistry,
+      CONTAINER_NAME: containerImageName,
+      RESOURCE_GROUP: resourceGroup,
+      CLUSTER_NAME: clusterName,
+      DEPLOYMENT_MANIFEST_PATH: deploymentManifestPath,
+      BRANCH_NAME: branchName,
+      DOCKERFILE_LOCATION: dockerfileLocation,
     },
-  },
-};
+    jobs: {
+      buildImage: {
+        permissions: {
+          contents: "read",
+          "id-token": "write",
+        },
+        "runs-on": "ubuntu-latest",
+        steps: [
+          {
+            uses: "actions/checkout@v3",
+            with: {
+              ref: "${{ env.BRANCH_NAME }}",
+            },
+          },
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
+          },
+          {
+            name: "Build and push image to ACR",
+            run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
+          },
+        ],
+      },
+      deploy: {
+        permissions: {
+          actions: "read",
+          contents: "read",
+          "id-token": "write",
+        },
+        "runs-on": "ubuntu-latest",
+        needs: ["buildImage"],
+        steps: [
+          {
+            uses: "actions/checkout@v3",
+          },
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
+          },
+          {
+            name: "Get K8s context",
+            uses: "azure/aks-set-context@v3",
+            with: {
+              "resource-group": "${{ env.RESOURCE_GROUP }}",
+              "cluster-name": "${{ env.CLUSTER_NAME }}",
+            },
+          },
+          {
+            name: "Deploys application",
+            uses: "Azure/k8s-deploy@v4",
+            with: {
+              action: "deploy",
+              manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
+              images:
+                "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}\n",
+            },
+          },
+        ],
+      },
+    },
+  };
 
-export const bgcTemplate = {
-  name: "Build and deploy an app to AKS",
-  on: {
-    workflow_dispatch: null,
-  },
-  env: {
-    AZURE_CONTAINER_REGISTRY: "your-azure-container-registry",
-    CONTAINER_NAME: "your-container-image-name",
-    RESOURCE_GROUP: "your-resource-group",
-    CLUSTER_NAME: "your-cluster-name",
-    DEPLOYMENT_MANIFEST_PATH: "your-deployment-manifest-path",
-    DEPLOYMENT_STRATEGY: "your-deployment-strategy",
-    BRANCH_NAME: "your-branch-name",
-    DOCKERFILE_LOCATION: "your-dockerfile-folder-path",
-  },
-  jobs: {
-    buildImage: {
-      permissions: {
-        contents: "read",
-        "id-token": "write",
+  return basicTemplate;
+}
+export function getBgcTemplate(
+  azureContainerRegistry: string,
+  containerImageName: string,
+  resourceGroup: string,
+  clusterName: string,
+  deploymentManifestPath: string,
+  branchName: string,
+  dockerfileLocation: string,
+  deploymentStrategy: string
+): any {
+  const bgcTemplate = {
+    name: "Build and deploy an app to AKS",
+    on: {
+      workflow_dispatch: null,
+    },
+    env: {
+      AZURE_CONTAINER_REGISTRY: azureContainerRegistry,
+      CONTAINER_NAME: containerImageName,
+      RESOURCE_GROUP: resourceGroup,
+      CLUSTER_NAME: clusterName,
+      DEPLOYMENT_MANIFEST_PATH: deploymentManifestPath,
+      DEPLOYMENT_STRATEGY: deploymentStrategy,
+      BRANCH_NAME: branchName,
+      DOCKERFILE_LOCATION: dockerfileLocation,
+    },
+    jobs: {
+      buildImage: {
+        permissions: {
+          contents: "read",
+          "id-token": "write",
+        },
+        "runs-on": "ubuntu-latest",
+        steps: [
+          {
+            uses: "actions/checkout@v3",
+            with: {
+              ref: "${{ env.BRANCH_NAME }}",
+            },
+          },
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
+          },
+          {
+            name: "Build and push image to ACR",
+            run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
+          },
+        ],
       },
-      "runs-on": "ubuntu-latest",
-      steps: [
-        {
-          uses: "actions/checkout@v3",
-          with: {
-            ref: "${{ env.BRANCH_NAME }}",
+      deploy: {
+        permissions: {
+          actions: "read",
+          contents: "read",
+          "id-token": "write",
+        },
+        "runs-on": "ubuntu-latest",
+        needs: ["buildImage"],
+        steps: [
+          {
+            uses: "actions/checkout@v3",
           },
-        },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
           },
-        },
-        {
-          name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
-        },
-      ],
-    },
-    deploy: {
-      permissions: {
-        actions: "read",
-        contents: "read",
-        "id-token": "write",
+          {
+            name: "Get K8s context",
+            uses: "azure/aks-set-context@v3",
+            with: {
+              "resource-group": "${{ env.RESOURCE_GROUP }}",
+              "cluster-name": "${{ env.CLUSTER_NAME }}",
+            },
+          },
+          {
+            name: "Deploys application",
+            uses: "Azure/k8s-deploy@v4",
+            with: {
+              strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
+              "traffic-split-method": "pod",
+              action: "deploy",
+              manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
+              images:
+                "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
+            },
+          },
+        ],
       },
-      "runs-on": "ubuntu-latest",
-      needs: ["buildImage"],
-      steps: [
-        {
-          uses: "actions/checkout@v3",
-        },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+      shouldPromote: {
+        "runs-on": "ubuntu-latest",
+        needs: "deploy",
+        environment: "promote",
+        steps: [
+          {
+            run: "echo 'requested approval (approve to promote, deny to reject)'",
           },
-        },
-        {
-          name: "Get K8s context",
-          uses: "azure/aks-set-context@v3",
-          with: {
-            "resource-group": "${{ env.RESOURCE_GROUP }}",
-            "cluster-name": "${{ env.CLUSTER_NAME }}",
-          },
-        },
-        {
-          name: "Deploys application",
-          uses: "Azure/k8s-deploy@v4",
-          with: {
-            strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
-            "traffic-split-method": "pod",
-            action: "deploy",
-            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
-            images:
-              "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
-          },
-        },
-      ],
-    },
-    shouldPromote: {
-      "runs-on": "ubuntu-latest",
-      needs: "deploy",
-      environment: "promote",
-      steps: [
-        {
-          run: "echo 'requested approval (approve to promote, deny to reject)'",
-        },
-      ],
-    },
-    promote: {
-      permissions: {
-        actions: "read",
-        contents: "read",
-        "id-token": "write",
+        ],
       },
-      "runs-on": "ubuntu-latest",
-      needs: ["shouldPromote"],
-      if: "${{ contains(join(needs.*.result, ','), 'success') }}",
-      steps: [
-        {
-          uses: "actions/checkout@v3",
+      promote: {
+        permissions: {
+          actions: "read",
+          contents: "read",
+          "id-token": "write",
         },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+        "runs-on": "ubuntu-latest",
+        needs: ["shouldPromote"],
+        if: "${{ contains(join(needs.*.result, ','), 'success') }}",
+        steps: [
+          {
+            uses: "actions/checkout@v3",
           },
-        },
-        {
-          name: "Get K8s context",
-          uses: "azure/aks-set-context@v3",
-          with: {
-            "resource-group": "${{ env.RESOURCE_GROUP }}",
-            "cluster-name": "${{ env.CLUSTER_NAME }}",
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
           },
-        },
-        {
-          name: "Deploys application",
-          uses: "Azure/k8s-deploy@v4",
-          with: {
-            strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
-            "traffic-split-method": "pod",
-            action: "promote",
-            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
-            images:
-              "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
+          {
+            name: "Get K8s context",
+            uses: "azure/aks-set-context@v3",
+            with: {
+              "resource-group": "${{ env.RESOURCE_GROUP }}",
+              "cluster-name": "${{ env.CLUSTER_NAME }}",
+            },
           },
-        },
-      ],
-    },
-    reject: {
-      permissions: {
-        actions: "read",
-        contents: "read",
-        "id-token": "write",
+          {
+            name: "Deploys application",
+            uses: "Azure/k8s-deploy@v4",
+            with: {
+              strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
+              "traffic-split-method": "pod",
+              action: "promote",
+              manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
+              images:
+                "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
+            },
+          },
+        ],
       },
-      "runs-on": "ubuntu-latest",
-      needs: ["shouldPromote"],
-      if: "${{ always() && !contains(join(needs.*.result, ','), 'skipped') && contains(join(needs.*.result, ','), 'failure') }}",
-      steps: [
-        {
-          uses: "actions/checkout@v3",
+      reject: {
+        permissions: {
+          actions: "read",
+          contents: "read",
+          "id-token": "write",
         },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+        "runs-on": "ubuntu-latest",
+        needs: ["shouldPromote"],
+        if: "${{ always() && !contains(join(needs.*.result, ','), 'skipped') && contains(join(needs.*.result, ','), 'failure') }}",
+        steps: [
+          {
+            uses: "actions/checkout@v3",
           },
-        },
-        {
-          name: "Get K8s context",
-          uses: "azure/aks-set-context@v3",
-          with: {
-            "resource-group": "${{ env.RESOURCE_GROUP }}",
-            "cluster-name": "${{ env.CLUSTER_NAME }}",
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
           },
-        },
-        {
-          name: "Deploys application",
-          uses: "Azure/k8s-deploy@v4",
-          with: {
-            strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
-            "traffic-split-method": "pod",
-            action: "reject",
-            manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
-            images:
-              "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
+          {
+            name: "Get K8s context",
+            uses: "azure/aks-set-context@v3",
+            with: {
+              "resource-group": "${{ env.RESOURCE_GROUP }}",
+              "cluster-name": "${{ env.CLUSTER_NAME }}",
+            },
           },
-        },
-      ],
+          {
+            name: "Deploys application",
+            uses: "Azure/k8s-deploy@v4",
+            with: {
+              strategy: "${{ env.DEPLOYMENT_STRATEGY }}",
+              "traffic-split-method": "pod",
+              action: "reject",
+              manifests: "${{ env.DEPLOYMENT_MANIFEST_PATH }}\n",
+              images:
+                "${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}",
+            },
+          },
+        ],
+      },
     },
-  },
-};
+  };
 
-export const helmTemplate = {
-  name: "Build and deploy an app to AKS with Helm",
-  on: {
-    workflow_dispatch: null,
-  },
-  env: {
-    AZURE_CONTAINER_REGISTRY: "your-azure-container-registry",
-    CONTAINER_NAME: "your-container-image-name",
-    RESOURCE_GROUP: "your-resource-group",
-    CLUSTER_NAME: "your-cluster-name",
-    BRANCH_NAME: "your-branch-name",
-    HELM_DEPLOY_COMMAND: "your-helm-command",
-    DOCKERFILE_LOCATION: "your-dockerfile-folder-path",
-  },
-  jobs: {
-    buildImage: {
-      permissions: {
-        contents: "read",
-        "id-token": "write",
-      },
-      "runs-on": "ubuntu-latest",
-      steps: [
-        {
-          uses: "actions/checkout@v3",
-          with: {
-            ref: "${{ env.BRANCH_NAME }}",
-          },
-        },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-          },
-        },
-        {
-          name: "Build and push image to ACR",
-          run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
-        },
-      ],
+  return bgcTemplate;
+}
+
+export function getHelmTemplate(
+  azureContainerRegistry: string,
+  containerImageName: string,
+  resourceGroup: string,
+  clusterName: string,
+  branchName: string,
+  helmDeployCommand: string,
+  dockerfileLocation: string
+): any {
+  const helmTemplate = {
+    name: "Build and deploy an app to AKS with Helm",
+    on: {
+      workflow_dispatch: null,
     },
-    deploy: {
-      permissions: {
-        actions: "read",
-        contents: "read",
-        "id-token": "write",
-      },
-      "runs-on": "ubuntu-latest",
-      needs: ["buildImage"],
-      steps: [
-        {
-          uses: "actions/checkout@v3",
-        },
-        {
-          name: "Azure login",
-          uses: "azure/login@v1.4.3",
-          with: {
-            "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
-            "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
-            "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-          },
-        },
-        {
-          name: "Get K8s context",
-          uses: "azure/aks-set-context@v3",
-          with: {
-            "resource-group": "${{ env.RESOURCE_GROUP }}",
-            "cluster-name": "${{ env.CLUSTER_NAME }}",
-          },
-        },
-        {
-          name: "Deploy application",
-          run: "${{ env.HELM_DEPLOY_COMMAND }}",
-        },
-      ],
+    env: {
+      AZURE_CONTAINER_REGISTRY: azureContainerRegistry,
+      CONTAINER_NAME: containerImageName,
+      RESOURCE_GROUP: resourceGroup,
+      CLUSTER_NAME: clusterName,
+      BRANCH_NAME: branchName,
+      HELM_DEPLOY_COMMAND: helmDeployCommand,
+      DOCKERFILE_LOCATION: dockerfileLocation,
     },
-  },
-};
+    jobs: {
+      buildImage: {
+        permissions: {
+          contents: "read",
+          "id-token": "write",
+        },
+        "runs-on": "ubuntu-latest",
+        steps: [
+          {
+            uses: "actions/checkout@v3",
+            with: {
+              ref: "${{ env.BRANCH_NAME }}",
+            },
+          },
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
+          },
+          {
+            name: "Build and push image to ACR",
+            run: "az acr build --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.RESOURCE_GROUP }} ${{ env.DOCKERFILE_LOCATION }}\n",
+          },
+        ],
+      },
+      deploy: {
+        permissions: {
+          actions: "read",
+          contents: "read",
+          "id-token": "write",
+        },
+        "runs-on": "ubuntu-latest",
+        needs: ["buildImage"],
+        steps: [
+          {
+            uses: "actions/checkout@v3",
+          },
+          {
+            name: "Azure login",
+            uses: "azure/login@v1.4.3",
+            with: {
+              "client-id": "${{ secrets.AZURE_CLIENT_ID }}",
+              "tenant-id": "${{ secrets.AZURE_TENANT_ID }}",
+              "subscription-id": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            },
+          },
+          {
+            name: "Get K8s context",
+            uses: "azure/aks-set-context@v3",
+            with: {
+              "resource-group": "${{ env.RESOURCE_GROUP }}",
+              "cluster-name": "${{ env.CLUSTER_NAME }}",
+            },
+          },
+          {
+            name: "Deploy application",
+            run: "${{ env.HELM_DEPLOY_COMMAND }}",
+          },
+        ],
+      },
+    },
+  };
+
+  return helmTemplate;
+}
 
 export const comment = `
 # This workflow will build and push an application to a Azure Kubernetes Service (AKS) cluster when you push your code

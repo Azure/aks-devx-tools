@@ -464,7 +464,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     var helmCommand = "helm upgrade --wait -i";
     var comment = "";
     if (workflowType === helmWorkflowType) {
-      templateObj = wfTemplates.helmTemplate;
       deploymentStrategy = "helm";
       if (state.chartsOverridePaths !== "") {
         helmCommand += " -f " + state.chartsOverridePaths + " ";
@@ -473,6 +472,16 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         helmCommand += " -v " + state.chartOverrideValues + " ";
       }
       helmCommand += "automated-deployment " + state.chartPath;
+
+      templateObj = wfTemplates.getHelmTemplate(
+        containerRegistry,
+        containerImageName,
+        resourceGroup,
+        aksClusterName,
+        branch,
+        helmCommand,
+        dockerfileLocation
+      );
     } else {
       if (
         deploymentStrategy === canaryDeploymentStrategy ||
@@ -480,9 +489,26 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
       ) {
         comment =
           "# add a required approval to the promote environment https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments \n";
-        templateObj = wfTemplates.bgcTemplate;
+        templateObj = wfTemplates.getBgcTemplate(
+          containerRegistry,
+          containerImageName,
+          resourceGroup,
+          aksClusterName,
+          manifestsLocation,
+          branch,
+          dockerfileLocation,
+          deploymentStrategy
+        );
       } else {
-        templateObj = wfTemplates.basicTemplate;
+        templateObj = wfTemplates.getBasicTemplate(
+          containerRegistry,
+          containerImageName,
+          resourceGroup,
+          aksClusterName,
+          manifestsLocation,
+          branch,
+          dockerfileLocation
+        );
       }
     }
     const formatted = deploymentStrategy.replace("/", "-");
