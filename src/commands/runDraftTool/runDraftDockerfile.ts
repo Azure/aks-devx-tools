@@ -9,6 +9,7 @@ import { MultiStepInput, validationSleep, shouldResume } from './model/multiStep
 import * as fs from 'fs';
 import * as path from 'path';
 import linguist = require('linguist-js');
+import { validatePort } from '../../utils/validation';
 
 export default async function runDraftDockerfile(
     _context: vscode.ExtensionContext,
@@ -217,19 +218,4 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     } else {
         window.showErrorMessage(`Draft Dockerfile Failed - '${err}'`);
     }
-}
-
-async function validatePort(port: string) {
-    await validationSleep();
-
-    const portNum = parseInt(port);
-    const portMin = 1;
-    const portMax = 65535;
-    const portErr = `Port must be in range ${portMin} to ${portMax}`;
-
-    if (Number.isNaN(portNum)) {return portErr;}
-    if (portNum < portMin) {return portErr;}
-    if (portNum > portMax) {return portErr;};
-
-    return undefined;
 }
