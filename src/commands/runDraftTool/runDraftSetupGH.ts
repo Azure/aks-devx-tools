@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import {QuickPickItem} from 'vscode';
+import { QuickPickItem } from 'vscode';
 import { longRunning } from '../../utils/host';
 import { ensureDraftBinary } from './helper/runDraftHelper';
 import { window, ExtensionContext } from 'vscode';

@@ -1,15 +1,17 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import * as vscode from "vscode";
-import runDraftDockerfile from "./commands/runDraftTool/runDraftDockerfile";
+import * as vscode from 'vscode';
+import runDraftDockerfile from './commands/runDraftTool/runDraftDockerfile';
 import runCreateWorkflow from "./commands/runDraftTool/runCreateWorkflow";
-import runDraftSetupGH from "./commands/runDraftTool/runDraftSetupGH";
-import runDraftUpdate from "./commands/runDraftTool/runDraftUpdate";
-import { Reporter, reporter } from "./utils/reporter";
-import type { AzureExtensionApiProvider } from "@microsoft/vscode-azext-utils/api";
-import { AzureAccountExtensionApi } from "./utils/azAccount";
-import { Az, AzApi } from "./utils/az";
-import { API as GitAPI, GitExtension, APIState } from "./utils/git";
+import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
+import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
+import { Reporter, reporter } from './utils/reporter';
+import type { AzureExtensionApiProvider } from '@microsoft/vscode-azext-utils/api';
+import { AzureAccountExtensionApi } from './utils/azAccount';
+import { Az, AzApi } from './utils/az';
+import { API as GitAPI, GitExtension, APIState } from './utils/git';
+import runDraftDeployment from './commands/runDraftTool/runDraftDeployment';
+
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -62,18 +64,19 @@ export function activate(context: vscode.ExtensionContext) {
       runCreateWorkflow(context, currentWorkspace.uri.fsPath);
     }
   );
+	let disposableDeployment = vscode.commands.registerCommand('aks-draft-extension.runDraftDeployment', async (folder) => {
+		if (reporter) {
+            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftDeployment' });
+        }
+		runDraftDeployment(context, currentWorkspace.uri.fsPath);
+	});
 
-  let disposableSetupGH = vscode.commands.registerCommand(
-    "aks-draft-extension.runDraftSetupGH",
-    async (folder) => {
-      if (reporter) {
-        reporter.sendTelemetryEvent("command", {
-          command: "aks-draft-extension.runDraftSetupGH",
-        });
-      }
-      runDraftSetupGH(context, currentWorkspace.uri.fsPath, az, git);
-    }
-  );
+	let disposableSetupGH = vscode.commands.registerCommand('aks-draft-extension.runDraftSetupGH', async (folder) => {
+		if (reporter) {
+            reporter.sendTelemetryEvent("command", { command: 'aks-draft-extension.runDraftSetupGH' });
+        }
+		runDraftSetupGH(context, currentWorkspace.uri.fsPath,az,git);
+	});
 
   let disposableUpdate = vscode.commands.registerCommand(
     "aks-draft-extension.runDraftUpdate",
@@ -87,10 +90,11 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(disposableDockerfile);
-  context.subscriptions.push(disposableWorkflow);
-  context.subscriptions.push(disposableSetupGH);
-  context.subscriptions.push(disposableUpdate);
+	context.subscriptions.push(disposableDockerfile);
+	context.subscriptions.push(disposableDeployment);
+	context.subscriptions.push(disposableSetupGH);
+	context.subscriptions.push(disposableWorkflow);
+	context.subscriptions.push(disposableUpdate);
 }
 
 // this method is called when your extension is deactivated
