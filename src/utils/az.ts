@@ -10,7 +10,9 @@ import { ContainerServiceClient, ManagedCluster } from '@azure/arm-containerserv
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
   getResourceGroups(subscriptionId: string): Promise<Errorable<ResourceGroup[]>>;
-  getAcrs(subscriptionId: string, resourceGroupId: string): Promise<Errorable<Registry[]>> 
+  getAcrs(subscriptionId: string, resourceGroupId: string): Promise<Errorable<Registry[]>>
+  getAcrRegistriesByResourceGroup(resourceGroup: ResourceGroup, subscription: Subscription): Promise<Errorable<Registry[]>>;
+  getAksClusterNames(subscription: Subscription, resourceGroup: ResourceGroup): Promise<Errorable<ManagedCluster[]>> 
 }
 
 // TODO: add any needed az interactions
