@@ -16,11 +16,8 @@
   ],
   "activationEvents": [
     "onCommand:aks-draft-extension.runDraftDockerfile",
-<<<<<<< HEAD
     "onCommand:aks-draft-extension.runCreateWorkflow",
-=======
     "onCommand:aks-draft-extension.runDraftDeployment",
->>>>>>> upstream/multistep-commandpalette-wizard
     "onCommand:aks-draft-extension.runDraftSetupGH",
     "onCommand:aks-draft-extension.runDraftUpdate"
   ],
@@ -43,17 +40,12 @@
         "title": "AKS Developer: Draft a Dockerfile from source code"
       },
       {
-<<<<<<< HEAD
         "command": "aks-draft-extension.runCreateWorkflow",
         "title": "AKS Developer: Draft a CI/CD workflow using GitHub Actions"
-=======
-        "command": "aks-draft-extension.runDraftDeployment",
-        "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
       },
       {
-        "command": "aks-draft-extension.runDraftSetupGH",
-        "title": "AKS Developer: Set Up GitHub OpenID Connect"
->>>>>>> upstream/multistep-commandpalette-wizard
+        "command": "aks-draft-extension.runDraftDeployment",
+        "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
       },
       {
         "command": "aks-draft-extension.runDraftSetupGH",
@@ -84,19 +76,11 @@
           "group": "draftnavigation@1"
         },
         {
-<<<<<<< HEAD
           "command": "aks-draft-extension.runCreateWorkflow",
-=======
-          "command": "aks-draft-extension.runDraftDeployment",
-          "group": "draftnavigation@1"
-        },
-        {
-          "command": "aks-draft-extension.runDraftSetupGH",
->>>>>>> upstream/multistep-commandpalette-wizard
           "group": "draftnavigation@2"
-        },
+        }
         {
-          "command": "aks-draft-extension.runGenerateGitHubActionsWorkflow",
+          "command": "aks-draft-extension.runDraftDeployment",
           "group": "draftnavigation@3"
         },
         {
@@ -105,7 +89,7 @@
         },
         {
           "command": "aks-draft-extension.runDraftUpdate",
-          "group": "draftnavigation@6"
+          "group": "draftnavigation@5"
         }
       ]
     },
