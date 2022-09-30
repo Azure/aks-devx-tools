@@ -11,7 +11,7 @@ import { AzApi } from '../../utils/az';
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { ResourceGroup } from '@azure/arm-resources';
 import { basename } from 'path';
-import { API as GitAPI, GitExtension, APIState } from '../../utils/git';
+import { API as GitAPI } from '../../utils/git';
 
 export default async function runDraftSetupGH(
     _context: vscode.ExtensionContext,
