@@ -16,9 +16,9 @@
   ],
   "activationEvents": [
     "onCommand:aks-draft-extension.runDraftDockerfile",
+    "onCommand:aks-draft-extension.runCreateWorkflow",
     "onCommand:aks-draft-extension.runDraftDeployment",
     "onCommand:aks-draft-extension.runDraftSetupGH",
-    "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
     "onCommand:aks-draft-extension.runDraftUpdate"
   ],
   "main": "./dist/extension.js",
@@ -40,16 +40,16 @@
         "title": "AKS Developer: Draft a Dockerfile from source code"
       },
       {
+        "command": "aks-draft-extension.runCreateWorkflow",
+        "title": "AKS Developer: Draft a CI/CD workflow using GitHub Actions"
+      },
+      {
         "command": "aks-draft-extension.runDraftDeployment",
         "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
       },
       {
         "command": "aks-draft-extension.runDraftSetupGH",
         "title": "AKS Developer: Set Up GitHub OpenID Connect"
-      },
-      {
-        "command": "aks-draft-extension.runDraftGenerateWorkflow",
-        "title": "Generate Workflow"
       },
       {
         "command": "aks-draft-extension.runDraftUpdate",
@@ -76,20 +76,20 @@
           "group": "draftnavigation@1"
         },
         {
-          "command": "aks-draft-extension.runDraftDeployment",
-          "group": "draftnavigation@1"
-        },
-        {
-          "command": "aks-draft-extension.runDraftSetupGH",
+          "command": "aks-draft-extension.runCreateWorkflow",
           "group": "draftnavigation@2"
         },
         {
-          "command": "aks-draft-extension.runDraftGenerateWorkflow",
+          "command": "aks-draft-extension.runDraftDeployment",
           "group": "draftnavigation@3"
         },
         {
-          "command": "aks-draft-extension.runDraftUpdate",
+          "command": "aks-draft-extension.runDraftSetupGH",
           "group": "draftnavigation@4"
+        },
+        {
+          "command": "aks-draft-extension.runDraftUpdate",
+          "group": "draftnavigation@5"
         }
       ]
     },
