@@ -453,7 +453,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     const aksClusterName = state.aksClusterName;
     const containerRegistry = state.containerRegistry;
     const containerImageName = state.containerImageName;
-    var deploymentStrategy = state.deploymentStrategy;
+    let deploymentStrategy = state.deploymentStrategy;
     const branch = state.branch;
     const manifestsLocation = state.manifestsLocation;
     const workflowType = state.workflowType;
