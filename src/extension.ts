@@ -11,6 +11,7 @@ import { AzureAccountExtensionApi } from './utils/azAccount';
 import { Az, AzApi } from './utils/az';
 import { API as GitAPI, GitExtension, APIState } from './utils/git';
 import runDraftDeployment from './commands/runDraftTool/runDraftDeployment';
+import runBuildContainer from './commands/runDraftTool/runBuildContainer';
 
 
 // this method is called when your extension is activated
@@ -48,6 +49,18 @@ export function activate(context: vscode.ExtensionContext) {
         });
       }
       runDraftDockerfile(context, currentWorkspace.uri.fsPath);
+    }
+  );
+
+  let disposableBuildContainer = vscode.commands.registerCommand(
+    "aks-draft-extension.runBuildContainer",
+    async (folder) => {
+      if (reporter) {
+        reporter.sendTelemetryEvent("command", {
+          command: "aks-draft-extension.runDraftDockerfile",
+        });
+      }
+      runBuildContainer(context);
     }
   );
 
@@ -91,6 +104,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
 	context.subscriptions.push(disposableDockerfile);
+  context.subscriptions.push(disposableBuildContainer);
 	context.subscriptions.push(disposableDeployment);
 	context.subscriptions.push(disposableSetupGH);
 	context.subscriptions.push(disposableWorkflow);
