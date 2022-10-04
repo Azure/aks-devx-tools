@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import * as yaml from "yaml";
-import { longRunning } from "./../../utils/host";
 import * as wfTemplates from "./../../utils/workflowTemplates";
 import { QuickPickItem, window, ExtensionContext } from "vscode";
 import { reporter } from "./../../utils/reporter";
@@ -13,6 +12,8 @@ import * as fs from "fs";
 import * as path from "path";
 import linguist = require("linguist-js");
 import { Exception, template } from "handlebars";
+import { AzApi } from "../../utils/az";
+import { succeeded } from "../../utils/errorable";
 
 const wsPath = vscode.workspace.workspaceFolders![0].uri.fsPath;
 const githubFolderName = ".github";
@@ -37,7 +38,8 @@ const helmCmdPlaceholder = "your-helm-command";
 
 export default async function runCreateWorkflow(
   _context: vscode.ExtensionContext,
-  destination: string
+  destination: string,
+  az: AzApi
 ): Promise<void> {
   // init - create workflows folder if it doesn't already exist
 
@@ -48,10 +50,14 @@ export default async function runCreateWorkflow(
     fs.mkdirSync(workflowPath, { recursive: true });
   }
 
-  multiStepInput(_context, destination);
+  multiStepInput(_context, destination, az);
 }
 
-async function multiStepInput(context: ExtensionContext, destination: string) {
+async function multiStepInput(
+  context: ExtensionContext,
+  destination: string,
+  az: AzApi
+) {
   const title = "Generate Github Actions workflow";
 
   interface State {
@@ -84,6 +90,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     step: number
   ) {
     const rgList = getResourceGroups();
+    // const rgList = await az.getResourceGroups();
     const items: QuickPickItem[] = rgList.map((label) => ({ label }));
 
     const pick = await input.showQuickPick({
