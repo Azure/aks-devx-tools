@@ -106,10 +106,6 @@ async function multiStepInput(
         (rg.id as string).startsWith(sub.id as string)
       ) as Subscription;
 
-      if (matchingSub === undefined) {
-        console.log("subs are ", subs.result);
-        console.log("rgId is ", rg.id);
-      }
       return {
         label: rg.name as string,
         description: matchingSub.displayName,
