@@ -38,7 +38,7 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
         namespace: string;
         name: string;
         imageType: string;
-        subscriptionId: string;
+        subscription: string;
         resourceGroup: string;
         acr: string;
         image: string;
@@ -142,40 +142,24 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 	}
 
     async function inputAcrImage(input: MultiStepInput, state: Partial<State>, step: number) {
-        const subsResult = await az.getSubscriptions();
-        if (failed(subsResult)) {
-            window.showErrorMessage(`Failed to get Subscriptions: ${subsResult.error}`);
+        const subResult = await az.getSubscriptions();
+        if (failed(subResult)) {
+			window.showErrorMessage(`Failed to get Subscriptions: ${subResult.error}`);
             return;
         }
-        const subs = subsResult.result;
-
-        const subItems = subs.map((subscription) => {
-			return {
-				label: `${subscription.displayName}`,
-				description: subscription.subscriptionId,
-			};
-		});
-        const selectedSub = await input.showQuickPick({
-			title,
-			step,
-			totalSteps,
-			placeholder: 'Select an Azure Subscription',
-			items: subItems,
-			activeItem: typeof state.subscriptionId !== 'string' ? state.subscriptionId : undefined,
-			shouldResume
-		});
-        state.subscriptionId = selectedSub.description;
-
-		const rgResult = await az.getResourceGroups(state.subscriptionId as string);
+        const subs = subResult.result;
+        
+		const rgResult = await az.getResourceGroups();
         if (failed(rgResult)) {
 			window.showErrorMessage(`Failed to get ResourceGroups: ${rgResult.error}`);
             return;
         }
         const rgs = rgResult.result;
         const rgItems: QuickPickItem[] = rgs.map((resourceGroup: ResourceGroup) => {
+            const sub = subs.find(sub => resourceGroup.id?.startsWith(sub.id as string));
 			return {
 				label: `${resourceGroup.name}`,
-				description: resourceGroup.location,
+				description:  `${sub?.displayName}`,
 			};
 		});
 		const selectedRg = await input.showQuickPick({
@@ -187,9 +171,13 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 			activeItem: typeof state.resourceGroup !== 'string' ? state.resourceGroup : undefined,
 			shouldResume
 		});
-        state.resourceGroup = selectedRg.label;
+        const rgOptions = rgs.filter(rg => rg.name === selectedRg.label);
+        const subscription = subs.find(sub => sub.displayName === selectedRg.description);
+        const rg = rgOptions.find(rg => rg.id?.startsWith(subscription?.id as string));
+        state.subscription = subscription?.subscriptionId
+        state.resourceGroup = rg?.name;
 
-        const acrResult = await az.getAcrs(state.subscriptionId as string, state.resourceGroup as string);
+        const acrResult = await az.getAcrs(state.subscription as string, state.resourceGroup as string);
         if (failed(acrResult)) {
             window.showErrorMessage(`Failed to get Azure Container Registries: ${acrResult.error}`);
             return;
