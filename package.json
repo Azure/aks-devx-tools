@@ -42,7 +42,7 @@
       },
       {
         "command": "aks-draft-extension.runBuildContainer",
-        "title": "AKS Developer: Build a Container"
+        "title": "AKS Developer: Build a Container with Azure Container Registry"
       },
       {
         "command": "aks-draft-extension.runCreateWorkflow",
