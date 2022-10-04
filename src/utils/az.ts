@@ -70,7 +70,18 @@ export class Az implements AzApi {
         return;
       });
     }
-    return { succeeded: true, result: await Promise.all(subs) };
+
+    const finalSubs = await Promise.all(subs);
+
+    if (finalSubs.length === 0) {
+      return {
+        succeeded: false,
+        error:
+          "No subscriptions were found. Please select subscriptions using Azure Account VSCode extension.",
+      };
+    }
+
+    return { succeeded: true, result: finalSubs };
   }
 
   async getResourceGroups(
