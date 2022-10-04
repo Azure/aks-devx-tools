@@ -103,7 +103,7 @@ export class Az {
 
       // TODO: turn this logic into a generic
       await longRunning(`Fetching Resource Groups`, async () => {
-        subscriptionIDs.forEach(async (subscriptionId) => {
+        for (const subscriptionId of subscriptionIDs) {
           const resourceManagementClient: ResourceManagementClient =
             new ResourceManagementClient(credentials, subscriptionId);
 
@@ -114,7 +114,7 @@ export class Az {
           for await (const page of resourceGroupPages) {
             rgs.push(...page);
           }
-        });
+        }
       });
     }
 
