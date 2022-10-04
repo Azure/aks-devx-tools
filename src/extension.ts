@@ -3,14 +3,15 @@
 import * as vscode from "vscode";
 import runDraftDockerfile from "./commands/runDraftTool/runDraftDockerfile";
 import runCreateWorkflow from "./commands/runDraftTool/runCreateWorkflow";
-import runDraftSetupGH from "./commands/runDraftTool/runDraftSetupGH";
-import runDraftUpdate from "./commands/runDraftTool/runDraftUpdate";
-import { Reporter, reporter } from "./utils/reporter";
-import type { AzureExtensionApiProvider } from "@microsoft/vscode-azext-utils/api";
-import { AzureAccountExtensionApi } from "./utils/azAccount";
-import { Az, AzApi } from "./utils/az";
-import { API as GitAPI, GitExtension, APIState } from "./utils/git";
-import runDraftDeployment from "./commands/runDraftTool/runDraftDeployment";
+import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
+import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
+import { Reporter, reporter } from './utils/reporter';
+import type { AzureExtensionApiProvider } from '@microsoft/vscode-azext-utils/api';
+import { AzureAccountExtensionApi } from './utils/azAccount';
+import { Az, AzApi } from './utils/az';
+import { API as GitAPI, GitExtension, APIState } from './utils/git';
+import runDraftDeployment from './commands/runDraftTool/runDraftDeployment';
+import runBuildContainer from './commands/runDraftTool/runBuildContainer';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -47,6 +48,18 @@ export function activate(context: vscode.ExtensionContext) {
         });
       }
       runDraftDockerfile(context, currentWorkspace.uri.fsPath);
+    }
+  );
+
+  let disposableBuildContainer = vscode.commands.registerCommand(
+    "aks-draft-extension.runBuildContainer",
+    async (folder) => {
+      if (reporter) {
+        reporter.sendTelemetryEvent("command", {
+          command: "aks-draft-extension.runBuildContainer",
+        });
+      }
+      runBuildContainer(context);
     }
   );
 
@@ -99,11 +112,12 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(disposableDockerfile);
-  context.subscriptions.push(disposableDeployment);
-  context.subscriptions.push(disposableSetupGH);
-  context.subscriptions.push(disposableWorkflow);
-  context.subscriptions.push(disposableUpdate);
+	context.subscriptions.push(disposableDockerfile);
+  context.subscriptions.push(disposableBuildContainer);
+	context.subscriptions.push(disposableDeployment);
+	context.subscriptions.push(disposableSetupGH);
+	context.subscriptions.push(disposableWorkflow);
+	context.subscriptions.push(disposableUpdate);
 }
 
 // this method is called when your extension is deactivated

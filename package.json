@@ -16,6 +16,7 @@
   ],
   "activationEvents": [
     "onCommand:aks-draft-extension.runDraftDockerfile",
+    "onCommand:aks-draft-extension.runBuildContainer",
     "onCommand:aks-draft-extension.runCreateWorkflow",
     "onCommand:aks-draft-extension.runDraftDeployment",
     "onCommand:aks-draft-extension.runDraftSetupGH",
@@ -38,6 +39,10 @@
       {
         "command": "aks-draft-extension.runDraftDockerfile",
         "title": "AKS Developer: Draft a Dockerfile from source code"
+      },
+      {
+        "command": "aks-draft-extension.runBuildContainer",
+        "title": "AKS Developer: Build a Container with Azure Container Registry"
       },
       {
         "command": "aks-draft-extension.runCreateWorkflow",
@@ -117,6 +122,7 @@
   },
   "extensionDependencies": [
     "ms-vscode.azure-account",
+    "ms-azuretools.vscode-docker",
     "vscode.git"
   ],
   "devDependencies": {
