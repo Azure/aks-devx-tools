@@ -118,7 +118,6 @@ export class Az implements AzApi {
         }
       });
     }
-    console.log("rgs result", rgs);
     return { succeeded: true, result: rgs };
   }
 
