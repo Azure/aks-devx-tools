@@ -11,6 +11,7 @@ import * as path from 'path';
 import linguist = require('linguist-js');
 import { validatePort } from '../../utils/validation';
 import { Errorable, failed } from '../../utils/errorable';
+import { Context, ContextApi } from '../../utils/context';
 
 export default async function runDraftDockerfile(
     _context: vscode.ExtensionContext,
@@ -211,6 +212,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     }
 
     if (isSuccess) {
+        const ctx: ContextApi = new Context(context);
+        ctx.setPort(port);
+
         const buildContainer = "Build container";
         const outputPath = path.join(source, "Dockerfile");
         const vsPath = vscode.Uri.file(outputPath);

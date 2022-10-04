@@ -1,9 +1,12 @@
 import * as vscode from "vscode";
+import { Context, ContextApi } from "../../utils/context";
 import { longRunning } from "../../utils/host";
 
 export default async function runBuildContainer(
   _context: vscode.ExtensionContext
 ): Promise<void> {
+  const ctx: ContextApi = new Context(_context);
+
   // TODO: refactor this but it will be hard to do that without editing the docker extension itself
   // need error handling + this is super flimsy
   vscode.commands
@@ -36,9 +39,10 @@ export default async function runBuildContainer(
                   console.log(registry, repo, tag);
 
                   if (registry && repo && tag) {
-                    console.log(registry, repo, tag);
+                    const image = `${registry}/${repo}:${tag}`;
+                    ctx.setImage(image);
                     vscode.window.showInformationMessage(
-                      `Built container at ${registry}/${repo}:${tag}`
+                      `Built container ${image}`
                     );
                     stop();
                   }

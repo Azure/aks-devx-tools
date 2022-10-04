@@ -18,7 +18,7 @@ export interface AzApi {
 // TODO: add any needed az interactions
 // use subscription fn and https://github.com/microsoft/vscode-azure-account/blob/main/sample/src/extension.ts
 // as reference. Note that things like resource groups will take a subscription as a parameter like the linked example 
-export class Az {
+export class Az implements AzApi {
   constructor(private azAccount: AzureAccountExtensionApi) { }
 
   async checkLoginAndFilters(): Promise<Errorable<void>> {
