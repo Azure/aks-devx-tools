@@ -1,6 +1,6 @@
 import { AzureAccountExtensionApi } from "./azAccount";
-import { commands, workspace } from "vscode";
-import { Errorable } from "./errorable";
+import { commands, window, workspace } from "vscode";
+import { Errorable, succeeded } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { longRunning } from "./host";
 import { ResourceManagementClient, ResourceGroup } from "@azure/arm-resources";
@@ -34,9 +34,9 @@ export interface AzApi {
 
 // TODO: add any needed az interactions
 // use subscription fn and https://github.com/microsoft/vscode-azure-account/blob/main/sample/src/extension.ts
-// as reference. Note that things like resource groups will take a subscription as a parameter like the linked example 
+// as reference. Note that things like resource groups will take a subscription as a parameter like the linked example
 export class Az implements AzApi {
-  constructor(private azAccount: AzureAccountExtensionApi) { }
+  constructor(private azAccount: AzureAccountExtensionApi) {}
 
   async checkLoginAndFilters(): Promise<Errorable<void>> {
     if (!(await this.azAccount.waitForLogin())) {
@@ -48,6 +48,10 @@ export class Az implements AzApi {
   }
 
   async getSubscriptions(): Promise<Errorable<Subscription[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
     const azureConfig = workspace.getConfiguration("azure"); // from https://github.com/microsoft/vscode-azure-account/blob/de70d0b194727cc30b6f2f15f71678ea552640a4/src/login/commands/selectSubscriptions.ts#L28
     const resourceFilter: string[] = (
       azureConfig.get<string[]>("resourceFilter") || ["all"]
@@ -76,6 +80,19 @@ export class Az implements AzApi {
   async getResourceGroups(
     ...subscriptionIDs: string[]
   ): Promise<Errorable<ResourceGroup[]>> {
+    if (subscriptionIDs.length === 0) {
+      const subs = await this.getSubscriptions();
+      if (succeeded(subs)) {
+        subscriptionIDs = subs.result.map(
+          (sub) => sub.subscriptionId as string
+        );
+      } else {
+        window.showErrorMessage(
+          "Failed to retrieve Azure subscriptions:",
+          subs.error
+        );
+      }
+    }
     const loginResult = await this.checkLoginAndFilters();
     if (!loginResult.succeeded) {
       return loginResult;
@@ -86,7 +103,7 @@ export class Az implements AzApi {
 
       // TODO: turn this logic into a generic
       await longRunning(`Fetching Resource Groups`, async () => {
-        subscriptionIDs.forEach(async (subscriptionId) => {
+        for (const subscriptionId of subscriptionIDs) {
           const resourceManagementClient: ResourceManagementClient =
             new ResourceManagementClient(credentials, subscriptionId);
 
@@ -97,7 +114,7 @@ export class Az implements AzApi {
           for await (const page of resourceGroupPages) {
             rgs.push(...page);
           }
-        });
+        }
       });
     }
 
