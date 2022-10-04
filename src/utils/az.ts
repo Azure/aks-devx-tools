@@ -1,6 +1,6 @@
 import { AzureAccountExtensionApi } from "./azAccount";
 import { commands, window, workspace } from "vscode";
-import { Errorable, succeeded } from "./errorable";
+import { Errorable, Failed, succeeded } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { longRunning } from "./host";
 import { ResourceManagementClient, ResourceGroup } from "@azure/arm-resources";
@@ -16,19 +16,15 @@ import {
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
   getResourceGroups(
-    ...subscriptionIds: string[]
+    ...subscriptionIDs: string[]
   ): Promise<Errorable<ResourceGroup[]>>;
   getAcrs(
     subscriptionId: string,
     resourceGroupId: string
   ): Promise<Errorable<Registry[]>>;
-  getAcrRegistriesByResourceGroup(
-    resourceGroup: ResourceGroup,
-    subscription: Subscription
-  ): Promise<Errorable<Registry[]>>;
   getAksClusterNames(
-    subscription: Subscription,
-    resourceGroup: ResourceGroup
+    subscriptionId: string,
+    resourceGroupName: string
   ): Promise<Errorable<ManagedCluster[]>>;
 }
 
@@ -81,18 +77,12 @@ export class Az implements AzApi {
     ...subscriptionIDs: string[]
   ): Promise<Errorable<ResourceGroup[]>> {
     if (subscriptionIDs.length === 0) {
-      const subs = await this.getSubscriptions();
-      if (succeeded(subs)) {
-        subscriptionIDs = subs.result.map(
-          (sub) => sub.subscriptionId as string
-        );
-      } else {
-        window.showErrorMessage(
-          "Failed to retrieve Azure subscriptions:",
-          subs.error
-        );
-      }
+      return {
+        succeeded: false,
+        error: "no subscriptions were provided to getResourceGroups",
+      } as Failed;
     }
+
     const loginResult = await this.checkLoginAndFilters();
     if (!loginResult.succeeded) {
       return loginResult;
@@ -117,13 +107,13 @@ export class Az implements AzApi {
         }
       });
     }
-
+    console.log("rgs result", rgs);
     return { succeeded: true, result: rgs };
   }
 
   async getAcrs(
     subscriptionId: string,
-    resourceGroupId: string
+    resourceGroupName: string
   ): Promise<Errorable<Registry[]>> {
     const loginResult = await this.checkLoginAndFilters();
     if (!loginResult.succeeded) {
@@ -140,7 +130,7 @@ export class Az implements AzApi {
 
       await longRunning("Fetching ACRs", async () => {
         const pages = client.registries
-          .listByResourceGroup(resourceGroupId)
+          .listByResourceGroup(resourceGroupName)
           .byPage();
         for await (const page of pages) acrs.push(...page);
       });
@@ -151,39 +141,21 @@ export class Az implements AzApi {
 
   //this method considers getSubscriptions() and getResourceGroups() are called first
   async getAksClusterNames(
-    subscription: Subscription,
-    resourceGroup: ResourceGroup
+    subscriptionId: string,
+    resourceGroupName: string
   ): Promise<Errorable<ManagedCluster[]>> {
     const clusters: ManagedCluster[] = [];
     for (const session of this.azAccount.sessions) {
       const client = new ContainerServiceClient(
         session.credentials2,
-        subscription.subscriptionId!
+        subscriptionId
       );
       for await (const item of client.managedClusters
-        .listByResourceGroup(resourceGroup.name!)
+        .listByResourceGroup(resourceGroupName)
         .byPage()) {
         clusters.push(...item);
       }
     }
     return { succeeded: true, result: clusters };
-  }
-
-  async getAcrRegistriesByResourceGroup(
-    resourceGroup: ResourceGroup,
-    subscription: Subscription
-  ): Promise<Errorable<Registry[]>> {
-    const registries: Registry[] = [];
-    for (const session of this.azAccount.sessions) {
-      const client = new ContainerRegistryManagementClient(
-        session.credentials2,
-        subscription.subscriptionId!
-      );
-      const items = client.registries.listByResourceGroup(resourceGroup.name!);
-      for await (const item of items) {
-        registries.push(item);
-      }
-    }
-    return { succeeded: true, result: registries };
   }
 }
