@@ -128,7 +128,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             }
 
             const guess = guessResult.result;
-            window.showInformationMessage(`${guess} detected`);
             state.language = guess;
         } else {
 		    state.language = pick.label;
@@ -161,7 +160,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			title,
 			step: step,
 			totalSteps: totalSteps,
-			placeholder: 'Select the language version',
+			placeholder: `Select ${state.language} version`,
 			items: items,
 			activeItem: typeof state.version !== 'string' ? state.version : undefined,
 			shouldResume: shouldResume
@@ -218,7 +217,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
         vscode.workspace.openTextDocument(vsPath).then(doc => vscode.window.showTextDocument(doc));
 	    window.showInformationMessage(`Draft Dockerfile Succeeded`, buildContainer)
             .then(option => {
-                if (option === buildContainer) {}
+                if (option === buildContainer) {
+                    vscode.commands.executeCommand("aks-draft-extension.runBuildContainer");
+                }
             });
     } else {
         window.showErrorMessage(`Draft Dockerfile Failed - '${err}'`);

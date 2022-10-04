@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
     async (folder) => {
       if (reporter) {
         reporter.sendTelemetryEvent("command", {
-          command: "aks-draft-extension.runDraftDockerfile",
+          command: "aks-draft-extension.runBuildContainer",
         });
       }
       runBuildContainer(context);
