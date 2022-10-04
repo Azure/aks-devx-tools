@@ -1,6 +1,6 @@
 import { AzureAccountExtensionApi } from "./azAccount";
-import { commands, workspace } from "vscode";
-import { Errorable } from "./errorable";
+import { commands, window, workspace } from "vscode";
+import { Errorable, succeeded } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { longRunning } from "./host";
 import { ResourceManagementClient, ResourceGroup } from "@azure/arm-resources";
@@ -48,6 +48,10 @@ export class Az {
   }
 
   async getSubscriptions(): Promise<Errorable<Subscription[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
     const azureConfig = workspace.getConfiguration("azure"); // from https://github.com/microsoft/vscode-azure-account/blob/de70d0b194727cc30b6f2f15f71678ea552640a4/src/login/commands/selectSubscriptions.ts#L28
     const resourceFilter: string[] = (
       azureConfig.get<string[]>("resourceFilter") || ["all"]
@@ -76,6 +80,19 @@ export class Az {
   async getResourceGroups(
     ...subscriptionIDs: string[]
   ): Promise<Errorable<ResourceGroup[]>> {
+    if (subscriptionIDs.length === 0) {
+      const subs = await this.getSubscriptions();
+      if (succeeded(subs)) {
+        subscriptionIDs = subs.result.map(
+          (sub) => sub.subscriptionId as string
+        );
+      } else {
+        window.showErrorMessage(
+          "Failed to retrieve Azure subscriptions:",
+          subs.error
+        );
+      }
+    }
     const loginResult = await this.checkLoginAndFilters();
     if (!loginResult.succeeded) {
       return loginResult;

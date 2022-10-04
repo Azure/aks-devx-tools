@@ -13,7 +13,7 @@ import * as path from "path";
 import linguist = require("linguist-js");
 import { Exception, template } from "handlebars";
 import { AzApi } from "../../utils/az";
-import { succeeded } from "../../utils/errorable";
+import { succeeded, failed } from "../../utils/errorable";
 
 const wsPath = vscode.workspace.workspaceFolders![0].uri.fsPath;
 const githubFolderName = ".github";
@@ -89,9 +89,16 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ) {
-    const rgList = getResourceGroups();
-    // const rgList = await az.getResourceGroups();
-    const items: QuickPickItem[] = rgList.map((label) => ({ label }));
+    // const rgList = getResourceGroups();
+    let items: QuickPickItem[] = [];
+    const rgList = await az.getResourceGroups();
+    if (succeeded(rgList)) {
+      items = rgList.result.map((rg) => ({ label: rg.name as string }));
+    } else {
+      window.showErrorMessage(
+        `Failed to retrieve resource groups: ${rgList.error}`
+      );
+    }
 
     const pick = await input.showQuickPick({
       title,
