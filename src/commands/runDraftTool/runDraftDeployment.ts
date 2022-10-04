@@ -279,17 +279,25 @@ async function multiStepInput(
         shouldResume: shouldResume
     });
 
-    // const tag
     state.tag = await input.showInputBox({
         title,
         step: step,
         totalSteps: totalSteps,
         value: typeof state.tag === "string" ? state.tag : "",
         prompt: "Tag",
-        // TODO: add validation
-        validate: async () => undefined,
+        validate: async (tag: string) => {
+            await validationSleep();
+
+            // TODO: verify and change error message
+            if (!tag.match(/^[\w.\-_]{1,127}$/)) return "Tag is invalid";
+
+            return undefined;
+        },
         shouldResume: shouldResume
     });
+
+    // construct image
+    state.image = `${state.acr}/${state.repository}:${state.tag}`;
 
     return (input: MultiStepInput) => inputPortNumber(input, state, step + 1);
   }
