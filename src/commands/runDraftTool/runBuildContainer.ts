@@ -41,9 +41,21 @@ export default async function runBuildContainer(
                   if (registry && repo && tag) {
                     const image = `${registry}/${repo}:${tag}`;
                     ctx.setImage(image);
-                    vscode.window.showInformationMessage(
-                      `Built container ${image}`
-                    );
+
+                    const draftKubernetesDeployment =
+                      "Draft Kubernetes Deployment and Service";
+                    vscode.window
+                      .showInformationMessage(
+                        `Built container ${image}`,
+                        draftKubernetesDeployment
+                      )
+                      .then((option) => {
+                        if (option === draftKubernetesDeployment) {
+                          vscode.commands.executeCommand(
+                            "aks-draft-extension.runDraftDeployment"
+                          );
+                        }
+                      });
                     stop();
                   }
                 }
