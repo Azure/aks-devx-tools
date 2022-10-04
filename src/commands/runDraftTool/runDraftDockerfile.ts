@@ -11,6 +11,7 @@ import * as path from 'path';
 import linguist = require('linguist-js');
 import { validatePort } from '../../utils/validation';
 import { Errorable, failed } from '../../utils/errorable';
+import { Context, ContextApi } from '../../utils/context';
 
 export default async function runDraftDockerfile(
     _context: vscode.ExtensionContext,
@@ -128,7 +129,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             }
 
             const guess = guessResult.result;
-            window.showInformationMessage(`${guess} detected`);
             state.language = guess;
         } else {
 		    state.language = pick.label;
@@ -161,7 +161,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			title,
 			step: step,
 			totalSteps: totalSteps,
-			placeholder: 'Select the language version',
+			placeholder: `Select ${state.language} version`,
 			items: items,
 			activeItem: typeof state.version !== 'string' ? state.version : undefined,
 			shouldResume: shouldResume
@@ -212,13 +212,18 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     }
 
     if (isSuccess) {
+        const ctx: ContextApi = new Context(context);
+        ctx.setPort(port);
+
         const buildContainer = "Build container";
         const outputPath = path.join(source, "Dockerfile");
         const vsPath = vscode.Uri.file(outputPath);
         vscode.workspace.openTextDocument(vsPath).then(doc => vscode.window.showTextDocument(doc));
 	    window.showInformationMessage(`Draft Dockerfile Succeeded`, buildContainer)
             .then(option => {
-                if (option === buildContainer) {}
+                if (option === buildContainer) {
+                    vscode.commands.executeCommand("aks-draft-extension.runBuildContainer");
+                }
             });
     } else {
         window.showErrorMessage(`Draft Dockerfile Failed - '${err}'`);
