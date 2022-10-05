@@ -156,11 +156,11 @@ async function multiStepInput(
         const maxLen = 63;
 
         if (!name.match(alphanumDash))
-          return "Application name must be lowercase alphanumeric plus '-'";
+          {return "Application name must be lowercase alphanumeric plus '-'";}
         if (name.length > maxLen)
-          return `Application name length must be less than ${maxLen}`;
+          {return `Application name length must be less than ${maxLen}`;}
         if (name.charAt(0) === "-" || name.charAt(name.length - 1) === "-")
-          return "Application name must start and end with a lowercase alphanumeric character";
+          {return "Application name must start and end with a lowercase alphanumeric character";}
 
         return undefined;
       },
@@ -188,7 +188,7 @@ async function multiStepInput(
     state.imageType = pick.label;
 
     if (state.imageType === azureContainerRegistry)
-      return (input: MultiStepInput) => inputAcrImage(input, state, step);
+      {return (input: MultiStepInput) => inputAcrImage(input, state, step);}
 
     return (input: MultiStepInput) => inputImage(input, state, step);
   }
@@ -288,7 +288,7 @@ async function multiStepInput(
 
         const re = /^[a-z0-9]+((?:[._/]|__|[-]{0,10})[a-z0-9]+)*$/;
         if (!repo.match(re))
-          return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes";
+          {return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes";}
 
         return undefined;
       },
@@ -305,7 +305,7 @@ async function multiStepInput(
         await validationSleep();
 
         // TODO: verify and change error message
-        if (!tag.match(/^[\w.\-_]{1,127}$/)) return "Tag is invalid";
+        if (!tag.match(/^[\w.\-_]{1,127}$/)) {return "Tag is invalid";}
 
         return undefined;
       },
@@ -363,7 +363,7 @@ async function multiStepInput(
 
   // TODO: use namespace and image
 
-  const configPath = buildCreateConfig("", port, name, format, "");
+  const configPath = buildCreateConfig("", port, name, format, "",namespace,image);
   const command = buildCreateCommand(outputFolder, "deployment", configPath);
 
   const [success, err] = await runDraftCommand(command);
@@ -376,8 +376,8 @@ async function multiStepInput(
 
   if (isSuccess) {
     const folder = () => {
-      if (format === "Manifests") return "manifests";
-      if (format === "Helm") return "charts";
+      if (format === "Manifests") {return "manifests";}
+      if (format === "Helm") {return "charts";}
       return "base";
     };
     const outputPath = join(outputFolder, folder());
