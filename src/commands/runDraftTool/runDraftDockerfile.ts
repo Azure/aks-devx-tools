@@ -212,11 +212,12 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     }
 
     if (isSuccess) {
+        const outputPath = path.join(source, "Dockerfile");
         const ctx: ContextApi = new Context(context);
         ctx.setPort(port);
+        ctx.setDockerfile(outputPath);
 
         const buildContainer = "Build container";
-        const outputPath = path.join(source, "Dockerfile");
         const vsPath = vscode.Uri.file(outputPath);
         vscode.workspace.openTextDocument(vsPath).then(doc => vscode.window.showTextDocument(doc));
 	    window.showInformationMessage(`Draft Dockerfile Succeeded`, buildContainer)
