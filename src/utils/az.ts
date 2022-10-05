@@ -22,10 +22,15 @@ export interface AzApi {
     subscriptionId: string,
     resourceGroupId: string
   ): Promise<Errorable<Registry[]>>;
+  getAcrsFromSub(subscriptionId: string): Promise<Errorable<Registry[]>>;
   getAksClusterNames(
     subscriptionId: string,
     resourceGroupName: string
   ): Promise<Errorable<ManagedCluster[]>>;
+  parseId(id: string): {
+    subscription: string | undefined;
+    resourceGroup: string | undefined;
+  };
 }
 
 // TODO: add any needed az interactions
@@ -121,6 +126,29 @@ export class Az implements AzApi {
     return { succeeded: true, result: rgs };
   }
 
+  async getAcrsFromSub(subscriptionId: string): Promise<Errorable<Registry[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
+
+    const acrs: Registry[] = [];
+    for (const session of this.azAccount.sessions) {
+      const creds = session.credentials2;
+      const client = new ContainerRegistryManagementClient(
+        creds,
+        subscriptionId
+      );
+
+      await longRunning("Fetching ACRs", async () => {
+        const pages = client.registries.list().byPage();
+        for await (const page of pages) acrs.push(...page);
+      });
+    }
+
+    return { succeeded: true, result: acrs };
+  }
+
   async getAcrs(
     subscriptionId: string,
     resourceGroupName: string
@@ -149,11 +177,15 @@ export class Az implements AzApi {
     return { succeeded: true, result: acrs };
   }
 
-  //this method considers getSubscriptions() and getResourceGroups() are called first
   async getAksClusterNames(
     subscriptionId: string,
     resourceGroupName: string
   ): Promise<Errorable<ManagedCluster[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
+
     const clusters: ManagedCluster[] = [];
     for (const session of this.azAccount.sessions) {
       const client = new ContainerServiceClient(
@@ -167,5 +199,18 @@ export class Az implements AzApi {
       }
     }
     return { succeeded: true, result: clusters };
+  }
+
+  parseId(id: string): {
+    subscription: string | undefined;
+    resourceGroup: string | undefined;
+  } {
+    const re =
+      /subscriptions\/(?<subscription>.+)\/resourceGroups\/(?<resourceGroup>.+)\/providers\/(.+?)\/(.+?)\/(.+)/i;
+    const matches = id.match(re)?.groups;
+    return {
+      subscription: matches?.subscription,
+      resourceGroup: matches?.resourceGroup,
+    };
   }
 }
