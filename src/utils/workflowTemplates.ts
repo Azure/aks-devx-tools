@@ -390,6 +390,20 @@ export function getHelmTemplate(
   return helmTemplate;
 }
 
+export function getNonAdminSetContext() {
+  let toReturn = {
+    name: "Get K8s context",
+    uses: "azure/aks-set-context@v3",
+    with: {
+      "resource-group": "${{ env.RESOURCE_GROUP }}",
+      "cluster-name": "${{ env.CLUSTER_NAME }}",
+      "use-kubelogin": "true",
+      admin: "false",
+    },
+  };
+  return toReturn;
+}
+
 export const comment = `
 # This workflow will build and push an application to a Azure Kubernetes Service (AKS) cluster when you push your code
 #

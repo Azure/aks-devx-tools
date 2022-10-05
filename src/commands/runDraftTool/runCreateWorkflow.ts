@@ -55,6 +55,7 @@ async function multiStepInput(
     resourceGroup: string;
     subscriptionId: string;
     aksClusterName: string;
+    isClusterAdmin: boolean;
     containerRegistry: string;
     containerImageName: string;
     deploymentStrategy: string;
@@ -173,6 +174,21 @@ async function multiStepInput(
     });
 
     state.aksClusterName = pick.label;
+
+    const isAdminResult = await az.getAksAdminCreds(
+      state.subscriptionId as string,
+      state.resourceGroup as string,
+      pick.label
+    );
+
+    if (failed(isAdminResult)) {
+      window.showErrorMessage(
+        `failed to retrieve admin status: ${isAdminResult.error}`
+      );
+      return;
+    }
+
+    state.isClusterAdmin = isAdminResult.result as boolean;
 
     return (input: MultiStepInput) => selectAcrRegistry(input, state, step + 1);
   }
@@ -571,6 +587,12 @@ async function multiStepInput(
         );
       }
     }
+
+    if (!state.isClusterAdmin) {
+      console.log("detected not cluster admin");
+      templateObj = convertSetContext(templateObj, deploymentStrategy);
+    }
+
     deploymentStrategy = deploymentStrategy.replace("/", "-");
     const asYaml = new yaml.Document();
     asYaml.contents = templateObj;
@@ -599,4 +621,37 @@ async function multiStepInput(
     });
     window.showInformationMessage(`Encountered error: '${err}'`);
   }
+}
+
+function convertSetContext(templateObj: any, deploymentStrategy: string) {
+  templateObj.jobs.deploy?.steps.forEach(
+    (element: any, index: number, array: any[]) => {
+      if (element.name === "Get K8s context") {
+        array[index] = wfTemplates.getNonAdminSetContext();
+      }
+    }
+  );
+
+  if (
+    deploymentStrategy === canaryDeploymentStrategy ||
+    deploymentStrategy === bgDeploymentStrategy
+  ) {
+    templateObj.jobs.promote?.steps.forEach(
+      (element: any, index: number, array: any[]) => {
+        if (element.name === "Get K8s context") {
+          array[index] = wfTemplates.getNonAdminSetContext();
+        }
+      }
+    );
+
+    templateObj.jobs.reject?.steps.forEach(
+      (element: any, index: number, array: any[]) => {
+        if (element.name === "Get K8s context") {
+          array[index] = wfTemplates.getNonAdminSetContext();
+        }
+      }
+    );
+  }
+
+  return templateObj;
 }
