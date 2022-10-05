@@ -1,6 +1,6 @@
 import { AzureAccountExtensionApi } from "./azAccount";
 import { commands, window, workspace } from "vscode";
-import { Errorable, Failed, succeeded } from "./errorable";
+import { Errorable, failed, Failed, succeeded } from "./errorable";
 import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { longRunning } from "./host";
 import { ResourceManagementClient, ResourceGroup } from "@azure/arm-resources";
@@ -10,8 +10,10 @@ import {
 } from "@azure/arm-containerregistry";
 import {
   ContainerServiceClient,
+  CredentialResult,
   ManagedCluster,
 } from "@azure/arm-containerservice";
+import { resourceLimits } from "worker_threads";
 
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
@@ -26,6 +28,11 @@ export interface AzApi {
     subscriptionId: string,
     resourceGroupName: string
   ): Promise<Errorable<ManagedCluster[]>>;
+  getAksAdminCreds(
+    subscriptionId: string,
+    resourceGroupName: string,
+    desiredClusterName: string
+  ): Promise<Errorable<boolean>>;
 }
 
 // TODO: add any needed az interactions
@@ -167,5 +174,50 @@ export class Az implements AzApi {
       }
     }
     return { succeeded: true, result: clusters };
+  }
+
+  async getAksAdminCreds(
+    subscriptionId: string,
+    resourceGroupName: string,
+    desiredClusterName: string
+  ): Promise<Errorable<boolean>> {
+    const clusters: ManagedCluster[] = [];
+    let toReturn: Errorable<boolean> = { succeeded: true, result: true };
+    let foundAdmin = false;
+    let error: Error;
+
+    for (const session of this.azAccount.sessions) {
+      const client = new ContainerServiceClient(
+        session.credentials2,
+        subscriptionId
+      );
+      const credsPromise = client.managedClusters.listClusterAdminCredentials(
+        resourceGroupName,
+        desiredClusterName
+      );
+
+      await credsPromise
+        .then((output) => {
+          // if creds of any session have admin access, assume GitHub does too
+          toReturn = { succeeded: true, result: true };
+          foundAdmin = true;
+        })
+        .catch((error: Error) => {
+          if (
+            error.message.startsWith(
+              "Getting static credential is not allowed because this cluster is set to disable local accounts"
+            )
+          ) {
+            toReturn = { succeeded: true, result: false };
+          } else {
+            toReturn = { succeeded: false, error: error.message };
+          }
+        });
+
+      if (foundAdmin) {
+        break;
+      }
+    }
+    return toReturn;
   }
 }
