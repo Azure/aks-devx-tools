@@ -19,6 +19,8 @@ import { failed } from "../../utils/errorable";
 import { ResourceGroup } from "@azure/arm-resources";
 import { Context, ContextApi } from "../../utils/context";
 import { Subscription } from "@azure/arm-subscriptions";
+import * as fs from "fs";
+import { join } from "path";
 
 export default async function runDraftDeployment(
   _context: vscode.ExtensionContext,
@@ -373,6 +375,23 @@ async function multiStepInput(
   }
 
   if (isSuccess) {
+    const folder = () => {
+      if (format === "Manifests") return "manifests";
+      if (format === "Helm") return "charts";
+      return "base";
+    };
+    const outputPath = join(outputFolder, folder());
+    const files = fs
+      .readdirSync(outputPath)
+      .map((file) => join(outputPath, file))
+      .filter((file) => !fs.statSync(file).isDirectory());
+    for (const file of files) {
+      const vscodeFile = vscode.Uri.file(file);
+      await vscode.workspace
+        .openTextDocument(vscodeFile)
+        .then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
+    }
+
     window.showInformationMessage(
       `Draft Deployment and Services Succeeded - Output to '${outputFolder}'`
     );
