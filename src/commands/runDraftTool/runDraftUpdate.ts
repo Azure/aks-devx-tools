@@ -6,30 +6,32 @@ import { buildUpdateCommand } from './helper/draftCommandBuilder';
 import { reporter } from '../../utils/reporter';
 import { MultiStepInput, shouldResume } from './model/multiStep';
 import { ensureDraftBinary, runDraftCommand } from './helper/runDraftHelper';
+import { listNamespaces, listNamespacedServices } from '../../utils/k8Helper';
+import k8s = require('@kubernetes/client-node');
 
 export default async function runDraftUpdate(
-    _context: vscode.ExtensionContext,
-    destination: string
+	_context: vscode.ExtensionContext,
+	destination: string
 ): Promise<void> {
 
-    const extensionPath = getExtensionPath();
-    if (failed(extensionPath)) {
-        vscode.window.showErrorMessage(extensionPath.error);
-        return undefined;
-    }
+	const extensionPath = getExtensionPath();
+	if (failed(extensionPath)) {
+		vscode.window.showErrorMessage(extensionPath.error);
+		return undefined;
+	}
 
-    // Download Binary first
-    const downladResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
-    if (!downladResult) {
-        return undefined;
-    }
-    
-    multiStepInput(_context, destination);
+	// Download Binary first
+	const downladResult = await longRunning(`Downloading Draft.`, () => ensureDraftBinary());
+	if (!downladResult) {
+		return undefined;
+	}
+
+	multiStepInput(_context, destination);
 }
 
 
 async function multiStepInput(context: ExtensionContext, destination: string) {
-    const title = 'Draft a Kubernetes Ingress';
+	const title = 'Draft a Kubernetes Ingress';
 
 	interface State {
 		title: string;
@@ -41,7 +43,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 		port: string;
 		service: string;
 		useOpenServiceMesh: string;
-        keyVaultCert: string;
+		keyVaultCert: string;
 	}
 
 	async function collectInputs() {
@@ -50,7 +52,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 		return state as State;
 	}
 
-    const totalSteps = 7;
+	const totalSteps = 7;
 	async function inputOutputFolder(input: MultiStepInput, state: Partial<State>, step: number) {
 		state.outputFolder = await input.showInputBox({
 			title,
@@ -58,22 +60,30 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			totalSteps: totalSteps,
 			value: typeof state.outputFolder === 'string' ? state.outputFolder : '',
 			prompt: 'Select the output folder.',
-			validate: async() => undefined,
+			validate: async () => undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => inputNamespace(input, state, step + 1);
+		return (input: MultiStepInput) => pickNamespace(input, state, step + 1);
 	}
-	async function inputNamespace(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.namespace = await input.showInputBox({
+	async function pickNamespace(input: MultiStepInput, state: Partial<State>, step: number) {
+		const namespaces: k8s.V1Namespace[] = await listNamespaces();
+		const items = namespaces.map((namespace) => {
+			return {
+				label: `${namespace.metadata?.name}`,
+				description: namespace.metadata?.name,
+			};
+		});
+		const pick = await input.showQuickPick({
 			title,
 			step: step,
 			totalSteps: totalSteps,
-			value: typeof state.namespace === 'string' ? state.namespace : '',
-			prompt: 'Kubernetes namespace (e.g, myapp)',
-			validate: async() => undefined,
+			placeholder: 'Kubernetes namespace (e.g, myapp)',
+			items: items,
+			activeItem: typeof state.namespace !== 'string' ? state.namespace : undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => inputAppName(input, state, step + 1);
+		state.namespace = pick.label;
+		return (input: MultiStepInput) => inputAppName(input, state, step + 1);
 	}
 	async function inputAppName(input: MultiStepInput, state: Partial<State>, step: number) {
 		state.hostName = await input.showInputBox({
@@ -82,10 +92,10 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			totalSteps: totalSteps,
 			value: typeof state.hostName === 'string' ? state.hostName : '',
 			prompt: 'Hostname (e.g, myapp.contoso.com)',
-			validate: async() => undefined,
+			validate: async () => undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => inputPort(input, state, step + 1);
+		return (input: MultiStepInput) => inputPort(input, state, step + 1);
 	}
 
 	async function inputPort(input: MultiStepInput, state: Partial<State>, step: number) {
@@ -95,23 +105,31 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			totalSteps: totalSteps,
 			value: typeof state.port === 'string' ? state.port : '',
 			prompt: 'Port (e.g, 80)',
-			validate: async() => undefined,
+			validate: async () => undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => inputService(input, state, step + 1);
+		return (input: MultiStepInput) => inputService(input, state, step + 1);
 	}
 
 	async function inputService(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.service = await input.showInputBox({
+		const services: k8s.V1Service[] = await listNamespacedServices(state.namespace!);
+		const items = services.map((service) => {
+			return {
+				label: `${service.metadata?.name}`,
+				description: service.metadata?.name,
+			};
+		});
+		const pick = await input.showQuickPick({
 			title,
 			step: step,
 			totalSteps: totalSteps,
-			value: typeof state.service === 'string' ? state.service : '',
-			prompt: 'Service',
-			validate: async() => undefined,
+			placeholder: 'Pick a Service',
+			items: items,
+			activeItem: typeof state.service !== 'string' ? state.service : undefined,
 			shouldResume: shouldResume
 		});
-        return (input: MultiStepInput) => pickOpenServiceMesh(input, state, step + 1);
+		state.service = pick.label;
+		return (input: MultiStepInput) => pickOpenServiceMesh(input, state, step + 1);
 	}
 
 	async function pickOpenServiceMesh(input: MultiStepInput, state: Partial<State>, step: number) {
@@ -127,10 +145,10 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			shouldResume: shouldResume
 		});
 		state.useOpenServiceMesh = pick.label;
-        return (input: MultiStepInput) => pickKeyVaultCert(input, state, step + 1);
+		return (input: MultiStepInput) => pickKeyVaultCert(input, state, step + 1);
 	}
 
-    async function pickKeyVaultCert(input: MultiStepInput, state: Partial<State>, step: number) {
+	async function pickKeyVaultCert(input: MultiStepInput, state: Partial<State>, step: number) {
 		const options = ['Azure Key Vault', 'Provide Azure Key Vault Certificate URI'];
 		const optionsLabels: QuickPickItem[] = options.map(label => ({ label }));
 		const pick = await input.showQuickPick({
@@ -146,28 +164,28 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	}
 	const state = await collectInputs();
 
-    const host = state.hostName;
+	const host = state.hostName;
 	const namespace = state.namespace;
 	const outputFolder = state.outputFolder;
-	const port = state. port;
-    const certificate = state.keyVaultCert;
+	const port = state.port;
+	const certificate = state.keyVaultCert;
 	const service = state.service;
 	const useOpenServiceMesh = state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? true : false;
-    const command = buildUpdateCommand(outputFolder, host, certificate, port, namespace, service, useOpenServiceMesh);
+	const command = buildUpdateCommand(outputFolder, host, certificate, port, namespace, service, useOpenServiceMesh);
 
-    const result = await runDraftCommand(command);
-    const [success, err] = await longRunning(`Adding web app routing annotation.`, () => runDraftCommand(command));
-    const isSuccess = err?.length === 0 && success?.length !== 0;
+	const result = await runDraftCommand(command);
+	const [success, err] = await longRunning(`Adding web app routing annotation.`, () => runDraftCommand(command));
+	const isSuccess = err?.length === 0 && success?.length !== 0;
 
-    if (reporter) {
-        const resultSuccessOrFailure = result[1]?.length === 0 && result[0]?.length !== 0;
-        reporter.sendTelemetryEvent("updateDraftResult", { updateDraftResult: `${resultSuccessOrFailure}` });
-    }
+	if (reporter) {
+		const resultSuccessOrFailure = result[1]?.length === 0 && result[0]?.length !== 0;
+		reporter.sendTelemetryEvent("updateDraftResult", { updateDraftResult: `${resultSuccessOrFailure}` });
+	}
 
-    if (isSuccess) {
-	    window.showInformationMessage("Web app routing annotation succeeded");
+	if (isSuccess) {
+		window.showInformationMessage("Web app routing annotation succeeded");
 		window.showInformationMessage("Deploy using the draft generated files");
-    } else {
-        window.showErrorMessage(`Web app routing annotation succeeded failed - ${err}`);
-    }
+	} else {
+		window.showErrorMessage(`Web app routing annotation succeeded failed - ${err}`);
+	}
 }
