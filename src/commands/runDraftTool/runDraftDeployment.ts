@@ -19,6 +19,8 @@ import { failed } from "../../utils/errorable";
 import { ResourceGroup } from "@azure/arm-resources";
 import { Context, ContextApi } from "../../utils/context";
 import { Subscription } from "@azure/arm-subscriptions";
+import k8s = require('@kubernetes/client-node');
+import { listNamespaces } from "../../utils/k8Helper";
 
 export default async function runDraftDeployment(
   _context: vscode.ExtensionContext,
@@ -124,15 +126,23 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ) {
-    state.namespace = await input.showInputBox({
-      title,
-      step: step,
-      totalSteps: totalSteps,
-      value: typeof state.namespace === "string" ? state.namespace : "",
-      prompt: "Kubernetes namespace (e.g. myapp)",
-      validate: async () => undefined,
-      shouldResume: shouldResume,
-    });
+    const namespaces: k8s.V1Namespace[] = await listNamespaces();
+		const items = namespaces.map((namespace) => {
+			return {
+				label: `${namespace.metadata?.name}`,
+				description: namespace.metadata?.name,
+			};
+		});
+		const pick = await input.showQuickPick({
+			title,
+			step: step,
+			totalSteps: totalSteps,
+			placeholder: 'Kubernetes namespace (e.g, myapp)',
+			items: items,
+			activeItem: typeof state.namespace !== 'string' ? state.namespace : undefined,
+			shouldResume: shouldResume
+		});
+		state.namespace = pick.label;
 
     return (input: MultiStepInput) => inputName(input, state, step + 1);
   }

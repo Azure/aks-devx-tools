@@ -63,28 +63,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			validate: async () => undefined,
 			shouldResume: shouldResume
 		});
-		return (input: MultiStepInput) => pickNamespace(input, state, step + 1);
-	}
-	async function pickNamespace(input: MultiStepInput, state: Partial<State>, step: number) {
-		const namespaces: k8s.V1Namespace[] = await listNamespaces();
-		const items = namespaces.map((namespace) => {
-			return {
-				label: `${namespace.metadata?.name}`,
-				description: namespace.metadata?.name,
-			};
-		});
-		const pick = await input.showQuickPick({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			placeholder: 'Kubernetes namespace (e.g, myapp)',
-			items: items,
-			activeItem: typeof state.namespace !== 'string' ? state.namespace : undefined,
-			shouldResume: shouldResume
-		});
-		state.namespace = pick.label;
 		return (input: MultiStepInput) => inputAppName(input, state, step + 1);
 	}
+	
 	async function inputAppName(input: MultiStepInput, state: Partial<State>, step: number) {
 		state.hostName = await input.showInputBox({
 			title,
@@ -95,40 +76,6 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 			validate: async () => undefined,
 			shouldResume: shouldResume
 		});
-		return (input: MultiStepInput) => inputPort(input, state, step + 1);
-	}
-
-	async function inputPort(input: MultiStepInput, state: Partial<State>, step: number) {
-		state.port = await input.showInputBox({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			value: typeof state.port === 'string' ? state.port : '',
-			prompt: 'Port (e.g, 80)',
-			validate: async () => undefined,
-			shouldResume: shouldResume
-		});
-		return (input: MultiStepInput) => inputService(input, state, step + 1);
-	}
-
-	async function inputService(input: MultiStepInput, state: Partial<State>, step: number) {
-		const services: k8s.V1Service[] = await listNamespacedServices(state.namespace!);
-		const items = services.map((service) => {
-			return {
-				label: `${service.metadata?.name}`,
-				description: service.metadata?.name,
-			};
-		});
-		const pick = await input.showQuickPick({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			placeholder: 'Pick a Service',
-			items: items,
-			activeItem: typeof state.service !== 'string' ? state.service : undefined,
-			shouldResume: shouldResume
-		});
-		state.service = pick.label;
 		return (input: MultiStepInput) => pickOpenServiceMesh(input, state, step + 1);
 	}
 
@@ -165,13 +112,10 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
 	const state = await collectInputs();
 
 	const host = state.hostName;
-	const namespace = state.namespace;
 	const outputFolder = state.outputFolder;
-	const port = state.port;
 	const certificate = state.keyVaultCert;
-	const service = state.service;
 	const useOpenServiceMesh = state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? true : false;
-	const command = buildUpdateCommand(outputFolder, host, certificate, port, namespace, service, useOpenServiceMesh);
+	const command = buildUpdateCommand(outputFolder, host, certificate, useOpenServiceMesh);
 
 	const result = await runDraftCommand(command);
 	const [success, err] = await longRunning(`Adding web app routing annotation.`, () => runDraftCommand(command));
