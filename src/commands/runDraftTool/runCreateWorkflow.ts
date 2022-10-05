@@ -14,6 +14,7 @@ import linguist = require("linguist-js");
 import { Exception, template } from "handlebars";
 import { AzApi } from "../../utils/az";
 import { succeeded, failed } from "../../utils/errorable";
+import { Subscription } from "@azure/arm-subscriptions";
 
 const wsPath = vscode.workspace.workspaceFolders![0].uri.fsPath;
 const githubFolderName = ".github";
@@ -25,16 +26,6 @@ const kubeWorkflowType = "Kube";
 const basicDeploymentStrategy = "Basic";
 const canaryDeploymentStrategy = "Canary";
 const bgDeploymentStrategy = "Blue/green";
-
-const containerRegistryPlaceholder = "your-azure-container-registry";
-const containerImagePlaceholder = "your-container-image-name";
-const rgPlaceholder = "your-resource-group";
-const clusterPlaceholder = "your-cluster-name";
-const manifestPathPlaceholder = "your-deployment-manifest-path";
-const dockerfilePathPlaceholder = "your-dockerfile-folder-path";
-const deploymentStrategyPlaceholder = "your-deployment-strategy";
-const branchPlaceholder = "your-branch-name";
-const helmCmdPlaceholder = "your-helm-command";
 
 export default async function runCreateWorkflow(
   _context: vscode.ExtensionContext,
@@ -62,6 +53,7 @@ async function multiStepInput(
 
   interface State {
     resourceGroup: string;
+    subscriptionId: string;
     aksClusterName: string;
     containerRegistry: string;
     containerImageName: string;
@@ -89,16 +81,36 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ) {
-    // const rgList = getResourceGroups();
+    const subs = await az.getSubscriptions();
+
+    if (failed(subs)) {
+      window.showErrorMessage(
+        `Failed to retrieve Azure subscriptions: ${subs.error}`
+      );
+      return;
+    }
+    const subIds = subs.result.map((sub) =>
+      typeof sub.subscriptionId === "string" ? sub.subscriptionId : ""
+    );
     let items: QuickPickItem[] = [];
-    const rgList = await az.getResourceGroups();
-    if (succeeded(rgList)) {
-      items = rgList.result.map((rg) => ({ label: rg.name as string }));
-    } else {
+    const rgList = await az.getResourceGroups(...subIds);
+    if (failed(rgList)) {
       window.showErrorMessage(
         `Failed to retrieve resource groups: ${rgList.error}`
       );
+      return;
     }
+
+    items = rgList.result.map((rg) => {
+      const matchingSub = subs.result.find((sub) =>
+        (rg.id as string).startsWith(sub.id as string)
+      ) as Subscription;
+
+      return {
+        label: rg.name as string,
+        description: matchingSub.displayName,
+      };
+    });
 
     const pick = await input.showQuickPick({
       title,
@@ -115,6 +127,14 @@ async function multiStepInput(
 
     state.resourceGroup = pick.label;
 
+    const matchingRgs = rgList.result.filter(
+      (rg) => rg.name === state.resourceGroup
+    );
+    const matchingSub = subs.result.find(
+      (sub) => sub.displayName === pick.description
+    ) as Subscription;
+    state.subscriptionId = matchingSub.subscriptionId;
+
     return (input: MultiStepInput) => selectAksCluster(input, state, step + 1);
   }
 
@@ -124,8 +144,20 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ) {
-    const clusterList = getAKSClusters();
-    const items: QuickPickItem[] = clusterList.map((label) => ({ label }));
+    const clusterList = await az.getAksClusterNames(
+      state.subscriptionId as string,
+      state.resourceGroup as string
+    );
+
+    if (failed(clusterList)) {
+      window.showErrorMessage(
+        `failed to retrieve AKS clusters: ${clusterList.error}`
+      );
+      return;
+    }
+    const items: QuickPickItem[] = clusterList.result.map((managedCluster) => ({
+      label: managedCluster.name as string,
+    }));
 
     const pick = await input.showQuickPick({
       title,
@@ -151,8 +183,18 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ) {
-    const registryList = getContainerRegistries();
-    const items: QuickPickItem[] = registryList.map((label) => ({ label }));
+    const registryList = await az.getAcrs(
+      state.subscriptionId as string,
+      state.resourceGroup as string
+    );
+    if (failed(registryList)) {
+      window.showErrorMessage(`failed to retrieve ACRs: ${registryList.error}`);
+      return;
+    }
+
+    const items: QuickPickItem[] = registryList.result.map((registry) => ({
+      label: registry.name as string,
+    }));
 
     const pick = await input.showQuickPick({
       title,
@@ -546,22 +588,15 @@ async function multiStepInput(
     window.showInformationMessage(
       `Generate Github Actions workflow succeeded - output to '${outputFilepath}'`
     );
+
+    const vsPath = vscode.Uri.file(outputFilepath);
+    vscode.workspace
+      .openTextDocument(vsPath)
+      .then((doc) => vscode.window.showTextDocument(doc));
   } catch (err) {
     reporter.sendTelemetryEvent("generateworkflowResult", {
       generateworkflowResult: `${err}`,
     });
     window.showInformationMessage(`Encountered error: '${err}'`);
   }
-}
-
-function getResourceGroups(): string[] {
-  return ["resourceGroup1", "resourceGroup2", "resourceGroup3"];
-}
-
-function getAKSClusters(): string[] {
-  return ["cluster1", "cluster2", "cluster3"];
-}
-
-function getContainerRegistries(): string[] {
-  return ["registry1", "registry2", "registry3"];
 }
