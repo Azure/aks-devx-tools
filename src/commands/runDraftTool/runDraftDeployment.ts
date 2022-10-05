@@ -392,9 +392,18 @@ async function multiStepInput(
         .then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
     }
 
-    window.showInformationMessage(
-      `Draft Deployment and Services Succeeded - Output to '${outputFolder}'`
-    );
+    const deploy = "Deploy";
+    window
+      .showInformationMessage("Draft Deployment and Services Succeeded", deploy)
+      .then((option) => {
+        if (option === deploy) {
+          // TODO: use k8s wrapper instead of this
+          // TODO: we should check if their cluster is connected to their acr?
+          const terminal = vscode.window.createTerminal("AKS DevX");
+          terminal.sendText(`kubectl apply -f ${outputPath}`);
+          terminal.show();
+        }
+      });
   } else {
     window.showErrorMessage(`Draft Deployment and Services Failed - ${err}`);
   }
