@@ -19,6 +19,8 @@ import { failed } from "../../utils/errorable";
 import { ResourceGroup } from "@azure/arm-resources";
 import { Context, ContextApi } from "../../utils/context";
 import { Subscription } from "@azure/arm-subscriptions";
+import * as fs from "fs";
+import { join } from "path";
 
 export default async function runDraftDeployment(
   _context: vscode.ExtensionContext,
@@ -373,9 +375,35 @@ async function multiStepInput(
   }
 
   if (isSuccess) {
-    window.showInformationMessage(
-      `Draft Deployment and Services Succeeded - Output to '${outputFolder}'`
-    );
+    const folder = () => {
+      if (format === "Manifests") return "manifests";
+      if (format === "Helm") return "charts";
+      return "base";
+    };
+    const outputPath = join(outputFolder, folder());
+    const files = fs
+      .readdirSync(outputPath)
+      .map((file) => join(outputPath, file))
+      .filter((file) => !fs.statSync(file).isDirectory());
+    for (const file of files) {
+      const vscodeFile = vscode.Uri.file(file);
+      await vscode.workspace
+        .openTextDocument(vscodeFile)
+        .then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
+    }
+
+    const deploy = "Deploy";
+    window
+      .showInformationMessage("Draft Deployment and Services Succeeded", deploy)
+      .then((option) => {
+        if (option === deploy) {
+          // TODO: use k8s wrapper instead of this
+          // TODO: we should check if their cluster is connected to their acr?
+          const terminal = vscode.window.createTerminal("AKS DevX");
+          terminal.sendText(`kubectl apply -f ${outputPath}`);
+          terminal.show();
+        }
+      });
   } else {
     window.showErrorMessage(`Draft Deployment and Services Failed - ${err}`);
   }
