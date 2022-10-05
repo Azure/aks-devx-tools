@@ -251,6 +251,7 @@ export class Az implements AzApi {
       }
     }
     return toReturn;
+  }
 
   parseId(id: string): {
     subscription: string | undefined;
@@ -263,6 +264,5 @@ export class Az implements AzApi {
       subscription: matches?.subscription,
       resourceGroup: matches?.resourceGroup,
     };
-
   }
 }
