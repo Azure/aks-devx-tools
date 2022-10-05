@@ -12,6 +12,7 @@ import { SubscriptionClient, Subscription } from "@azure/arm-subscriptions";
 import { ResourceGroup } from '@azure/arm-resources';
 import { basename } from 'path';
 import { API as GitAPI } from '../../utils/git';
+import { failed } from '../../utils/errorable';
 
 export default async function runDraftSetupGH(
     _context: vscode.ExtensionContext,
@@ -53,47 +54,24 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 			appName: defaultAppName,
 			ghRepo: defaultRepo,
 		} as Partial<State>;
-		await MultiStepInput.run(input => inputSubscriptionID(input, state, 1));
+		await MultiStepInput.run(input => inputResourceGroup(input, state, 1, az));
 		return state as State;
 	}
 
-    const totalSteps = 4;
+    const totalSteps = 3;
 
-	async function inputSubscriptionID(input: MultiStepInput, state: Partial<State>, step: number) {
-		const getSubscriptionsResult = await az.getSubscriptions();
-		if (!getSubscriptionsResult.succeeded) {
-			window.showErrorMessage(`Failed to get Subscriptions: ${getSubscriptionsResult}`);
-			return;
-		}
-		const subscriptions: Subscription[] = getSubscriptionsResult.result;
-
-		console.log(subscriptions);
-		
-		const items = subscriptions.map((subscription) => {
-			return {
-				label: `${subscription.displayName}`,
-				description: subscription.subscriptionId,
-			};
-		});
-		
-		const selectedItem = await input.showQuickPick({
-			title,
-			step,
-			totalSteps,
-			placeholder: 'Select an Azure Subscription',
-			items,
-			activeItem: typeof state.subscriptionId !== 'string' ? state.subscriptionId : undefined,
-			shouldResume
-		});
-
-		const selectedSubscription = subscriptions.find((subscription) => subscription.subscriptionId === selectedItem.description) as Subscription;
-		state.subscriptionId = selectedSubscription.subscriptionId;
-
-		return (input: MultiStepInput) => inputResourceGroup(input, state, step + 1, az);
-	}
-	
 	async function inputResourceGroup(input: MultiStepInput, state: Partial<State>, step: number,az: AzApi) {
-		const getResourceGroupResult = await az.getResourceGroups(state.subscriptionId as string);
+		const subResult = await az.getSubscriptions();
+		if (failed(subResult)) {
+		  window.showErrorMessage(
+			`Failed to get Subscriptions: ${subResult.error}`
+		  );
+		  return;
+		}
+		const subs = subResult.result;
+
+
+		const getResourceGroupResult = await az.getResourceGroups(...subs.map(sub => sub.subscriptionId as string));
 		if (!getResourceGroupResult.succeeded) {
 			window.showErrorMessage(`Failed to get ResourceGroups: ${getResourceGroupResult}`);
 			return;
@@ -101,9 +79,12 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 		const resourceGroups: ResourceGroup[] = getResourceGroupResult.result;
 		
 		const items: QuickPickItem[] = resourceGroups.map((resourceGroup: ResourceGroup) => {
+			const sub = subs.find((sub) =>
+			resourceGroup.id?.startsWith(sub.id as string)
+		  );
 			return {
 				label: `${resourceGroup.name}`,
-				description: resourceGroup.location,
+				description: `${sub?.displayName}`,
 			};
 		});
 
@@ -116,7 +97,16 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 			activeItem: typeof state.resourceGroup !== 'string' ? state.resourceGroup : undefined,
 			shouldResume
 		});
-		state.resourceGroup = selectedItem.label;
+		const rgOptions = resourceGroups.filter((rg) => rg.name === selectedItem.label);
+		const subscription = subs.find(
+		  (sub) => sub.displayName === selectedItem.description
+		);
+		const rg = rgOptions.find((rg) =>
+		  rg.id?.startsWith(subscription?.id as string)
+		);
+		state.subscriptionId = subscription?.subscriptionId;
+		state.resourceGroup = rg?.name;
+
         return (input: MultiStepInput) => inputAppName(input, state, step + 1);
 	}
 
@@ -153,7 +143,7 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 
     const command = buildSetupGHCommand(appName, subscriptionId, resourceGroup, ghRepo);
 
-    const [success, err] = await longRunning(`Setting up GitHub OIDC.`, () => runDraftCommand(command));
+    const [success, err] = await longRunning(`Setting up GitHub OIDC`, () => runDraftCommand(command));
     const isSuccess = err?.length === 0 && success?.length !== 0;
     if (reporter) {
         reporter.sendTelemetryEvent("setupghDraftResult", { setupghDraftResult: `${isSuccess}` });
