@@ -624,13 +624,6 @@ async function multiStepInput(
 }
 
 function convertSetContext(templateObj: any, deploymentStrategy: string) {
-  // deploy, promote, reject
-  // for (let step of templateObj.jobs.deploy?.steps) {
-  //   if (templateObj.jobs.deploy.steps[i].name === "Get K8s context") {
-  //     templateObj.jobs.deploy.steps[i] = wfTemplates.nonAdminSetContext;
-  //   }
-  // }
-
   templateObj.jobs.deploy?.steps.forEach(
     (element: any, index: number, array: any[]) => {
       if (element.name === "Get K8s context") {
@@ -643,17 +636,21 @@ function convertSetContext(templateObj: any, deploymentStrategy: string) {
     deploymentStrategy === canaryDeploymentStrategy ||
     deploymentStrategy === bgDeploymentStrategy
   ) {
-    for (let i = 0; i < templateObj.jobs.promote?.steps?.length; i++) {
-      if (templateObj.jobs.promote.steps[i].name === "Get K8s context") {
-        templateObj.jobs.promote.steps[i] = wfTemplates.getNonAdminSetContext();
+    templateObj.jobs.promote?.steps.forEach(
+      (element: any, index: number, array: any[]) => {
+        if (element.name === "Get K8s context") {
+          array[index] = wfTemplates.getNonAdminSetContext();
+        }
       }
-    }
+    );
 
-    for (let i = 0; i < templateObj.jobs.reject?.steps?.length; i++) {
-      if (templateObj.jobs.reject.steps[i].name === "Get K8s context") {
-        templateObj.jobs.reject.steps[i] = wfTemplates.getNonAdminSetContext();
+    templateObj.jobs.reject?.steps.forEach(
+      (element: any, index: number, array: any[]) => {
+        if (element.name === "Get K8s context") {
+          array[index] = wfTemplates.getNonAdminSetContext();
+        }
       }
-    }
+    );
   }
 
   return templateObj;
