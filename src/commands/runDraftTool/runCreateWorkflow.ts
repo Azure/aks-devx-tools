@@ -15,6 +15,7 @@ import { Exception, template } from "handlebars";
 import { AzApi } from "../../utils/az";
 import { succeeded, failed } from "../../utils/errorable";
 import { Subscription } from "@azure/arm-subscriptions";
+import { Context, ContextApi } from "../../utils/context";
 
 const wsPath = vscode.workspace.workspaceFolders![0].uri.fsPath;
 const githubFolderName = ".github";
@@ -50,6 +51,7 @@ async function multiStepInput(
   az: AzApi
 ) {
   const title = "Generate Github Actions workflow";
+  const ctx: ContextApi = new Context(context);
 
   interface State {
     resourceGroup: string;
@@ -69,7 +71,17 @@ async function multiStepInput(
   }
 
   async function collectInputs() {
-    const state = { sourceFolder: destination } as Partial<State>;
+    let imageName = ctx.getImage();
+    if ((imageName || "").indexOf(":") > -1) {
+      imageName = (imageName as string).split(":")[0];
+    }
+    const state = {
+      sourceFolder: destination,
+      chartPath: ctx.getChartPath(),
+      manifestsLocation: ctx.getManifestsPath(),
+      dockerfileLocation: ctx.getDockerfile(),
+      containerImageName: imageName,
+    } as Partial<State>;
     await MultiStepInput.run((input) => selectResourceGroup(input, state, 1));
     return state as State;
   }
@@ -308,13 +320,13 @@ async function multiStepInput(
         typeof state.dockerfileLocation === "string"
           ? state.dockerfileLocation
           : "",
-      prompt: "Path to folder with your Dockerfile (e.g. src/docker)",
+      prompt: "Path to your Dockerfile (e.g. ./Dockerfile)",
       validate: async (file: string) => {
         await validationSleep();
-        const errMsg = "Input must be an existing directory";
-        const fullWsPath = path.join(wsPath, file);
-        if (!fs.existsSync(fullWsPath)) return errMsg;
-        if (!fs.lstatSync(fullWsPath).isDirectory()) return errMsg;
+        const errMsg = "Input must be an existing file";
+
+        if (!fs.existsSync(file)) return errMsg;
+        if (fs.lstatSync(file).isDirectory()) return errMsg;
 
         return undefined;
       },
@@ -370,8 +382,7 @@ async function multiStepInput(
         await validationSleep();
         const errMsg =
           "Input must be an existing YAML file (ending in .yml or .yaml)";
-        const fullWsPath = path.join(wsPath, file);
-        if (!fs.existsSync(fullWsPath)) return errMsg;
+        if (!fs.existsSync(file)) return errMsg;
         if (!file.endsWith(".yaml") && !file.endsWith(".yml")) return errMsg;
 
         return undefined;
@@ -504,9 +515,8 @@ async function multiStepInput(
       validate: async (file: string) => {
         await validationSleep();
         const errMsg = "Input must be an existing directory";
-        const fullWsPath = path.join(wsPath, file);
-        if (!fs.existsSync(fullWsPath)) return errMsg;
-        if (!fs.lstatSync(fullWsPath).isDirectory()) return errMsg;
+        if (!fs.existsSync(file)) return errMsg;
+        if (!fs.lstatSync(file).isDirectory()) return errMsg;
 
         return undefined;
       },
@@ -599,7 +609,7 @@ async function multiStepInput(
     asYaml.commentBefore = comment + wfTemplates.comment;
     const yamlString = asYaml.toString({ lineWidth: 0 });
 
-    const outputFilename = `${deploymentStrategy}.yaml`;
+    const outputFilename = `aksDeploy.yaml`;
     const outputFilepath = path.join(workflowPath, outputFilename);
     fs.writeFileSync(outputFilepath, yamlString);
 
@@ -608,7 +618,7 @@ async function multiStepInput(
     });
 
     window.showInformationMessage(
-      `Generate Github Actions workflow succeeded - output to '${outputFilepath}'`
+      `Generate GitHub workflow succeeded`
     );
 
     const vsPath = vscode.Uri.file(outputFilepath);

@@ -376,6 +376,7 @@ async function multiStepInput(
   }
 
   if (isSuccess) {
+    // TODO: refactor this stuff to be cleaner (use an enum)
     const folder = () => {
       if (format === "Manifests") {return "manifests";}
       if (format === "Helm") {return "charts";}
@@ -391,6 +392,15 @@ async function multiStepInput(
       await vscode.workspace
         .openTextDocument(vscodeFile)
         .then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
+    }
+
+    if (format === "Manifests") {
+      ctx.setDeploymentType("Manifests");
+      ctx.setManifestsPath(outputPath);
+    }
+    if (format === "Helm") {
+      ctx.setDeploymentType("Helm");
+      ctx.setChartPath(outputPath);
     }
 
     const deploy = "Deploy";
