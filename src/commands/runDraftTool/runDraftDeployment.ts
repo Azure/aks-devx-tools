@@ -18,6 +18,7 @@ import { AzApi } from "../../utils/az";
 import { failed } from "../../utils/errorable";
 import { ResourceGroup } from "@azure/arm-resources";
 import { Context, ContextApi } from "../../utils/context";
+import { Subscription } from "@azure/arm-subscriptions";
 
 export default async function runDraftDeployment(
   _context: vscode.ExtensionContext,
@@ -67,9 +68,15 @@ async function multiStepInput(
   const ctx: ContextApi = new Context(context);
 
   async function collectInputs() {
-    const state = { 
-        outputFolder: destination,
-        port: ctx.getPort()
+    const state = {
+      outputFolder: destination,
+      port: ctx.getPort(),
+      image: ctx.getImage(),
+      acr: ctx.getAcrName(),
+      subscription: ctx.getSubscription(),
+      repository: ctx.getAcrRepository(),
+      resourceGroup: ctx.getAcrResourceGroup(),
+      tag: ctx.getAcrTag(),
     } as Partial<State>;
     await MultiStepInput.run((input) => inputOutputFolder(input, state, 1));
     return state as State;
@@ -198,7 +205,9 @@ async function multiStepInput(
     }
     const subs = subResult.result;
 
-    const rgResult = await az.getResourceGroups();
+    const rgResult = await az.getResourceGroups(
+      ...subs.map((sub) => sub.subscriptionId as string)
+    );
     if (failed(rgResult)) {
       window.showErrorMessage(
         `Failed to get ResourceGroups: ${rgResult.error}`
@@ -215,6 +224,10 @@ async function multiStepInput(
         description: `${sub?.displayName}`,
       };
     });
+
+    const activeSub = subs.find(
+      (sub) => sub.subscriptionId === state.subscription
+    ) as Subscription;
     const selectedRg = await input.showQuickPick({
       title,
       step,
@@ -222,8 +235,8 @@ async function multiStepInput(
       placeholder: "Select an Azure Resource Group",
       items: rgItems,
       activeItem:
-        typeof state.resourceGroup !== "string"
-          ? state.resourceGroup
+        typeof state.resourceGroup === "string"
+          ? { label: state.resourceGroup, description: activeSub.displayName }
           : undefined,
       shouldResume,
     });
@@ -263,37 +276,38 @@ async function multiStepInput(
     state.acr = selectedAcr.label;
 
     state.repository = await input.showInputBox({
-        title,
-        step: step,
-        totalSteps: totalSteps,
-        value: typeof state.repository === "string" ? state.repository : "",
-        prompt: "Repository",
-        validate: async (repo: string) => {
-            await validationSleep();
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value: typeof state.repository === "string" ? state.repository : "",
+      prompt: "Repository",
+      validate: async (repo: string) => {
+        await validationSleep();
 
-            const re = /^[a-z0-9]+((?:[._/]|__|[-]{0,10})[a-z0-9]+)*$/;
-            if (!repo.match(re)) return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes";
+        const re = /^[a-z0-9]+((?:[._/]|__|[-]{0,10})[a-z0-9]+)*$/;
+        if (!repo.match(re))
+          return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes";
 
-            return undefined;
-        },
-        shouldResume: shouldResume
+        return undefined;
+      },
+      shouldResume: shouldResume,
     });
 
     state.tag = await input.showInputBox({
-        title,
-        step: step,
-        totalSteps: totalSteps,
-        value: typeof state.tag === "string" ? state.tag : "",
-        prompt: "Tag",
-        validate: async (tag: string) => {
-            await validationSleep();
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      value: typeof state.tag === "string" ? state.tag : "",
+      prompt: "Tag",
+      validate: async (tag: string) => {
+        await validationSleep();
 
-            // TODO: verify and change error message
-            if (!tag.match(/^[\w.\-_]{1,127}$/)) return "Tag is invalid";
+        // TODO: verify and change error message
+        if (!tag.match(/^[\w.\-_]{1,127}$/)) return "Tag is invalid";
 
-            return undefined;
-        },
-        shouldResume: shouldResume
+        return undefined;
+      },
+      shouldResume: shouldResume,
     });
 
     // construct image
