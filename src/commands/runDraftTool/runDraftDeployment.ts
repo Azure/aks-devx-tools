@@ -20,7 +20,7 @@ import { ResourceGroup } from "@azure/arm-resources";
 import { Context, ContextApi } from "../../utils/context";
 import { Subscription } from "@azure/arm-subscriptions";
 import * as fs from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 
 export default async function runDraftDeployment(
   _context: vscode.ExtensionContext,
@@ -72,6 +72,7 @@ async function multiStepInput(
   async function collectInputs() {
     const state = {
       outputFolder: destination,
+      name: basename(destination) ,
       port: ctx.getPort(),
       image: ctx.getImage(),
       acr: ctx.getAcrName(),

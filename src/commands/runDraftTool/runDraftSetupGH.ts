@@ -47,7 +47,7 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 	const firstFiltered = filteredRepositories[0];
 	const firstRemote = firstFiltered && firstFiltered.state.remotes[0];
 	const firstPushUrl = firstRemote && firstRemote.pushUrl;
-	const defaultRepo = firstPushUrl || 'https://github.com/username/repo';
+	const defaultRepo = firstPushUrl?.replace(".git", "") || 'https://github.com/username/repo';
 
 	async function collectInputs() {
 		const state = {
