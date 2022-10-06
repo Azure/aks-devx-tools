@@ -21,6 +21,8 @@ import { Context, ContextApi } from "../../utils/context";
 import { Subscription } from "@azure/arm-subscriptions";
 import * as fs from "fs";
 import { join, basename } from "path";
+import k8s = require('@kubernetes/client-node');
+import { listNamespaces } from "../../utils/k8Helper";
 
 export default async function runDraftDeployment(
   _context: vscode.ExtensionContext,
@@ -72,7 +74,7 @@ async function multiStepInput(
   async function collectInputs() {
     const state = {
       outputFolder: destination,
-      name: basename(destination) ,
+      name: basename(destination),
       port: ctx.getPort(),
       image: ctx.getImage(),
       acr: ctx.getAcrName(),
@@ -127,16 +129,23 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ) {
-    state.namespace = await input.showInputBox({
+    const namespaces: k8s.V1Namespace[] = await listNamespaces();
+    const items = namespaces.map((namespace) => {
+      return {
+        label: `${namespace.metadata?.name}`,
+        description: namespace.metadata?.name,
+      };
+    });
+    const pick = await input.showQuickPick({
       title,
       step: step,
       totalSteps: totalSteps,
-      value: typeof state.namespace === "string" ? state.namespace : "",
-      prompt: "Kubernetes namespace (e.g. myapp)",
-      validate: async () => undefined,
-      shouldResume: shouldResume,
+      placeholder: 'Kubernetes namespace (e.g, myapp)',
+      items: items,
+      activeItem: typeof state.namespace !== 'string' ? state.namespace : undefined,
+      shouldResume: shouldResume
     });
-
+    state.namespace = pick.label;
     return (input: MultiStepInput) => inputName(input, state, step + 1);
   }
 
@@ -156,12 +165,9 @@ async function multiStepInput(
         const alphanumDash = /^[0-9a-z-]+$/;
         const maxLen = 63;
 
-        if (!name.match(alphanumDash))
-          {return "Application name must be lowercase alphanumeric plus '-'";}
-        if (name.length > maxLen)
-          {return `Application name length must be less than ${maxLen}`;}
-        if (name.charAt(0) === "-" || name.charAt(name.length - 1) === "-")
-          {return "Application name must start and end with a lowercase alphanumeric character";}
+        if (!name.match(alphanumDash)) { return "Application name must be lowercase alphanumeric plus '-'"; }
+        if (name.length > maxLen) { return `Application name length must be less than ${maxLen}`; }
+        if (name.charAt(0) === "-" || name.charAt(name.length - 1) === "-") { return "Application name must start and end with a lowercase alphanumeric character"; }
 
         return undefined;
       },
@@ -188,8 +194,7 @@ async function multiStepInput(
     });
     state.imageType = pick.label;
 
-    if (state.imageType === azureContainerRegistry)
-      {return (input: MultiStepInput) => inputAcrImage(input, state, step);}
+    if (state.imageType === azureContainerRegistry) { return (input: MultiStepInput) => inputAcrImage(input, state, step); }
 
     return (input: MultiStepInput) => inputImage(input, state, step);
   }
@@ -288,8 +293,7 @@ async function multiStepInput(
         await validationSleep();
 
         const re = /^[a-z0-9]+((?:[._/]|__|[-]{0,10})[a-z0-9]+)*$/;
-        if (!repo.match(re))
-          {return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes";}
+        if (!repo.match(re)) { return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes"; }
 
         return undefined;
       },
@@ -306,7 +310,7 @@ async function multiStepInput(
         await validationSleep();
 
         // TODO: verify and change error message
-        if (!tag.match(/^[\w.\-_]{1,127}$/)) {return "Tag is invalid";}
+        if (!tag.match(/^[\w.\-_]{1,127}$/)) { return "Tag is invalid"; }
 
         return undefined;
       },
@@ -364,7 +368,7 @@ async function multiStepInput(
 
   // TODO: use namespace and image
 
-  const configPath = buildCreateConfig("", port, name, format, "",namespace,image);
+  const configPath = buildCreateConfig("", port, name, format, "", namespace, image);
   const command = buildCreateCommand(outputFolder, "deployment", configPath);
 
   const [success, err] = await runDraftCommand(command);
@@ -378,8 +382,8 @@ async function multiStepInput(
   if (isSuccess) {
     // TODO: refactor this stuff to be cleaner (use an enum)
     const folder = () => {
-      if (format === "Manifests") {return "manifests";}
-      if (format === "Helm") {return "charts";}
+      if (format === "Manifests") { return "manifests"; }
+      if (format === "Helm") { return "charts"; }
       return "base";
     };
     const outputPath = join(outputFolder, folder());
