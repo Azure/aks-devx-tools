@@ -152,6 +152,7 @@
     "@azure/container-registry": "^1.0.0",
     "@azure/ms-rest-azure-env": "^2.0.0",
     "@azure/ms-rest-nodeauth": "^3.1.1",
+    "@kubernetes/client-node": "^0.17.1",
     "@microsoft/vscode-azext-utils": "^0.3.15",
     "download": "^8.0.0",
     "handlebars": "^4.7.7",
