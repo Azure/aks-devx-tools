@@ -15,6 +15,14 @@ export interface ContextApi {
   setAcrRepository(repo: string): void;
   getAcrTag(): string | undefined;
   setAcrTag(tag: string): void;
+  setDockerfile(dockerfile: string): void;
+  getDockerfile(): string | undefined;
+  setDeploymentType(type: string): void;
+  getDeploymentType(): string | undefined;
+  setManifestsPath(path: string): void;
+  getManifestsPath(): string | undefined;
+  setChartPath(path: string): void;
+  getChartPath(): string | undefined;
 }
 
 const portKey = "port";
@@ -24,9 +32,39 @@ const acrRgKey = "acrResourceGroup";
 const acrNameKey = "acrName";
 const acrRepoKey = "acrRepo";
 const acrTagKey = "acrTag";
+const dockerfileKey = "dockerfile";
+const deploymentTypeKey = "deploymentType";
+const manifestPathKey = "manifestPath";
+const chartPathKey = "chartPath";
 
 export class Context implements ContextApi {
   constructor(private ctx: vscode.ExtensionContext) {}
+
+  setManifestsPath(path: string): void {
+    this.set(manifestPathKey, path);
+  }
+  getManifestsPath(): string | undefined {
+    return this.get(manifestPathKey);
+  }
+  setChartPath(path: string): void {
+    this.set(chartPathKey, path);
+  }
+  getChartPath(): string | undefined {
+    return this.get(chartPathKey);
+  }
+
+  setDockerfile(dockerfile: string): void {
+    this.set(dockerfileKey, dockerfile);
+  }
+  getDockerfile(): string | undefined {
+    return this.get(dockerfileKey);
+  }
+  setDeploymentType(type: string): void {
+    this.set(deploymentTypeKey, type);
+  }
+  getDeploymentType(): string | undefined {
+    return this.get(deploymentTypeKey);
+  }
 
   getAcrTag(): string | undefined {
     return this.get(acrTagKey);

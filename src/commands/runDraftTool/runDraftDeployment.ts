@@ -19,6 +19,8 @@ import { failed } from "../../utils/errorable";
 import { ResourceGroup } from "@azure/arm-resources";
 import { Context, ContextApi } from "../../utils/context";
 import { Subscription } from "@azure/arm-subscriptions";
+import * as fs from "fs";
+import { join, basename } from "path";
 import k8s = require('@kubernetes/client-node');
 import { listNamespaces } from "../../utils/k8Helper";
 
@@ -72,6 +74,7 @@ async function multiStepInput(
   async function collectInputs() {
     const state = {
       outputFolder: destination,
+      name: basename(destination),
       port: ctx.getPort(),
       image: ctx.getImage(),
       acr: ctx.getAcrName(),
@@ -127,23 +130,22 @@ async function multiStepInput(
     step: number
   ) {
     const namespaces: k8s.V1Namespace[] = await listNamespaces();
-		const items = namespaces.map((namespace) => {
-			return {
-				label: `${namespace.metadata?.name}`,
-				description: namespace.metadata?.name,
-			};
-		});
-		const pick = await input.showQuickPick({
-			title,
-			step: step,
-			totalSteps: totalSteps,
-			placeholder: 'Kubernetes namespace (e.g, myapp)',
-			items: items,
-			activeItem: typeof state.namespace !== 'string' ? state.namespace : undefined,
-			shouldResume: shouldResume
-		});
-		state.namespace = pick.label;
-
+    const items = namespaces.map((namespace) => {
+      return {
+        label: `${namespace.metadata?.name}`,
+        description: namespace.metadata?.name,
+      };
+    });
+    const pick = await input.showQuickPick({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      placeholder: 'Kubernetes namespace (e.g, myapp)',
+      items: items,
+      activeItem: typeof state.namespace !== 'string' ? state.namespace : undefined,
+      shouldResume: shouldResume
+    });
+    state.namespace = pick.label;
     return (input: MultiStepInput) => inputName(input, state, step + 1);
   }
 
@@ -163,12 +165,9 @@ async function multiStepInput(
         const alphanumDash = /^[0-9a-z-]+$/;
         const maxLen = 63;
 
-        if (!name.match(alphanumDash))
-          return "Application name must be lowercase alphanumeric plus '-'";
-        if (name.length > maxLen)
-          return `Application name length must be less than ${maxLen}`;
-        if (name.charAt(0) === "-" || name.charAt(name.length - 1) === "-")
-          return "Application name must start and end with a lowercase alphanumeric character";
+        if (!name.match(alphanumDash)) { return "Application name must be lowercase alphanumeric plus '-'"; }
+        if (name.length > maxLen) { return `Application name length must be less than ${maxLen}`; }
+        if (name.charAt(0) === "-" || name.charAt(name.length - 1) === "-") { return "Application name must start and end with a lowercase alphanumeric character"; }
 
         return undefined;
       },
@@ -195,8 +194,7 @@ async function multiStepInput(
     });
     state.imageType = pick.label;
 
-    if (state.imageType === azureContainerRegistry)
-      return (input: MultiStepInput) => inputAcrImage(input, state, step);
+    if (state.imageType === azureContainerRegistry) { return (input: MultiStepInput) => inputAcrImage(input, state, step); }
 
     return (input: MultiStepInput) => inputImage(input, state, step);
   }
@@ -295,8 +293,7 @@ async function multiStepInput(
         await validationSleep();
 
         const re = /^[a-z0-9]+((?:[._/]|__|[-]{0,10})[a-z0-9]+)*$/;
-        if (!repo.match(re))
-          return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes";
+        if (!repo.match(re)) { return "Repository can only include lowercase alphanumeric characters, periods, dashes, underscores, and forward slashes"; }
 
         return undefined;
       },
@@ -313,7 +310,7 @@ async function multiStepInput(
         await validationSleep();
 
         // TODO: verify and change error message
-        if (!tag.match(/^[\w.\-_]{1,127}$/)) return "Tag is invalid";
+        if (!tag.match(/^[\w.\-_]{1,127}$/)) { return "Tag is invalid"; }
 
         return undefined;
       },
@@ -371,7 +368,7 @@ async function multiStepInput(
 
   // TODO: use namespace and image
 
-  const configPath = buildCreateConfig("", port, name, format, "");
+  const configPath = buildCreateConfig("", port, name, format, "", namespace, image);
   const command = buildCreateCommand(outputFolder, "deployment", configPath);
 
   const [success, err] = await runDraftCommand(command);
@@ -383,9 +380,45 @@ async function multiStepInput(
   }
 
   if (isSuccess) {
-    window.showInformationMessage(
-      `Draft Deployment and Services Succeeded - Output to '${outputFolder}'`
-    );
+    // TODO: refactor this stuff to be cleaner (use an enum)
+    const folder = () => {
+      if (format === "Manifests") { return "manifests"; }
+      if (format === "Helm") { return "charts"; }
+      return "base";
+    };
+    const outputPath = join(outputFolder, folder());
+    const files = fs
+      .readdirSync(outputPath)
+      .map((file) => join(outputPath, file))
+      .filter((file) => !fs.statSync(file).isDirectory());
+    for (const file of files) {
+      const vscodeFile = vscode.Uri.file(file);
+      await vscode.workspace
+        .openTextDocument(vscodeFile)
+        .then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
+    }
+
+    if (format === "Manifests") {
+      ctx.setDeploymentType("Manifests");
+      ctx.setManifestsPath(outputPath);
+    }
+    if (format === "Helm") {
+      ctx.setDeploymentType("Helm");
+      ctx.setChartPath(outputPath);
+    }
+
+    const deploy = "Deploy";
+    window
+      .showInformationMessage("Draft Deployment and Services Succeeded", deploy)
+      .then((option) => {
+        if (option === deploy) {
+          // TODO: use k8s wrapper instead of this
+          // TODO: we should check if their cluster is connected to their acr?
+          const terminal = vscode.window.createTerminal("AKS DevX");
+          terminal.sendText(`kubectl apply -f ${outputPath}`);
+          terminal.show();
+        }
+      });
   } else {
     window.showErrorMessage(`Draft Deployment and Services Failed - ${err}`);
   }

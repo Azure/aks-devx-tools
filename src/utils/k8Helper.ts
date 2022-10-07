@@ -22,4 +22,3 @@ export async function listNamespacedPods(namespace: string): Promise<k8s.V1Pod[]
     return getk8sApiClient().listNamespacedPod(namespace)
         .then((res: { body: k8s.V1PodList; }) => res.body.items);
 }
-

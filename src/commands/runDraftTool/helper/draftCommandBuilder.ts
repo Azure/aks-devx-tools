@@ -33,7 +33,9 @@ export function buildCreateConfig(
     port: string,
     appName: string,
     workflow: string,
-    languageVersion: string
+    languageVersion: string,
+    namespace?: string,
+    imageName?: string
 ): string {
     let data = {
         deployType: workflow,
@@ -63,6 +65,20 @@ export function buildCreateConfig(
         data.languageVariables.push({
             name: "VERSION",
             value: languageVersion
+        });
+    }
+
+    if (namespace && namespace.length > 0) {
+        data.deployVariables.push({
+            name: "NAMESPACE",
+            value: namespace
+        });
+    }
+
+    if (imageName && imageName.length > 0) {
+        data.deployVariables.push({
+            name: "IMAGENAME",
+            value: imageName
         });
     }
 
