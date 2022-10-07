@@ -12,6 +12,15 @@ export async function listNamespaces(): Promise<k8s.V1Namespace[]> {
         .then((res: { body: k8s.V1NamespaceList; }) => res.body.items);
 }
 
+export async function createNamespace(namespace: string): Promise<void> {
+    const ns: k8s.V1Namespace = {
+        metadata: {
+            name: namespace
+        } 
+    };
+    await getk8sApiClient().createNamespace(ns);
+}
+
 export async function listNamespacedServices(namespace: string): Promise<k8s.V1Service[]> {
     return getk8sApiClient().listServiceForAllNamespaces()
         .then((res: { body: k8s.V1ServiceList; }) => res.body.items
