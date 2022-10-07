@@ -14,6 +14,11 @@ import {
   ManagedCluster,
 } from "@azure/arm-containerservice";
 import { resourceLimits } from "worker_threads";
+import { KeyVaultManagementClient, Vault } from "@azure/arm-keyvault";
+import {
+  CertificateClient,
+  CertificateProperties,
+} from "@azure/keyvault-certificates";
 
 export interface AzApi {
   getSubscriptions(): Promise<Errorable<Subscription[]>>;
@@ -34,6 +39,10 @@ export interface AzApi {
     resourceGroupName: string,
     desiredClusterName: string
   ): Promise<Errorable<boolean>>;
+  getKeyVaults(
+    subscriptionId: string,
+    resourceGroup: string
+  ): Promise<Errorable<Vault[]>>;
   parseId(id: string): {
     subscription: string | undefined;
     resourceGroup: string | undefined;
@@ -251,6 +260,28 @@ export class Az implements AzApi {
       }
     }
     return toReturn;
+  }
+
+  async getKeyVaults(
+    subscriptionId: string,
+    resourceGroup: string
+  ): Promise<Errorable<Vault[]>> {
+    const loginResult = await this.checkLoginAndFilters();
+    if (!loginResult.succeeded) {
+      return loginResult;
+    }
+
+    const vaults: Vault[] = [];
+
+    for (const session of this.azAccount.sessions) {
+      const creds = session.credentials2;
+      const client = new KeyVaultManagementClient(creds, subscriptionId);
+
+      const pages = client.vaults.listByResourceGroup(resourceGroup).byPage();
+      for await (const page of pages) vaults.push(...page);
+    }
+
+    return { succeeded: true, result: vaults };
   }
 
   parseId(id: string): {
