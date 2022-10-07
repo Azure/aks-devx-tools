@@ -112,10 +112,7 @@ export function buildUpdateCommand(
     outputFolder: string,
     host: string,
     certificate: string,
-    port: string,
-    namespace: string,
-    service: string,
     useOpenServiceMesh: boolean
 ): string {
-    return `update -d ${outputFolder} -a webapp_routing --variable ingress-use-osm-mtls=${useOpenServiceMesh} --variable ingress-host=${host} --variable ingress-tls-cert-keyvault-uri=${certificate} --variable ingress-port=${port} --variable ingress-service=${service} --variable ingress-namespace=${namespace}`;
+    return `update -d ${outputFolder} -a webapp_routing --variable ingress-use-osm-mtls=${useOpenServiceMesh} --variable ingress-host=${host} --variable ingress-tls-cert-keyvault-uri=${certificate}`;
 }
