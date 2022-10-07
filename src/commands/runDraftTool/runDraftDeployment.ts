@@ -124,12 +124,11 @@ async function multiStepInput(
     return (input: MultiStepInput) => selectNamespace(input, state, step + 1);
   }
 
-  // @ts-ignore
   async function selectNamespace(
     input: MultiStepInput,
     state: Partial<State>,
     step: number
-  ) {
+  ): Promise<(input: MultiStepInput) => any> {
     const namespaces: k8s.V1Namespace[] = await listNamespaces();
     const items = namespaces.map((namespace) => {
       return {
@@ -153,23 +152,30 @@ async function multiStepInput(
     });
 
     if (pick.label === newNamespace) {
-      const ns = await input.showInputBox({
-        title,
-        step: step,
-        totalSteps: totalSteps,
-        validate: async () => undefined,
-        value: "",
-        prompt: "Namespace",
-        shouldResume: shouldResume,
-      });
-      await createNamespace(ns);
-      state.namespace = ns;
-      // @ts-ignore
-      return (input: MultiStepInput) => selectNamespace(input, state, step);
+      return (input: MultiStepInput) => inputNewNamespace(input, state, step);
     }
 
     state.namespace = pick.label;
     return (input: MultiStepInput) => inputName(input, state, step + 1);
+  }
+
+  async function inputNewNamespace(
+    input: MultiStepInput,
+    state: Partial<State>,
+    step: number
+  ) {
+    const ns = await input.showInputBox({
+      title,
+      step: step,
+      totalSteps: totalSteps,
+      validate: async () => undefined,
+      value: "",
+      prompt: "Namespace",
+      shouldResume: shouldResume,
+    });
+    await createNamespace(ns);
+    state.namespace = ns;
+    return (input: MultiStepInput) => selectNamespace(input, state, step);
   }
 
   async function inputName(
