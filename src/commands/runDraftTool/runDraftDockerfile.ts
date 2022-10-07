@@ -28,6 +28,9 @@ export default async function runDraftDockerfile(
 async function multiStepInput(context: ExtensionContext, destination: string) {
     const title = 'Draft a Dockerfile from source code';
     const languages = ['clojure', 'c#', 'erlang', 'go', 'gomodule', "java", "gradle", "javascript", "php", "python", "rust", "swift"];
+    const languageLabelToDraftNameMap: Map< string, string> = new Map([
+        ["c#","csharp"],
+    ]);
 	const languageLabels: QuickPickItem[] = languages.map(label => ({ label }));
 
 	interface State {
@@ -88,7 +91,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             // https://github.com/github/linguist/blob/master/lib/linguist/languages.yml for keys
             const convert: {[key: string]: string} = {
                 "Clojure": "clojure",
-                "C#": "c#",
+                "C#": "csharp",
                 "Erlang": "erlang",
                 "Go": "go",
                 "Java": "java",
@@ -102,13 +105,13 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             };
 
             const converted = topLanguage in convert ? convert[topLanguage] : "";
-            if (!languages.includes(converted)) return { succeeded: false, error: "failed to detect language" };
+            if (!languages.includes(converted)) {return { succeeded: false, error: "failed to detect language" };}
 
             return { succeeded: true, result: converted };
         };
 
         const autoDetectLabel = "Auto-detect";
-        const items = [{label: autoDetectLabel}, ...languageLabels];
+        const items: vscode.QuickPickItem[] = [{label: autoDetectLabel}, ...languageLabels];
 
 		const pick = await input.showQuickPick({
 			title,
@@ -131,7 +134,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             const guess = guessResult.result;
             state.language = guess;
         } else {
-		    state.language = pick.label;
+		    state.language = languageLabelToDraftNameMap.get(pick.label) || pick.label;
         }
 
         return (input: MultiStepInput) => inputVersion(input, state, step + 1);
@@ -140,7 +143,7 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
     async function inputVersion(input: MultiStepInput, state: Partial<State>, step: number) {
         const versions : {[key: string]: string[]} = {
             "clojure": ["8-jdk-alpine"],
-            "c#": ["6.0","5.0","4.0","3.1"],
+            "csharp": ["6.0","5.0","4.0","3.1"],
             "erlang": ["3.15"],
             "go": ["1.19","1.18","1.17","1.16"],
             "java": ["11-jre-slim"],
@@ -152,6 +155,9 @@ async function multiStepInput(context: ExtensionContext, destination: string) {
             "swift": ["5.5","5.4","5.3","5.2"]
         };
         const selectedLanguage = state.language as string;
+        if (!versions[selectedLanguage]) {
+            window.showErrorMessage(`Language ${selectedLanguage} has no supported versions`);
+        }
         const defaultVersion = versions[selectedLanguage][0];
         const items = versions[selectedLanguage].map((version) => {return {label: version};});
         items.push({label: "Custom"});
