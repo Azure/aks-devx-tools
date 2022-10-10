@@ -48,7 +48,7 @@ To properly use Draft to containerize your application, create manifest files, a
 - Install the Visual Studio Extension Manager (VSCE) with `npm install --global vsce`
 - Install dependencies with `npm install`
 - Compile with `npm run compile` 
-- Package with `npm run package` then `vsce package`
+- Package with `vsce package`
 
 ## Telemetry
 
