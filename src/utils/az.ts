@@ -123,21 +123,24 @@ export class Az implements AzApi {
     for (const session of this.azAccount.sessions) {
       const credentials = session.credentials2;
 
-      // TODO: turn this logic into a generic
-      await longRunning(`Fetching Resource Groups`, async () => {
-        for (const subscriptionId of subscriptionIDs) {
-          const resourceManagementClient: ResourceManagementClient =
-            new ResourceManagementClient(credentials, subscriptionId);
+      try {
+        // TODO: turn this logic into a generic
+        await longRunning(`Fetching Resource Groups`, async () => {
+          for (const subscriptionId of subscriptionIDs) {
+            const resourceManagementClient: ResourceManagementClient =
+              new ResourceManagementClient(credentials, subscriptionId);
 
-          const resourceGroupPages = resourceManagementClient.resourceGroups
-            .list()
-            .byPage();
+            const resourceGroupPages = resourceManagementClient.resourceGroups
+              .list()
+              .byPage();
 
-          for await (const page of resourceGroupPages) {
-            rgs.push(...page);
+            for await (const page of resourceGroupPages) {
+              rgs.push(...page);
+            }
           }
-        }
-      });
+        });
+      }
+      catch {}
     }
     return { succeeded: true, result: rgs };
   }
