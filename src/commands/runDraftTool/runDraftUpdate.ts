@@ -251,51 +251,21 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 	const state = await collectInputs();
 
 	const host = state.hostName;
+	const service = state.service;
+	const namespace = state.namespace;
+	const port = state.port;
 	const outputFolder = state.outputFolder;
 	const certificate = state.keyVaultCert;
 	const useOpenServiceMesh = state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? true : false;
 
-	const output = path.join(outputFolder, "ingress.yaml");
-	const uri = vscode.Uri.file(output);
-	const ws = new vscode.WorkspaceEdit();
-	const ingress = `apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    kubernetes.azure.com/tls-cert-keyvault-uri: "${state.keyVaultUri}"
-    kubernetes.azure.com/use-osm-mtls: "${useOpenServiceMesh}"
-    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-    nginx.ingress.kubernetes.io/configuration-snippet: |2-
-      proxy_ssl_name "default.{{service-namespace}}.cluster.local";
-    nginx.ingress.kubernetes.io/proxy-ssl-secret: kube-system/osm-ingress-client-cert
-    nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
-  name: ${state.service}
-  namespace: ${state.namespace}
-spec:
-  ingressClassName: webapprouting.kubernetes.azure.com
-  rules:
-  - host: ${state.hostName}
-    http:
-      paths:
-      - backend:
-          service:
-            name: ${state.service}
-            port:
-              number: ${state.port}
-        path: /
-        pathType: Prefix
-  tls:
-  - hosts:
-    - ${state.hostName}
-    secretName: keyvault-${state.service}
-`;
-	ws.createFile(uri);
-	ws.insert(uri, new vscode.Position(0, 0), ingress);
-	vscode.workspace.applyEdit(ws).then(() => {
-			vscode.workspace.openTextDocument(uri)
-				.then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
-		}
-	);
+
+	if(useOpenServiceMesh === true) {
+		generateIngressYaml(host,service,namespace,port,certificate,useOpenServiceMesh,outputFolder);
+		generateIngressBackendYaml(host,service,namespace,port,outputFolder);
+	}
+	else {
+		generateIngressYaml(host,service,namespace,port,certificate,useOpenServiceMesh, outputFolder);
+	}
 
 	/**
 	const command = buildUpdateCommand(outputFolder, host, certificate, useOpenServiceMesh);
@@ -315,4 +285,118 @@ spec:
 		window.showErrorMessage(`Web app routing annotation failed - ${err}`);
 	}*/
 	window.showInformationMessage("Ingress set up");
+
+	function generateIngressYaml(host: string, service: string, namespace: string, port: string, certificate: string, useOpenServiceMesh: boolean, outputFolder: string) {
+		const output = path.join(outputFolder, "ingress.yaml");
+		const uri = vscode.Uri.file(output);
+		const ws = new vscode.WorkspaceEdit();
+		var ingress = "";
+		if(useOpenServiceMesh) {
+		ingress = `apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.azure.com/tls-cert-keyvault-uri: "${certificate}"
+    kubernetes.azure.com/use-osm-mtls: "${useOpenServiceMesh}"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/configuration-snippet: |2-
+
+      proxy_ssl_name "default.{{service-namespace}}.cluster.local";
+    nginx.ingress.kubernetes.io/proxy-ssl-secret: kube-system/osm-ingress-client-cert
+    nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+  name: ${service}
+  namespace: ${namespace}
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  rules:
+  - host: ${host}
+    http:
+      paths:
+      - backend:
+          service:
+            name: ${service}
+            port:
+              number: ${port}
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${host}
+    secretName: keyvault-${service}
+ `;
+		}
+		else {
+ingress = `apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    annotations:
+      kubernetes.azure.com/tls-cert-keyvault-uri: "${certificate}"
+    name: ${service}
+    namespace: ${namespace}
+spec:
+    ingressClassName: webapprouting.kubernetes.azure.com
+    rules:
+    - host: ${host}
+    http:
+        paths:
+        - backend:
+            service:
+            name: ${service}
+            port:
+                number: ${port}
+        path: /
+        pathType: Prefix
+    tls:
+    - hosts:
+      - ${host}
+      secretName: keyvault-${service}
+    `;			
+		}
+		ws.createFile(uri);
+		ws.insert(uri, new vscode.Position(0, 0), ingress);
+		try {
+			vscode.workspace.applyEdit(ws).then(() => {
+			vscode.workspace.openTextDocument(uri)
+				.then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
+			}
+		); } catch (error) {
+			
+		}
+	}
+
+	function generateIngressBackendYaml(host: string, service: string, namespace: string, port: string, outputFolder: string) {
+		const output = path.join(outputFolder, "ingress-backend.yaml");
+		const uri = vscode.Uri.file(output);
+		const ws = new vscode.WorkspaceEdit();
+		var ingressbackend = `apiVersion: policy.openservicemesh.io/v1alpha1
+kind: IngressBackend
+metadata:
+  name: ${service}
+  namespace: ${namespace}
+spec:
+  backends:
+  - name:  ${service}
+    port:
+      number:  ${port}
+      protocol: https
+    tls:
+      skipClientCertValidation: false
+  sources:
+  - kind: Service
+    name: nginx
+    namespace: app-routing-system
+  - kind: AuthenticatedPrincipal
+    name: ingress-nginx.ingress.cluster.local`;
+
+		ws.createFile(uri);
+		ws.insert(uri, new vscode.Position(0, 0), ingressbackend);
+		try {
+			vscode.workspace.applyEdit(ws).then(() => {
+			vscode.workspace.openTextDocument(uri)
+				.then((doc) => vscode.window.showTextDocument(doc, { preview: false }));
+			}
+		); } catch (error) {
+			
+		}
+	}
 }

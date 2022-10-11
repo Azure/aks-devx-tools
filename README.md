@@ -43,6 +43,12 @@ To properly use Draft to containerize your application, create manifest files, a
 
 **Draft Add Web App Routing Annotations** annotates your Kubernetes service manifest to expose it to the internet through Web App Routing.
 
+## Building and packaging the extension
+
+- Install the Visual Studio Extension Manager (VSCE) with `npm install --global vsce`
+- Install dependencies with `npm install`
+- Compile with `npm run compile` 
+- Package with `vsce package`
 
 ## Telemetry
 

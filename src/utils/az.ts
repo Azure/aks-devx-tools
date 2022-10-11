@@ -80,16 +80,18 @@ export class Az implements AzApi {
 
     const subs: Promise<Subscription>[] = [];
     for (const session of this.azAccount.sessions) {
-      const credentials = session.credentials2;
-      const subscriptionClient = new SubscriptionClient(credentials);
+      try {
+        const credentials = session.credentials2;
+        const subscriptionClient = new SubscriptionClient(credentials);
 
-      // TODO: turn this logic into a generic
-      await longRunning(`Fetching Azure Subscriptions`, async () => {
-        for (const selectedSub of selectedSubs) {
-          subs.push(subscriptionClient.subscriptions.get(selectedSub));
-        }
-        return;
-      });
+        // TODO: turn this logic into a generic
+        await longRunning(`Fetching Azure Subscriptions`, async () => {
+          for (const selectedSub of selectedSubs) {
+            subs.push(subscriptionClient.subscriptions.get(selectedSub));
+          }
+          return;
+        });
+      } catch {}
     }
 
     const finalSubs = await Promise.all(subs);
@@ -123,21 +125,24 @@ export class Az implements AzApi {
     for (const session of this.azAccount.sessions) {
       const credentials = session.credentials2;
 
-      // TODO: turn this logic into a generic
-      await longRunning(`Fetching Resource Groups`, async () => {
-        for (const subscriptionId of subscriptionIDs) {
-          const resourceManagementClient: ResourceManagementClient =
-            new ResourceManagementClient(credentials, subscriptionId);
+      try {
+        // TODO: turn this logic into a generic
+        await longRunning(`Fetching Resource Groups`, async () => {
+          for (const subscriptionId of subscriptionIDs) {
+            const resourceManagementClient: ResourceManagementClient =
+              new ResourceManagementClient(credentials, subscriptionId);
 
-          const resourceGroupPages = resourceManagementClient.resourceGroups
-            .list()
-            .byPage();
+            const resourceGroupPages = resourceManagementClient.resourceGroups
+              .list()
+              .byPage();
 
-          for await (const page of resourceGroupPages) {
-            rgs.push(...page);
+            for await (const page of resourceGroupPages) {
+              rgs.push(...page);
+            }
           }
-        }
-      });
+        });
+      }
+      catch {}
     }
     return { succeeded: true, result: rgs };
   }
@@ -150,16 +155,19 @@ export class Az implements AzApi {
 
     const acrs: Registry[] = [];
     for (const session of this.azAccount.sessions) {
-      const creds = session.credentials2;
-      const client = new ContainerRegistryManagementClient(
-        creds,
-        subscriptionId
-      );
+      try {
+        const creds = session.credentials2;
+        const client = new ContainerRegistryManagementClient(
+          creds,
+          subscriptionId
+        );
 
-      await longRunning("Fetching ACRs", async () => {
-        const pages = client.registries.list().byPage();
-        for await (const page of pages) acrs.push(...page);
-      });
+        await longRunning("Fetching ACRs", async () => {
+          const pages = client.registries.list().byPage();
+          for await (const page of pages) acrs.push(...page);
+        });
+
+      } catch {}
     }
 
     return { succeeded: true, result: acrs };
@@ -176,18 +184,20 @@ export class Az implements AzApi {
 
     const acrs: Registry[] = [];
     for (const session of this.azAccount.sessions) {
-      const creds = session.credentials2;
-      const client = new ContainerRegistryManagementClient(
-        creds,
-        subscriptionId
-      );
+      try {
+        const creds = session.credentials2;
+        const client = new ContainerRegistryManagementClient(
+          creds,
+          subscriptionId
+        );
 
-      await longRunning("Fetching ACRs", async () => {
-        const pages = client.registries
-          .listByResourceGroup(resourceGroupName)
-          .byPage();
-        for await (const page of pages) acrs.push(...page);
-      });
+        await longRunning("Fetching ACRs", async () => {
+          const pages = client.registries
+            .listByResourceGroup(resourceGroupName)
+            .byPage();
+          for await (const page of pages) acrs.push(...page);
+        });
+      } catch {}
     }
 
     return { succeeded: true, result: acrs };
@@ -204,6 +214,7 @@ export class Az implements AzApi {
 
     const clusters: ManagedCluster[] = [];
     for (const session of this.azAccount.sessions) {
+      try {
       const client = new ContainerServiceClient(
         session.credentials2,
         subscriptionId
@@ -213,6 +224,7 @@ export class Az implements AzApi {
         .byPage()) {
         clusters.push(...item);
       }
+    } catch {}
     }
     return { succeeded: true, result: clusters };
   }
@@ -228,6 +240,7 @@ export class Az implements AzApi {
     let error: Error;
 
     for (const session of this.azAccount.sessions) {
+      try {
       const client = new ContainerServiceClient(
         session.credentials2,
         subscriptionId
@@ -258,6 +271,7 @@ export class Az implements AzApi {
       if (foundAdmin) {
         break;
       }
+    } catch {}
     }
     return toReturn;
   }
@@ -274,11 +288,13 @@ export class Az implements AzApi {
     const vaults: Vault[] = [];
 
     for (const session of this.azAccount.sessions) {
+      try {
       const creds = session.credentials2;
       const client = new KeyVaultManagementClient(creds, subscriptionId);
 
       const pages = client.vaults.listByResourceGroup(resourceGroup).byPage();
       for await (const page of pages) vaults.push(...page);
+    } catch {}
     }
 
     return { succeeded: true, result: vaults };
