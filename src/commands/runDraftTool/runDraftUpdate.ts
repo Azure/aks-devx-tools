@@ -259,36 +259,36 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 	const uri = vscode.Uri.file(output);
 	const ws = new vscode.WorkspaceEdit();
 	const ingress = `apiVersion: networking.k8s.io/v1
-	kind: Ingress
-	metadata:
-	  annotations:
-		kubernetes.azure.com/tls-cert-keyvault-uri: "${state.keyVaultUri}"
-		kubernetes.azure.com/use-osm-mtls: "${useOpenServiceMesh}"
-		nginx.ingress.kubernetes.io/backend-protocol: HTTPS
-		nginx.ingress.kubernetes.io/configuration-snippet: |2-
-		  proxy_ssl_name "default.{{service-namespace}}.cluster.local";
-		nginx.ingress.kubernetes.io/proxy-ssl-secret: kube-system/osm-ingress-client-cert
-		nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
-	  name: ${state.service}
-	  namespace: ${state.namespace}
-	spec:
-	  ingressClassName: webapprouting.kubernetes.azure.com
-	  rules:
-	  - host: ${state.hostName}
-		http:
-		  paths:
-		  - backend:
-			  service:
-				name: ${state.service}
-				port:
-				  number: ${state.port}
-			path: /
-			pathType: Prefix
-	  tls:
-	  - hosts:
-		- ${state.hostName}
-		secretName: keyvault-${state.service}
-	`;
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.azure.com/tls-cert-keyvault-uri: "${state.keyVaultUri}"
+    kubernetes.azure.com/use-osm-mtls: "${useOpenServiceMesh}"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    nginx.ingress.kubernetes.io/configuration-snippet: |2-
+      proxy_ssl_name "default.{{service-namespace}}.cluster.local";
+    nginx.ingress.kubernetes.io/proxy-ssl-secret: kube-system/osm-ingress-client-cert
+    nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
+  name: ${state.service}
+  namespace: ${state.namespace}
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  rules:
+  - host: ${state.hostName}
+    http:
+      paths:
+      - backend:
+          service:
+            name: ${state.service}
+            port:
+              number: ${state.port}
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${state.hostName}
+    secretName: keyvault-${state.service}
+`;
 	ws.createFile(uri);
 	ws.insert(uri, new vscode.Position(0, 0), ingress);
 	vscode.workspace.applyEdit(ws).then(() => {
