@@ -258,6 +258,7 @@ async function multiStepInput(context: ExtensionContext, destination: string, az
 	const certificate = state.keyVaultCert;
 	const useOpenServiceMesh = state.useOpenServiceMesh === 'Use Open Service Mesh for mTLS' ? true : false;
 
+
 	if(useOpenServiceMesh === true) {
 		generateIngressYaml(host,service,namespace,port,certificate,useOpenServiceMesh,outputFolder);
 		generateIngressBackendYaml(host,service,namespace,port,outputFolder);
