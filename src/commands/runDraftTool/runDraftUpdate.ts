@@ -301,7 +301,7 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
     nginx.ingress.kubernetes.io/configuration-snippet: |2-
 
-      proxy_ssl_name "default.{{service-namespace}}.cluster.local";
+      proxy_ssl_name "default.${service}.cluster.local";
     nginx.ingress.kubernetes.io/proxy-ssl-secret: kube-system/osm-ingress-client-cert
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "on"
   name: ${service}
