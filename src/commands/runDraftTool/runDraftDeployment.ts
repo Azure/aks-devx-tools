@@ -74,14 +74,14 @@ async function multiStepInput(
   async function collectInputs() {
     const state = {
       outputFolder: destination,
-      name: basename(destination),
+      name: basename(destination).toLowerCase().replace(/[^a-zA-Z0-9-]+/g,""),
       port: ctx.getPort(),
       image: ctx.getImage(),
       acr: ctx.getAcrName(),
       subscription: ctx.getSubscription(),
       repository: ctx.getAcrRepository(),
       resourceGroup: ctx.getAcrResourceGroup(),
-      tag: ctx.getAcrTag(),
+      tag: ctx.getAcrTag() || "latest",
     } as Partial<State>;
     await MultiStepInput.run((input) => inputOutputFolder(input, state, 1));
     return state as State;
@@ -129,7 +129,20 @@ async function multiStepInput(
     state: Partial<State>,
     step: number
   ): Promise<(input: MultiStepInput) => any> {
-    const namespaces: k8s.V1Namespace[] = await listNamespaces();
+    async function listNamespacesWithTimeout(): Promise<k8s.V1Namespace[]> {
+      return new Promise<k8s.V1Namespace[]>((resolve, reject) => {
+        setTimeout(() => {
+          const noNamespaces: k8s.V1Namespace[] = [];
+          window.showInformationMessage("No namespaces found in the current kubeconfig");
+          resolve(noNamespaces);
+        }, 3000);
+        listNamespaces().then((namespaces) => {
+          resolve(namespaces);
+        });
+      });
+    }
+
+    const namespaces: k8s.V1Namespace[] = await longRunning("Getting k8s namespaces", listNamespacesWithTimeout);
     const items = namespaces.map((namespace) => {
       return {
         label: `${namespace.metadata?.name}`,
@@ -359,7 +372,7 @@ async function multiStepInput(
     });
 
     // construct image
-    state.image = `${state.acr}/${state.repository}:${state.tag}`;
+    state.image = `${state.acr}.azurecr.io/${state.repository}:${state.tag}`;
 
     return (input: MultiStepInput) => inputPortNumber(input, state, step + 1);
   }
@@ -393,7 +406,7 @@ async function multiStepInput(
       step: step,
       totalSteps: totalSteps,
       value: typeof state.port === "string" ? state.port : "",
-      prompt: "Port (e.g. 8080)",
+      prompt: "Port (e.g. 80)",
       validate: validatePort,
       shouldResume: shouldResume,
     });
