@@ -16,4 +16,4 @@ jobs:
            run: npm install prettier
 
          - name: Ensure Prettier
-           run: prettier --check .
+           run: npx prettier --check .
