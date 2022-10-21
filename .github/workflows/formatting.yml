@@ -1,0 +1,19 @@
+name: Ensure syntax formatting
+on:
+   pull_request:
+   push:
+      branches: [main]
+
+jobs:
+   prettier:
+      name: Prettier check
+      runs-on: ubuntu-latest
+      steps:
+         - name: Checkout repository
+           uses: actions/checkout@v2
+
+         - name: Install Prettier
+           run: npm install prettier
+
+         - name: Ensure Prettier
+           run: prettier --check .
