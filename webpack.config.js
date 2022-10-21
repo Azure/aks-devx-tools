@@ -1,10 +1,10 @@
 //@ts-check
 
-'use strict'
+'use strict';
 
-const path = require('path')
-const {ContextReplacementPlugin} = require('webpack')
-const webpack = require('webpack')
+const path = require('path');
+const {ContextReplacementPlugin} = require('webpack');
+const webpack = require('webpack');
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -58,5 +58,5 @@ const extensionConfig = {
    infrastructureLogging: {
       level: 'log' // enables logging required for problem matchers
    }
-}
-module.exports = [extensionConfig]
+};
+module.exports = [extensionConfig];

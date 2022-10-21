@@ -30,39 +30,39 @@
 
       <script>
          // https://code.visualstudio.com/api/extension-guides/webview#passing-messages-from-a-webview-to-an-extension
-         const vscode = acquireVsCodeApi()
+         const vscode = acquireVsCodeApi();
 
          $(document).ready(function () {
             $(function () {
-               $('[data-toggle="tooltip"]').tooltip()
-            })
+               $('[data-toggle="tooltip"]').tooltip();
+            });
             $('.toggleoutput').click(function () {
-               $('.asooutput').toggle('slow')
-            })
+               $('.asooutput').toggle('slow');
+            });
             $('.toggle').click(function () {
-               $('.allocatebody').toggle('slow')
-            })
+               $('.allocatebody').toggle('slow');
+            });
             $('#submit').click(function () {
-               const appName = $('#app-name').val().trim()
-               const subscriptionId = $('#subscription-id').val().trim()
-               const resourceGroup = $('#resource-group').val().trim()
-               const ghRepo = $('#gh-repo').val().trim()
+               const appName = $('#app-name').val().trim();
+               const subscriptionId = $('#subscription-id').val().trim();
+               const resourceGroup = $('#resource-group').val().trim();
+               const ghRepo = $('#gh-repo').val().trim();
                if (
                   appName.length > 0 &&
                   subscriptionId.length > 0 &&
                   resourceGroup.length > 0 &&
                   ghRepo.length > 0
                ) {
-                  $('#draftform').hide()
+                  $('#draftform').hide();
                   vscode.postMessage({
                      appName: appName,
                      subscriptionId: subscriptionId,
                      resourceGroup: resourceGroup,
                      ghRepo: ghRepo
-                  })
+                  });
                }
-            })
-         })
+            });
+         });
       </script>
    </head>
 

@@ -22,21 +22,21 @@
 
       <script>
          // https://code.visualstudio.com/api/extension-guides/webview#passing-messages-from-a-webview-to-an-extension
-         const vscode = acquireVsCodeApi()
+         const vscode = acquireVsCodeApi();
 
          $(document).ready(function () {
             $('.toggleoutput').click(function () {
-               $('.asooutput').toggle('slow')
-            })
+               $('.asooutput').toggle('slow');
+            });
             $('.toggle').click(function () {
-               $('.allocatebody').toggle('slow')
-            })
+               $('.allocatebody').toggle('slow');
+            });
             $('#submit').click(function () {
-               const clusterName = $('#cluster-name').val().trim()
-               const resourceGroup = $('#resource-group').val().trim()
-               const registryName = $('#registry-name').val().trim()
-               const containerName = $('#container-name').val().trim()
-               const branch = $('#branch').val().trim()
+               const clusterName = $('#cluster-name').val().trim();
+               const resourceGroup = $('#resource-group').val().trim();
+               const registryName = $('#registry-name').val().trim();
+               const containerName = $('#container-name').val().trim();
+               const branch = $('#branch').val().trim();
                if (
                   clusterName.length > 0 &&
                   resourceGroup.length > 0 &&
@@ -44,17 +44,17 @@
                   containerName.length > 0 &&
                   branch.length > 0
                ) {
-                  $('#draftform').hide()
+                  $('#draftform').hide();
                   vscode.postMessage({
                      clusterName: clusterName,
                      resourceGroup: resourceGroup,
                      registryName: registryName,
                      containerName: containerName,
                      branch: branch
-                  })
+                  });
                }
-            })
-         })
+            });
+         });
       </script>
    </head>
 

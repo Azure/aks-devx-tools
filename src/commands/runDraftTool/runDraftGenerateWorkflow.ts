@@ -1,34 +1,34 @@
-import * as vscode from 'vscode'
-import {getExtensionPath, longRunning} from '../../utils/host'
-import {failed} from '../../utils/errorable'
-import {createWebView} from '../../utils/webview'
-import * as os from 'os'
+import * as vscode from 'vscode';
+import {getExtensionPath, longRunning} from '../../utils/host';
+import {failed} from '../../utils/errorable';
+import {createWebView} from '../../utils/webview';
+import * as os from 'os';
 import {
    createDraftWebView,
    downloadDraftBinary,
    runDraftCommand
-} from './helper/runDraftHelper'
-import {InstallationResponse} from './model/installationResponse'
-import {setFlagsFromString} from 'v8'
-import {buildGenerateWorkflowCommand} from './helper/draftCommandBuilder'
-import {reporter} from '../../utils/reporter'
+} from './helper/runDraftHelper';
+import {InstallationResponse} from './model/installationResponse';
+import {setFlagsFromString} from 'v8';
+import {buildGenerateWorkflowCommand} from './helper/draftCommandBuilder';
+import {reporter} from '../../utils/reporter';
 
 export default async function runDraftGenerateWorkflow(
    _context: vscode.ExtensionContext,
    destination: string
 ): Promise<void> {
-   const extensionPath = getExtensionPath()
+   const extensionPath = getExtensionPath();
    if (failed(extensionPath)) {
-      vscode.window.showErrorMessage(extensionPath.error)
-      return undefined
+      vscode.window.showErrorMessage(extensionPath.error);
+      return undefined;
    }
 
    // Download Binary first
    const downladResult = await longRunning(`Downloading Draft.`, () =>
       downloadDraftBinary()
-   )
+   );
    if (!downladResult) {
-      return undefined
+      return undefined;
    }
 
    // Create webview with user input required.
@@ -38,15 +38,15 @@ export default async function runDraftGenerateWorkflow(
    const webview = createWebView(
       'AKS Draft Tool',
       `Draft Generate GitHub Actions Workflow`
-   )
-   const installationResponse: InstallationResponse = {name: 'test'}
+   );
+   const installationResponse: InstallationResponse = {name: 'test'};
    createDraftWebView(
       'generate_workflow',
       webview,
       extensionPath.result,
       installationResponse,
       true
-   )
+   );
 
    // After the download of the exe or equivalent if first time
    // ---> Ground up work for this is 80 percetn done and checkout the helper methods: in the project.
@@ -59,11 +59,11 @@ export default async function runDraftGenerateWorkflow(
          message.containerName &&
          message.branch
       ) {
-         const clusterName = message.clusterName
-         const registryName = message.registryName
-         const resourceGroup = message.resourceGroup
-         const containerName = message.containerName
-         const branch = message.branch
+         const clusterName = message.clusterName;
+         const registryName = message.registryName;
+         const resourceGroup = message.resourceGroup;
+         const containerName = message.containerName;
+         const branch = message.branch;
 
          const command = buildGenerateWorkflowCommand(
             destination,
@@ -72,20 +72,20 @@ export default async function runDraftGenerateWorkflow(
             registryName,
             containerName,
             branch
-         )
+         );
 
-         const result = await runDraftCommand(command)
+         const result = await runDraftCommand(command);
          const createResponse: InstallationResponse = {
             name: 'generate_workflow',
             stdout: result[0],
             stderr: result[1]
-         }
+         };
          if (reporter) {
             const resultSuccessOrFailure =
-               result[1]?.length === 0 && result[0]?.length !== 0
+               result[1]?.length === 0 && result[0]?.length !== 0;
             reporter.sendTelemetryEvent('generateworkflowResult', {
                generateworkflowResult: `${resultSuccessOrFailure}`
-            })
+            });
          }
          createDraftWebView(
             'generate_workflow',
@@ -93,9 +93,9 @@ export default async function runDraftGenerateWorkflow(
             extensionPath.result,
             createResponse,
             false
-         )
+         );
       }
-      return undefined
-   }, undefined)
+      return undefined;
+   }, undefined);
    // Step 3: Report it back in the webview with outcome.
 }

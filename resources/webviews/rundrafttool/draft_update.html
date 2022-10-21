@@ -22,27 +22,27 @@
 
       <script>
          // https://code.visualstudio.com/api/extension-guides/webview#passing-messages-from-a-webview-to-an-extension
-         const vscode = acquireVsCodeApi()
+         const vscode = acquireVsCodeApi();
 
          $(document).ready(function () {
             $('.toggleoutput').click(function () {
-               $('.asooutput').toggle('slow')
-            })
+               $('.asooutput').toggle('slow');
+            });
             $('.toggle').click(function () {
-               $('.allocatebody').toggle('slow')
-            })
+               $('.allocatebody').toggle('slow');
+            });
             $('#submit').click(function () {
-               const host = $('#host').val().trim()
-               const certificate = $('#certificate').val().trim()
+               const host = $('#host').val().trim();
+               const certificate = $('#certificate').val().trim();
                if (host.length > 0 && certificate.length > 0) {
-                  $('#draftform').hide()
+                  $('#draftform').hide();
                   vscode.postMessage({
                      host: host,
                      certificate: certificate
-                  })
+                  });
                }
-            })
-         })
+            });
+         });
       </script>
    </head>
 
