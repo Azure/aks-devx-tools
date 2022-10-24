@@ -2,19 +2,17 @@ import * as vscode from 'vscode';
 import {getExtensionPath, longRunning} from '../../utils/host';
 import {failed} from '../../utils/errorable';
 import {createWebView} from '../../utils/webview';
-import * as os from 'os';
 import {
    createDraftWebView,
    downloadDraftBinary,
    runDraftCommand
 } from './helper/runDraftHelper';
 import {InstallationResponse} from './model/installationResponse';
-import {setFlagsFromString} from 'v8';
 import {buildGenerateWorkflowCommand} from './helper/draftCommandBuilder';
-import {reporter} from '../../utils/reporter';
+import {Context} from './model/context';
 
 export default async function runDraftGenerateWorkflow(
-   _context: vscode.ExtensionContext,
+   context: Context,
    destination: string
 ): Promise<void> {
    const extensionPath = getExtensionPath();
@@ -74,19 +72,17 @@ export default async function runDraftGenerateWorkflow(
             branch
          );
 
-         const result = await runDraftCommand(command);
+         const [success, err] = await runDraftCommand(command);
+         const isSuccess = err?.length === 0 && success?.length !== 0;
          const createResponse: InstallationResponse = {
             name: 'generate_workflow',
-            stdout: result[0],
-            stderr: result[1]
+            stdout: success,
+            stderr: err
          };
-         if (reporter) {
-            const resultSuccessOrFailure =
-               result[1]?.length === 0 && result[0]?.length !== 0;
-            reporter.sendTelemetryEvent('generateworkflowResult', {
-               generateworkflowResult: `${resultSuccessOrFailure}`
-            });
-         }
+         context.telemetry.properties.result = isSuccess
+            ? 'Succeeded'
+            : 'Failed';
+
          createDraftWebView(
             'generate_workflow',
             webview,
