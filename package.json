@@ -104,7 +104,9 @@
       "watch-tests": "tsc -p . -w --outDir out",
       "pretest": "npm run compile-tests && npm run compile && npm run lint",
       "lint": "eslint src --ext ts",
-      "test": "node ./out/test/runE2eTest.js"
+      "test": "npm run unit-test && npm run e2e-test",
+      "e2e-test": "node ./out/test/runE2eTest.js",
+      "unit-test": "jest -c jest.unit.config.js"
    },
    "devDependencies": {
       "@jest/test-result": "^29.2.1",
