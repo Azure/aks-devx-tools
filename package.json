@@ -134,7 +134,6 @@
       "node-fetch": "^3.2.5",
       "shelljs": "^0.8.5",
       "tmp": "^0.2.1",
-      "vscode-extension-telemetry": "^0.1.7",
       "yaml": "^2.1.1"
    },
    "repository": {
