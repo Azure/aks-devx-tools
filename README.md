@@ -3,7 +3,8 @@
 The AKS DevX extension for Visual Studio Code (Preview) is an extension focused on enhancing your day-to-day life as a developer on Azure Kubernetes Service. This extension is focused on non-cluster developer experiences. If you are more interested in cluster operations, download the [aks-extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-aks-tools).
 
 The current list of experiences in this extension are:
--	[Draft](https://github.com/Azure/draft)
+
+-  [Draft](https://github.com/Azure/draft)
 
 ## Installation
 
@@ -15,27 +16,27 @@ The current list of experiences in this extension are:
 
 ## Features
 
-### Draft 
+### Draft
 
 Draft makes it easier for developers to get started building apps that run on Kubernetes by taking a non-containerized application and generating the Dockerfiles, Kubernetes manifests, Helm charts, Kustomize configuration, and other artifacts associated with a containerized application. Draft can also generate a GitHub Actions workflow file to quickly build and deploy applications onto an AKS cluster.
 
-To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. 
+To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you.
 
 ![Draft commands](resources/draft-extension-homepage.png)
 
+To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order:
 
-To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order: 
-- Create Deployment Files
-- Setup GitHub OpenID Connect
-- Generate Workflow.
+-  Create Deployment Files
+-  Setup GitHub OpenID Connect
+-  Generate Workflow.
 
 **Note:** Draft currently has a dependency on [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) and [GitHub CLI](https://cli.github.com/).
 
-
-## Commands  
+## Commands
 
 **Draft Create Deployment Files** adds the minimum required Dockerfile and manifest files for your deployment to the project directory.
-- Supported deployment types: Helm, Kustomize, Kubernetes manifest.
+
+-  Supported deployment types: Helm, Kustomize, Kubernetes manifest.
 
 **Draft Set Up GitHub OpenID Connect** automates the GitHub OIDC setup process for your project.
 
@@ -43,17 +44,17 @@ To properly use Draft to containerize your application, create manifest files, a
 
 **Draft Add Web App Routing Annotations** annotates your Kubernetes service manifest to expose it to the internet through Web App Routing.
 
-
 ## Telemetry
 
 This extension collects telemetry data to help us build a better experience for building applications with Azure Kubernetes Service and VS Code. We only collect the following data:
 
-* Which commands are executed.
+-  Which commands are executed.
 
 We do not collect any information about image names, paths, etc. Read our [privacy statement](https://privacy.microsoft.com/privacystatement) to learn more. If you don’t wish to send usage data to Microsoft, you can set the `telemetry.enableTelemetry` setting to `false`. Learn more in our [FAQ](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting).
+
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+This project welcomes contributions and suggestions. Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
 
@@ -67,8 +68,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.

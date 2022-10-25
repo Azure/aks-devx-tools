@@ -1,9 +1,9 @@
 export type Dictionary<T> = {
-    [key: string]: T;
+   [key: string]: T;
 };
 
 export module Dictionary {
-    export function of<T>(): Dictionary<T> {
-        return {};
-    }
+   export function of<T>(): Dictionary<T> {
+      return {};
+   }
 }
