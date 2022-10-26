@@ -10,7 +10,8 @@ async function main() {
       await runTests({
          extensionDevelopmentPath,
          extensionTestsPath,
-         launchArgs: ['--verbose']
+         launchArgs: ['--verbose'],
+         version: '1.72.1'
       });
    } catch (err) {
       console.error(err);
