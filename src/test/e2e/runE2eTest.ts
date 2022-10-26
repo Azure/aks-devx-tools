@@ -10,7 +10,6 @@ async function main() {
       await runTests({
          extensionDevelopmentPath,
          extensionTestsPath,
-         version: '1.40.0',
          launchArgs: ['--verbose']
       });
    } catch (err) {
