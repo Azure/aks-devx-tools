@@ -19,6 +19,7 @@ export async function run(): Promise<void> {
          .runCLI(jestConfig, [extensionRoot])
          .catch((err) => {
             delete (process as any).__VSCODE;
+            console.log('FAILING IN RUNNING');
             return reject(err);
          })
          .then((out) => {
@@ -26,6 +27,7 @@ export async function run(): Promise<void> {
             const {results} = out as Output;
 
             if (results.numFailedTestSuites || results.numFailedTests) {
+               console.log('FAILING IN TESTS');
                return reject('failed tests');
             }
 
