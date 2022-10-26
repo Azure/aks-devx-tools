@@ -1,6 +1,7 @@
 import * as jest from 'jest';
 import {AggregatedResult} from '@jest/test-result';
 import * as path from 'path';
+import * as fs from 'fs';
 
 const extensionRoot = path.join(__dirname, '..', '..', '..');
 type Output = {results: AggregatedResult};
@@ -24,11 +25,27 @@ export async function run(): Promise<void> {
          })
          .then((out) => {
             delete (process as any).__VSCODE;
-            const {results} = out as Output;
+            if (!out) {
+               return resolve();
+            }
 
+            const {results} = out;
             if (results.numFailedTestSuites || results.numFailedTests) {
-               console.log('FAILING IN TESTS');
-               return reject('failed tests');
+               // If we reject, VS Code doesn't exit gracefully
+               const extensionDevelopmentPath = path.resolve(
+                  __dirname,
+                  '../../../'
+               );
+               const tempDir = path.join(extensionDevelopmentPath, 'temp');
+               if (!fs.existsSync(tempDir)) {
+                  fs.mkdirSync(tempDir);
+               }
+               const testFailedPath = path.join(
+                  tempDir,
+                  'aks-devx-tools.e2e.failed'
+               );
+
+               fs.appendFileSync(testFailedPath, 'failed');
             }
 
             return resolve();
