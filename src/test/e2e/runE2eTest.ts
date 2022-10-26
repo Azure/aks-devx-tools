@@ -9,9 +9,7 @@ async function main() {
       // Download VS Code, unzip it and run the integration test
       await runTests({
          extensionDevelopmentPath,
-         extensionTestsPath,
-         launchArgs: ['--verbose'],
-         version: '1.72.1'
+         extensionTestsPath
       });
    } catch (err) {
       console.error(err);
