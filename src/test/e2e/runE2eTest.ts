@@ -7,7 +7,9 @@ async function main() {
       const extensionTestsPath = path.resolve(__dirname, './index');
 
       // Download VS Code, unzip it and run the integration test
-      await runTests({extensionDevelopmentPath, extensionTestsPath});
+      const platform =
+         process.platform === 'win32' ? 'win32-x64-archive' : undefined;
+      await runTests({extensionDevelopmentPath, extensionTestsPath, platform});
    } catch (err) {
       console.error(err);
       process.exit(1);
