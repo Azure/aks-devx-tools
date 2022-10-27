@@ -52,5 +52,5 @@ export class State {
    }
 }
 
-declare function assertIs<T>(value: unknown): asserts value is T;
+function assertIs<T>(value: unknown): asserts value is T {}
 const capitalize = (s: string) => s[0].toUpperCase() + s.substring(1);
