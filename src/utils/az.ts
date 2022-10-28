@@ -34,26 +34,24 @@ export interface AzApi {
    ): Promise<Errorable<TagItem[]>>;
 }
 
-interface Item extends vscode.QuickPickItem {}
-
-interface SubscriptionItem extends Item {
+interface SubscriptionItem {
    session: AzureSession;
    subscription: Subscription;
 }
 
-interface ResourceGroupItem extends Item {
+interface ResourceGroupItem {
    resourceGroup: ResourceGroup;
 }
 
-interface RegistryItem extends Item {
+interface RegistryItem {
    registry: Registry;
 }
 
-interface RepositoryItem extends Item {
+interface RepositoryItem {
    repositoryName: string;
 }
 
-interface TagItem extends Item {
+interface TagItem {
    tag: ArtifactTagProperties;
 }
 
@@ -84,8 +82,6 @@ export class Az implements AzApi {
          );
          subscriptionItems.push(
             ...sessionSubscriptions.map((subscription) => ({
-               label: subscription.displayName || '',
-               description: subscription.subscriptionId || '',
                session,
                subscription
             }))
@@ -117,8 +113,6 @@ export class Az implements AzApi {
       );
       const resourceGroupItems: ResourceGroupItem[] = resourceGroups.map(
          (resourceGroup) => ({
-            label: resourceGroup.name || '',
-            description: resourceGroup.location,
             resourceGroup
          })
       );
@@ -152,7 +146,6 @@ export class Az implements AzApi {
          )
       );
       const registryItem: RegistryItem[] = registries.map((registry) => ({
-         label: registry.name || '',
          registry
       }));
       return {succeeded: true, result: registryItem};
@@ -179,7 +172,6 @@ export class Az implements AzApi {
       const repositories = await listAll(registryClient.listRepositoryNames());
       const repositoryItems: RepositoryItem[] = repositories.map(
          (repository) => ({
-            label: repository,
             repositoryName: repository
          })
       );
@@ -211,7 +203,6 @@ export class Az implements AzApi {
             .listTagProperties()
       );
       const tagItems: TagItem[] = tags.map((tag) => ({
-         label: tag.name,
          tag: tag
       }));
       return {succeeded: true, result: tagItems};
