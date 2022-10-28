@@ -27,7 +27,7 @@ export interface AzApi {
       subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem
    ): Promise<Errorable<RepositoryItem[]>>;
-   listRepositoryTag(
+   listRepositoryTags(
       subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem,
       repositoryItem: RepositoryItem
@@ -178,7 +178,7 @@ export class Az implements AzApi {
       return {succeeded: true, result: repositoryItems};
    }
 
-   async listRepositoryTag(
+   async listRepositoryTags(
       subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem,
       repositoryItem: RepositoryItem
