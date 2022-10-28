@@ -199,7 +199,7 @@ export class Az implements AzApi {
       );
       const tags = await listAll(
          registryClient
-            .getArtifact(repositoryItem.repositoryName, '')
+            .getArtifact(repositoryItem.repositoryName, '') // the second parameter is a tag or digest which makes this a weird but correct usage pattern
             .listTagProperties()
       );
       const tagItems: TagItem[] = tags.map((tag) => ({
