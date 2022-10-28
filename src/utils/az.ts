@@ -3,22 +3,37 @@ import type {AzureExtensionApiProvider} from '@microsoft/vscode-azext-utils/api'
 import {SubscriptionClient, Subscription} from '@azure/arm-subscriptions';
 import {ResourceManagementClient, ResourceGroup} from '@azure/arm-resources';
 import {PagedAsyncIterableIterator} from '@azure/core-paging';
+import {
+   ContainerRegistryManagementClient,
+   Registry
+} from '@azure/arm-containerregistry';
+import {ContainerRegistryClient} from '@azure/container-registry';
+
 import * as vscode from 'vscode';
 import {Errorable} from './errorable';
 
 export interface AzApi {}
 
-interface SubscriptionItem {
+interface Item {
    label: string;
    description: string;
+}
+
+interface SubscriptionItem extends Item {
    session: AzureSession;
    subscription: Subscription;
 }
 
-interface ResourceGroupItem {
-   label: string;
-   description: string;
+interface ResourceGroupItem extends Item {
    resourceGroup: ResourceGroup;
+}
+
+interface RegistryItem extends Item {
+   registry: Registry;
+}
+
+interface RepositoryItem extends Item {
+   repositoryName: string;
 }
 
 export class Az implements AzApi {
@@ -87,6 +102,70 @@ export class Az implements AzApi {
          })
       );
       return {succeeded: true, result: resourceGroupItems};
+   }
+
+   async listContainerRegistries(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<RegistryItem[]>> {
+      const loginResult = await this.checkLoginAndFilters();
+      if (!loginResult.succeeded) {
+         return loginResult;
+      }
+
+      if (typeof subscriptionItem.subscription.subscriptionId === 'undefined') {
+         return {succeeded: false, error: 'subscriptionId undefined'};
+      }
+      if (typeof resourceGroupItem.resourceGroup.name === 'undefined') {
+         return {succeeded: false, error: 'resourceGroup name undefined'};
+      }
+
+      const {credentials2} = subscriptionItem.session;
+      const registryManagementClient = new ContainerRegistryManagementClient(
+         credentials2,
+         subscriptionItem.subscription.subscriptionId
+      );
+      const registries = await listAll(
+         registryManagementClient.registries.listByResourceGroup(
+            resourceGroupItem.resourceGroup.name
+         )
+      );
+      const registryItem: RegistryItem[] = registries.map((registry) => ({
+         label: registry.name || '',
+         description: '',
+         registry
+      }));
+      return {succeeded: true, result: registryItem};
+   }
+
+   async listRegistryRepositories(
+      subscriptionItem: SubscriptionItem,
+      registryItem: RegistryItem
+   ): Promise<Errorable<RepositoryItem[]>> {
+      const loginResult = await this.checkLoginAndFilters();
+      if (!loginResult.succeeded) {
+         return loginResult;
+      }
+
+      if (typeof registryItem.registry.name === 'undefined') {
+         return {succeeded: false, error: 'registry name undefined'};
+      }
+      const endpoint = `https://${registryItem.registry.name}.azurecr.io`;
+
+      const {credentials2} = subscriptionItem.session;
+      const registryClient = new ContainerRegistryClient(
+         endpoint,
+         credentials2
+      );
+      const repositories = await listAll(registryClient.listRepositoryNames());
+      const repositoryItems: RepositoryItem[] = repositories.map(
+         (repository) => ({
+            label: repository,
+            description: '',
+            repositoryName: repository
+         })
+      );
+      return {succeeded: true, result: repositoryItems};
    }
 }
 
