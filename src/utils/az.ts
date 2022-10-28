@@ -7,17 +7,34 @@ import {
    ContainerRegistryManagementClient,
    Registry
 } from '@azure/arm-containerregistry';
-import {ContainerRegistryClient} from '@azure/container-registry';
-
+import {
+   ContainerRegistryClient,
+   ArtifactTagProperties
+} from '@azure/container-registry';
 import * as vscode from 'vscode';
 import {Errorable} from './errorable';
 
-export interface AzApi {}
-
-interface Item {
-   label: string;
-   description: string;
+export interface AzApi {
+   listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
+   listResourceGroups(
+      subscriptionItem: SubscriptionItem
+   ): Promise<Errorable<ResourceGroupItem[]>>;
+   listContainerRegistries(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<RegistryItem[]>>;
+   listRegistryRepositories(
+      subscriptionItem: SubscriptionItem,
+      registryItem: RegistryItem
+   ): Promise<Errorable<RepositoryItem[]>>;
+   listRepositoryTag(
+      subscriptionItem: SubscriptionItem,
+      registryItem: RegistryItem,
+      repositoryItem: RepositoryItem
+   ): Promise<Errorable<TagItem[]>>;
 }
+
+interface Item extends vscode.QuickPickItem {}
 
 interface SubscriptionItem extends Item {
    session: AzureSession;
@@ -34,6 +51,10 @@ interface RegistryItem extends Item {
 
 interface RepositoryItem extends Item {
    repositoryName: string;
+}
+
+interface TagItem extends Item {
+   tag: ArtifactTagProperties;
 }
 
 export class Az implements AzApi {
@@ -132,7 +153,6 @@ export class Az implements AzApi {
       );
       const registryItem: RegistryItem[] = registries.map((registry) => ({
          label: registry.name || '',
-         description: '',
          registry
       }));
       return {succeeded: true, result: registryItem};
@@ -147,25 +167,54 @@ export class Az implements AzApi {
          return loginResult;
       }
 
-      if (typeof registryItem.registry.name === 'undefined') {
-         return {succeeded: false, error: 'registry name undefined'};
+      if (typeof registryItem.registry.loginServer === 'undefined') {
+         return {succeeded: false, error: 'registry login server undefined'};
       }
-      const endpoint = `https://${registryItem.registry.name}.azurecr.io`;
 
       const {credentials2} = subscriptionItem.session;
       const registryClient = new ContainerRegistryClient(
-         endpoint,
+         registryItem.registry.loginServer,
          credentials2
       );
       const repositories = await listAll(registryClient.listRepositoryNames());
       const repositoryItems: RepositoryItem[] = repositories.map(
          (repository) => ({
             label: repository,
-            description: '',
             repositoryName: repository
          })
       );
       return {succeeded: true, result: repositoryItems};
+   }
+
+   async listRepositoryTag(
+      subscriptionItem: SubscriptionItem,
+      registryItem: RegistryItem,
+      repositoryItem: RepositoryItem
+   ): Promise<Errorable<TagItem[]>> {
+      const loginResult = await this.checkLoginAndFilters();
+      if (!loginResult.succeeded) {
+         return loginResult;
+      }
+
+      if (typeof registryItem.registry.loginServer === 'undefined') {
+         return {succeeded: false, error: 'registry login server undefined'};
+      }
+
+      const {credentials2} = subscriptionItem.session;
+      const registryClient = new ContainerRegistryClient(
+         registryItem.registry.loginServer,
+         credentials2
+      );
+      const tags = await listAll(
+         registryClient
+            .getArtifact(repositoryItem.repositoryName, '')
+            .listTagProperties()
+      );
+      const tagItems: TagItem[] = tags.map((tag) => ({
+         label: tag.name,
+         tag: tag
+      }));
+      return {succeeded: true, result: tagItems};
    }
 }
 
