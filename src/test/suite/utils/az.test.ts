@@ -36,5 +36,6 @@ suite('Az Utility Test Suite', () => {
 
       const returned = await listAll(iterator);
       assert.deepStrictEqual(returned, collection);
+      assert.strictEqual(returned.length, n);
    });
 });
