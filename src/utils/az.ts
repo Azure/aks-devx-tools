@@ -215,7 +215,7 @@ export function getAzureAccount(): AzureAccountExtensionApi {
    )).getApi('1.0.0');
 }
 
-async function listAll<T>(
+export async function listAll<T>(
    iterator: PagedAsyncIterableIterator<T>
 ): Promise<T[]> {
    const all: T[] = [];
