@@ -8,8 +8,14 @@ import {failed, succeeded} from '../../../utils/errorable';
 
 suite('Kubernetes Utility Test Suite', () => {
    test('it can list namespaces', async () => {
-      const kubeconfigMock = mock<KubeConfig>();
-      const coreV1ApiMock = mock<CoreV1Api>();
+      const kubectlMock = mock<KubectlV1>();
+      const helmMock = mock<HelmV1>();
+      const kubectl = instance(kubectlMock);
+      const helm = instance(helmMock);
+
+      // success case
+      const successKubeconfigMock = mock<KubeConfig>();
+      const successCoreV1ApiMock = mock<CoreV1Api>();
       const incomingMessageMock = mock<http.IncomingMessage>();
       const incomingMessage = instance(incomingMessageMock);
       const namespaces: {
@@ -23,21 +29,36 @@ suite('Kubernetes Utility Test Suite', () => {
          },
          response: incomingMessage
       };
-      when(coreV1ApiMock.listNamespace()).thenResolve(namespaces);
-      const coreV1Api = instance(coreV1ApiMock);
-      when(kubeconfigMock.makeApiClient(CoreV1Api)).thenReturn(coreV1Api);
-
-      const kubectlMock = mock<KubectlV1>();
-      const helmMock = mock<HelmV1>();
-      const kubeconfig = instance(kubeconfigMock);
-      const kubectl = instance(kubectlMock);
-      const helm = instance(helmMock);
-      const k8s = new Kubernetes(kubeconfig, kubectl, helm);
-
-      const response = await k8s.listNamespaces();
-      if (failed(response)) {
-         assert.fail(`List namespaces failed: ${response.error}`);
+      when(successCoreV1ApiMock.listNamespace()).thenResolve(namespaces);
+      const successCoreV1Api = instance(successCoreV1ApiMock);
+      when(successKubeconfigMock.makeApiClient(CoreV1Api)).thenReturn(
+         successCoreV1Api
+      );
+      const kubeconfig = instance(successKubeconfigMock);
+      const successK8s = new Kubernetes(kubeconfig, kubectl, helm);
+      const succeededResponse = await successK8s.listNamespaces();
+      if (failed(succeededResponse)) {
+         assert.fail(`List namespaces failed: ${succeededResponse.error}`);
       }
-      assert.deepStrictEqual(response.result, namespaces.body.items);
+      assert.deepStrictEqual(succeededResponse.result, namespaces.body.items);
+
+      // fail case
+      const failCoreV1ApiMock = mock<CoreV1Api>();
+      when(failCoreV1ApiMock.listNamespace()).thenReject(new Error());
+      const failCoreV1Api = instance(failCoreV1ApiMock);
+      const failKubeconfigMock = mock<KubeConfig>();
+      when(failKubeconfigMock.makeApiClient(CoreV1Api)).thenReturn(
+         failCoreV1Api
+      );
+      const failKubeconfig = instance(failKubeconfigMock);
+
+      const failK8s = new Kubernetes(failKubeconfig, kubectl, helm);
+      const failedResponse = await failK8s.listNamespaces();
+      if (succeeded(failedResponse)) {
+         assert.fail('List namespaces succeeded');
+      }
+      assert.notStrictEqual(failedResponse.error, '');
    });
+
+   test('it handles listing namespace errors', async () => {});
 });
