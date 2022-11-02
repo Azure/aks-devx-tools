@@ -9,12 +9,36 @@ import {withTempFile} from './temp';
 
 kubernetesExtension.kubectl.v1;
 
-export interface KubernetesApi {}
+export interface KubernetesApi {
+   listNamespaces(): Promise<Errorable<V1Namespace[]>>;
+   createNamespace(name: string): Promise<Errorable<void>>;
+   applyManifests(manifestPaths: string[]): Promise<Errorable<string>>;
+   applyKustomize(kustomizationDirectory: string): Promise<Errorable<string>>;
+   deployHelm(chartDirectory: string): Promise<Errorable<string>>;
+}
 
 export function getDefaultKubeconfig(): KubeConfig {
    const kc = new KubeConfig();
    kc.loadFromDefault();
    return kc;
+}
+
+export async function getKubectl(): Promise<Errorable<KubectlV1>> {
+   const result = await kubernetesExtension.kubectl.v1;
+   if (!result.available) {
+      return {succeeded: false, error: 'Kubectl not available'};
+   }
+
+   return {succeeded: true, result: result.api};
+}
+
+export async function getHelm(): Promise<Errorable<HelmV1>> {
+   const result = await kubernetesExtension.helm.v1;
+   if (!result.available) {
+      return {succeeded: false, error: 'Helm not available'};
+   }
+
+   return {succeeded: true, result: result.api};
 }
 
 export class Kubernetes implements KubernetesApi {
@@ -24,15 +48,32 @@ export class Kubernetes implements KubernetesApi {
       private helm: HelmV1
    ) {}
 
-   async listNamespaces(): Promise<V1Namespace[]> {
+   async listNamespaces(): Promise<Errorable<V1Namespace[]>> {
       const api = this.kubeconfig.makeApiClient(CoreV1Api);
-      const {body} = await api.listNamespace();
-      return body.items;
+
+      try {
+         const {body} = await api.listNamespace();
+         return {succeeded: true, result: body.items};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list namespaces: ${error}`
+         };
+      }
    }
 
-   async createNamespace(name: string) {
+   async createNamespace(name: string): Promise<Errorable<void>> {
       const api = this.kubeconfig.makeApiClient(CoreV1Api);
-      await api.createNamespace({metadata: {name}});
+
+      try {
+         await api.createNamespace({metadata: {name}});
+         return {succeeded: true, result: undefined};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to create namespace "${name}": ${error}`
+         };
+      }
    }
 
    async applyManifests(manifestPaths: string[]): Promise<Errorable<string>> {
