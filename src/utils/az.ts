@@ -76,16 +76,22 @@ export class Az implements AzApi {
 
       const subscriptionItems: SubscriptionItem[] = [];
       for (const session of this.azAccount.sessions) {
-         const subClient = new SubscriptionClient(session.credentials2);
-         const sessionSubscriptions = await listAll(
-            subClient.subscriptions.list()
-         );
-         subscriptionItems.push(
-            ...sessionSubscriptions.map((subscription) => ({
-               session,
-               subscription
-            }))
-         );
+         try {
+            const subClient = new SubscriptionClient(session.credentials2);
+            const sessionSubscriptions = await listAll(
+               subClient.subscriptions.list()
+            );
+            subscriptionItems.push(
+               ...sessionSubscriptions.map((subscription) => ({
+                  session,
+                  subscription
+               }))
+            );
+         } catch (error) {
+            // we don't want to fail if only one session is failing to list.
+            // there could be incorrect credentials for that session
+            console.error(`Failed to list subscriptions for a session`);
+         }
       }
 
       return {succeeded: true, result: subscriptionItems};
@@ -99,24 +105,33 @@ export class Az implements AzApi {
          return loginResult;
       }
 
-      if (typeof subscriptionItem.subscription.subscriptionId === 'undefined') {
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (typeof subscriptionId === 'undefined') {
          return {succeeded: false, error: 'subscriptionId undefined'};
       }
 
       const {credentials2} = subscriptionItem.session;
-      const resourceGroupClient = new ResourceManagementClient(
-         credentials2,
-         subscriptionItem.subscription.subscriptionId
-      );
-      const resourceGroups = await listAll(
-         resourceGroupClient.resourceGroups.list()
-      );
-      const resourceGroupItems: ResourceGroupItem[] = resourceGroups.map(
-         (resourceGroup) => ({
-            resourceGroup
-         })
-      );
-      return {succeeded: true, result: resourceGroupItems};
+      try {
+         const resourceGroupClient = new ResourceManagementClient(
+            credentials2,
+            subscriptionId
+         );
+         const resourceGroups = await listAll(
+            resourceGroupClient.resourceGroups.list()
+         );
+
+         const resourceGroupItems: ResourceGroupItem[] = resourceGroups.map(
+            (resourceGroup) => ({
+               resourceGroup
+            })
+         );
+         return {succeeded: true, result: resourceGroupItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list resource groups for subscription "${subscriptionId}": ${error}`
+         };
+      }
    }
 
    async listContainerRegistries(
@@ -128,27 +143,36 @@ export class Az implements AzApi {
          return loginResult;
       }
 
-      if (typeof subscriptionItem.subscription.subscriptionId === 'undefined') {
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (typeof subscriptionId === 'undefined') {
          return {succeeded: false, error: 'subscriptionId undefined'};
       }
-      if (typeof resourceGroupItem.resourceGroup.name === 'undefined') {
+      const resourceGroupName = resourceGroupItem.resourceGroup.name;
+      if (typeof resourceGroupName === 'undefined') {
          return {succeeded: false, error: 'resourceGroup name undefined'};
       }
 
       const {credentials2} = subscriptionItem.session;
-      const registryManagementClient = new ContainerRegistryManagementClient(
-         credentials2,
-         subscriptionItem.subscription.subscriptionId
-      );
-      const registries = await listAll(
-         registryManagementClient.registries.listByResourceGroup(
-            resourceGroupItem.resourceGroup.name
-         )
-      );
-      const registryItem: RegistryItem[] = registries.map((registry) => ({
-         registry
-      }));
-      return {succeeded: true, result: registryItem};
+      try {
+         const registryManagementClient = new ContainerRegistryManagementClient(
+            credentials2,
+            subscriptionId
+         );
+         const registries = await listAll(
+            registryManagementClient.registries.listByResourceGroup(
+               resourceGroupName
+            )
+         );
+         const registryItem: RegistryItem[] = registries.map((registry) => ({
+            registry
+         }));
+         return {succeeded: true, result: registryItem};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list registries for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
+         };
+      }
    }
 
    async listRegistryRepositories(
@@ -160,22 +184,32 @@ export class Az implements AzApi {
          return loginResult;
       }
 
-      if (typeof registryItem.registry.loginServer === 'undefined') {
+      const loginServer = registryItem.registry.loginServer;
+      if (typeof loginServer === 'undefined') {
          return {succeeded: false, error: 'registry login server undefined'};
       }
 
       const {credentials2} = subscriptionItem.session;
-      const registryClient = new ContainerRegistryClient(
-         registryItem.registry.loginServer,
-         credentials2
-      );
-      const repositories = await listAll(registryClient.listRepositoryNames());
-      const repositoryItems: RepositoryItem[] = repositories.map(
-         (repository) => ({
-            repositoryName: repository
-         })
-      );
-      return {succeeded: true, result: repositoryItems};
+      try {
+         const registryClient = new ContainerRegistryClient(
+            loginServer,
+            credentials2
+         );
+         const repositories = await listAll(
+            registryClient.listRepositoryNames()
+         );
+         const repositoryItems: RepositoryItem[] = repositories.map(
+            (repository) => ({
+               repositoryName: repository
+            })
+         );
+         return {succeeded: true, result: repositoryItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list registry repositories: ${error}`
+         };
+      }
    }
 
    async listRepositoryTags(
@@ -188,24 +222,32 @@ export class Az implements AzApi {
          return loginResult;
       }
 
-      if (typeof registryItem.registry.loginServer === 'undefined') {
+      const loginServer = registryItem.registry.loginServer;
+      if (typeof loginServer === 'undefined') {
          return {succeeded: false, error: 'registry login server undefined'};
       }
 
       const {credentials2} = subscriptionItem.session;
-      const registryClient = new ContainerRegistryClient(
-         registryItem.registry.loginServer,
-         credentials2
-      );
-      const tags = await listAll(
-         registryClient
-            .getArtifact(repositoryItem.repositoryName, '') // the second parameter is a tag or digest which makes this a weird but correct usage pattern
-            .listTagProperties()
-      );
-      const tagItems: TagItem[] = tags.map((tag) => ({
-         tag: tag
-      }));
-      return {succeeded: true, result: tagItems};
+      try {
+         const registryClient = new ContainerRegistryClient(
+            loginServer,
+            credentials2
+         );
+         const tags = await listAll(
+            registryClient
+               .getArtifact(repositoryItem.repositoryName, '') // the second parameter is a tag or digest which makes this a weird but correct usage pattern
+               .listTagProperties()
+         );
+         const tagItems: TagItem[] = tags.map((tag) => ({
+            tag: tag
+         }));
+         return {succeeded: true, result: tagItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list repository tags: ${error}`
+         };
+      }
    }
 }
 
