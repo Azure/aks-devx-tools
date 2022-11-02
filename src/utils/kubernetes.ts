@@ -14,7 +14,7 @@ export interface KubernetesApi {
    createNamespace(name: string): Promise<Errorable<void>>;
    applyManifests(manifestPaths: string[]): Promise<Errorable<string>>;
    applyKustomize(kustomizationDirectory: string): Promise<Errorable<string>>;
-   deployHelm(chartDirectory: string): Promise<Errorable<string>>;
+   installHelm(chartDirectory: string): Promise<Errorable<string>>;
 }
 
 export function getDefaultKubeconfig(): KubeConfig {
@@ -88,7 +88,7 @@ export class Kubernetes implements KubernetesApi {
       return await this.invokeKubectl(command);
    }
 
-   async deployHelm(chartDirectory: string): Promise<Errorable<string>> {
+   async installHelm(chartDirectory: string): Promise<Errorable<string>> {
       const command = `install ${chartDirectory} --generate-name`;
       return await this.invokeHelm(command);
    }

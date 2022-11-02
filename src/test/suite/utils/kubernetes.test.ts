@@ -4,7 +4,8 @@ import {
    V1Namespace,
    V1NamespaceList
 } from '@kubernetes/client-node';
-import {instance, mock, when, anything} from 'ts-mockito';
+import {instance, mock, when, anything, anyString, verify} from 'ts-mockito';
+import {Matcher} from 'ts-mockito/lib/matcher/type/Matcher';
 import {HelmV1, KubectlV1} from 'vscode-kubernetes-tools-api';
 import {Kubernetes} from '../../../utils/kubernetes';
 import * as http from 'http';
@@ -119,4 +120,70 @@ suite('Kubernetes Utility Test Suite', () => {
       }
       assert.notStrictEqual(failedResponse.error, '');
    });
+
+   test('it can apply manifests', async () => {
+      const helmMock = mock<HelmV1>();
+      const helm = instance(helmMock);
+      const kubeconfigMock = mock<KubeConfig>();
+      when(kubeconfigMock.exportConfig()).thenReturn('kubeconfig string');
+      const kubeconfig = instance(kubeconfigMock);
+
+      // success case
+      const files = ['file1', './file2', '/path/to/file3'];
+      const stdout = 'output from command';
+      const successKubectlMock = mock<KubectlV1>();
+      when(successKubectlMock.invokeCommand(anyString())).thenResolve({
+         code: 0,
+         stderr: '',
+         stdout
+      });
+      const successKubectl = instance(successKubectlMock);
+
+      const successK8s = new Kubernetes(kubeconfig, successKubectl, helm);
+      const successResponse = await successK8s.applyManifests(files);
+      if (failed(successResponse)) {
+         assert.fail(`Apply manifests failed: ${successResponse.error}`);
+      }
+      assert.strictEqual(successResponse.result, stdout);
+      verify(kubeconfigMock.exportConfig()).once();
+      verify(
+         successKubectlMock.invokeCommand(
+            new ContainsStr(`apply -f ${files.join(' ')}`) as any
+         )
+      ).once();
+
+      // fail case
+      const failKubectlMock = mock<KubectlV1>();
+      when(failKubectlMock.invokeCommand(anyString())).thenResolve({
+         code: 1,
+         stderr: 'error',
+         stdout: ''
+      });
+      const failKubectl = instance(failKubectlMock);
+
+      const failK8s = new Kubernetes(kubeconfig, failKubectl, helm);
+      const failedResponse = await failK8s.applyManifests(files);
+      if (succeeded(failedResponse)) {
+         assert.fail(`Apply manifests succeeded`);
+      }
+      assert.notStrictEqual(failedResponse.error, '');
+   });
+
+   test('it can apply kustomize', async () => {});
 });
+
+class ContainsStr extends Matcher {
+   constructor(private expected: string) {
+      super();
+   }
+
+   match(value: any): boolean {
+      if (typeof value !== 'string') return false;
+
+      return value.includes(this.expected);
+   }
+
+   toString(): string {
+      return `Did not contain ${this.expected}`;
+   }
+}
