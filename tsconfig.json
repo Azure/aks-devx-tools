@@ -5,7 +5,7 @@
       "lib": ["ES2020"],
       "sourceMap": true,
       "rootDir": "src",
-      "skipLibCheck": true, // this is unfortunately needed unitil issues with the JavaScript K8s client are resolved
+      "skipLibCheck": true, // this is unfortunately needed until issues with the JavaScript K8s client are resolved
       // this is the relevant issue (and links to a few similar ones that also cause problems) https://github.com/kubernetes-client/javascript/issues/883
       "strict": true /* enable all strict type-checking options */
       /* Additional Checks */
