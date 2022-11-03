@@ -109,6 +109,9 @@
       "lint": "eslint src --ext ts",
       "test": "node ./out/test/runTest.js"
    },
+   "extensionDependencies": [
+      "ms-vscode.azure-account"
+   ],
    "devDependencies": {
       "@types/download": "^8.0.1",
       "@types/glob": "^7.2.0",
@@ -130,8 +133,14 @@
       "webpack-cli": "^4.9.2"
    },
    "dependencies": {
-      "@kubernetes/client-node": "^0.17.1",
+      "@azure/arm-containerregistry": "^10.0.0",
+      "@azure/arm-resources": "^5.0.1",
+      "@azure/arm-subscriptions": "^5.0.1",
+      "@azure/container-registry": "^1.0.0",
+      "@azure/core-auth": "^1.4.0",
       "@azure/ms-rest-azure-env": "^2.0.0",
+      "@azure/ms-rest-nodeauth": "^3.1.1",
+      "@kubernetes/client-node": "^0.17.1",
       "@microsoft/vscode-azext-utils": "^0.3.15",
       "download": "^8.0.0",
       "handlebars": "^4.7.7",
