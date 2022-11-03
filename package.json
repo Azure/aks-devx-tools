@@ -16,6 +16,7 @@
    ],
    "activationEvents": [
       "onCommand:aks-draft-extension.runDraftCreate",
+      "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftSetupGH",
       "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
       "onCommand:aks-draft-extension.runDraftUpdate"
@@ -37,6 +38,10 @@
          {
             "command": "aks-draft-extension.runDraftCreate",
             "title": "Create Deployment Files"
+         },
+         {
+            "command": "aks-draft-extension.runDraftDockerfile",
+            "title": "AKS Developer: Draft a Dockerfile"
          },
          {
             "command": "aks-draft-extension.runDraftSetupGH",
@@ -96,7 +101,8 @@
       ]
    },
    "extensionDependencies": [
-      "ms-kubernetes-tools.vscode-kubernetes-tools"
+      "ms-kubernetes-tools.vscode-kubernetes-tools",
+      "ms-vscode.azure-account"
    ],
    "scripts": {
       "vscode:prepublish": "npm run package",
@@ -109,9 +115,6 @@
       "lint": "eslint src --ext ts",
       "test": "node ./out/test/runTest.js"
    },
-   "extensionDependencies": [
-      "ms-vscode.azure-account"
-   ],
    "devDependencies": {
       "@types/download": "^8.0.1",
       "@types/glob": "^7.2.0",
@@ -155,5 +158,8 @@
    "repository": {
       "type": "git",
       "url": "https://github.com/Azure/aks-devx-tools"
+   },
+   "bugs": {
+      "url": "https://github.com/Azure/aks-devx-tools/issues"
    }
 }

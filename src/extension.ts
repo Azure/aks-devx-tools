@@ -13,6 +13,7 @@ import {
    registerCommand
 } from '@microsoft/vscode-azext-utils';
 import {Context} from './commands/runDraftTool/model/context';
+import {runDraftDockerfile} from './commands/runDraftTool/runDraftDockerfile';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -45,6 +46,14 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
       (actionContext: IActionContext, folder) => {
          const context: Context = {...actionContext, ...extensionContext};
          runDraftCreate(context, vscode.Uri.parse(folder).fsPath);
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDraftDockerfile',
+      (actionContext: IActionContext, folder) => {
+         const context: Context = {...actionContext, ...extensionContext};
+         runDraftDockerfile(context, vscode.Uri.parse(folder).fsPath);
       }
    );
 
