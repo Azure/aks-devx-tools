@@ -9,11 +9,9 @@ import {
 } from './helper/runDraftHelper';
 import {InstallationResponse} from './model/installationResponse';
 import {buildSetupGHCommand} from './helper/draftCommandBuilder';
-import {reporter} from '../../utils/reporter';
+import {Context} from './model/context';
 
-export default async function runDraftSetupGH(
-   _context: vscode.ExtensionContext
-): Promise<void> {
+export default async function runDraftSetupGH(context: Context): Promise<void> {
    const extensionPath = getExtensionPath();
    if (failed(extensionPath)) {
       vscode.window.showErrorMessage(extensionPath.error);
@@ -67,21 +65,20 @@ export default async function runDraftSetupGH(
             ghRepo
          );
 
-         const result = await longRunning(`Setting up Github OIDC.`, () =>
-            runDraftCommand(command)
+         const [success, err] = await longRunning(
+            `Setting up Github OIDC.`,
+            () => runDraftCommand(command)
          );
+         const isSuccess = err?.length === 0 && success?.length !== 0;
+         context.telemetry.properties.result = isSuccess
+            ? 'Succeeded'
+            : 'Failed';
          const createResponse: InstallationResponse = {
             name: 'setup_gh',
-            stdout: result[0],
-            stderr: result[1]
+            stdout: success,
+            stderr: err
          };
-         if (reporter) {
-            const resultSuccessOrFailure =
-               result[1]?.length === 0 && result[0]?.length !== 0;
-            reporter.sendTelemetryEvent('setupghDraftResult', {
-               setupghDraftResult: `${resultSuccessOrFailure}`
-            });
-         }
+
          createDraftWebView(
             'setup_gh',
             webview,
