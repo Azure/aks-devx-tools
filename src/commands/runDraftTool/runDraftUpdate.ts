@@ -9,10 +9,10 @@ import {
 } from './helper/runDraftHelper';
 import {InstallationResponse} from './model/installationResponse';
 import {buildUpdateCommand} from './helper/draftCommandBuilder';
-import {reporter} from '../../utils/reporter';
+import {Context} from './model/context';
 
 export default async function runDraftUpdate(
-   _context: vscode.ExtensionContext,
+   context: Context,
    destination: string
 ): Promise<void> {
    const extensionPath = getExtensionPath();
@@ -56,19 +56,17 @@ export default async function runDraftUpdate(
 
          const command = buildUpdateCommand(destination, host, certificate);
 
-         const result = await runDraftCommand(command);
+         const [success, err] = await runDraftCommand(command);
          const createResponse: InstallationResponse = {
             name: 'update',
-            stdout: result[0],
-            stderr: result[1]
+            stdout: success,
+            stderr: err
          };
-         if (reporter) {
-            const resultSuccessOrFailure =
-               result[1]?.length === 0 && result[0]?.length !== 0;
-            reporter.sendTelemetryEvent('updateDraftResult', {
-               updateDraftResult: `${resultSuccessOrFailure}`
-            });
-         }
+         const isSuccess = err?.length === 0 && success?.length !== 0;
+         context.telemetry.properties.result = isSuccess
+            ? 'Succeeded'
+            : 'Failed';
+
          createDraftWebView(
             'update',
             webview,
