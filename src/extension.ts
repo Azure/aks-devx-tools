@@ -32,52 +32,55 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 function initializeExtensionVariables(context: vscode.ExtensionContext): void {
-   const outputChannel = createAzExtOutputChannel(
-      'AKS DevX Tools',
-      'aks-devx-tools'
-   );
+   const outputChannel = createAzExtOutputChannel('AKS DevX Tools', '');
    context.subscriptions.push(outputChannel);
-   registerUIExtensionVariables({context, outputChannel});
+   registerUIExtensionVariables({
+      context,
+      outputChannel
+   });
 }
 
 function registerCommands(extensionContext: vscode.ExtensionContext): void {
    registerCommand(
       'aks-draft-extension.runDraftCreate',
       (actionContext: IActionContext, folder) => {
-         const context: Context = {...actionContext, ...extensionContext};
-         runDraftCreate(context, vscode.Uri.parse(folder).fsPath);
+         const context: Context = {actionContext, extensionContext};
+         return runDraftCreate(context, vscode.Uri.parse(folder).fsPath);
       }
    );
 
    registerCommand(
       'aks-draft-extension.runDraftDockerfile',
       (actionContext: IActionContext, folder) => {
-         const context: Context = {...actionContext, ...extensionContext};
-         runDraftDockerfile(context, vscode.Uri.parse(folder).fsPath);
+         const context: Context = {actionContext, extensionContext};
+         return runDraftDockerfile(context, vscode.Uri.parse(folder).fsPath);
       }
    );
 
    registerCommand(
       'aks-draft-extension.runDraftSetupGH',
       (actionContext: IActionContext) => {
-         const context: Context = {...actionContext, ...extensionContext};
-         runDraftSetupGH(context);
+         const context: Context = {actionContext, extensionContext};
+         return runDraftSetupGH(context);
       }
    );
 
    registerCommand(
       'aks-draft-extension.runDraftGenerateWorkflow',
       (actionContext: IActionContext, folder) => {
-         const context: Context = {...actionContext, ...extensionContext};
-         runDraftGenerateWorkflow(context, vscode.Uri.parse(folder).fsPath);
+         const context: Context = {actionContext, extensionContext};
+         return runDraftGenerateWorkflow(
+            context,
+            vscode.Uri.parse(folder).fsPath
+         );
       }
    );
 
    registerCommand(
       'aks-draft-extension.runDraftUpdate',
       (actionContext: IActionContext, folder) => {
-         const context: Context = {...actionContext, ...extensionContext};
-         runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
+         const context: Context = {actionContext, extensionContext};
+         return runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
       }
    );
 }

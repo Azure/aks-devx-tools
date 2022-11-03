@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import {downloadDraftBinary} from './helper/runDraftHelper';
 
 export async function runDraftDockerfile(
-   context: Context,
+   {actionContext, extensionContext}: Context,
    destination: string
 ) {
    const extensionPath = getExtensionPath();
@@ -23,5 +23,5 @@ export async function runDraftDockerfile(
       return undefined;
    }
 
-   // context.ui.showInputBox({prompt: 'hello world!'});
+   actionContext.ui.showInputBox({prompt: 'hello world!'});
 }

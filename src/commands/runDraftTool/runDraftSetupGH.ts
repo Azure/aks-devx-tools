@@ -11,7 +11,10 @@ import {InstallationResponse} from './model/installationResponse';
 import {buildSetupGHCommand} from './helper/draftCommandBuilder';
 import {Context} from './model/context';
 
-export default async function runDraftSetupGH(context: Context): Promise<void> {
+export default async function runDraftSetupGH({
+   actionContext,
+   extensionContext
+}: Context): Promise<void> {
    const extensionPath = getExtensionPath();
    if (failed(extensionPath)) {
       vscode.window.showErrorMessage(extensionPath.error);
@@ -70,7 +73,7 @@ export default async function runDraftSetupGH(context: Context): Promise<void> {
             () => runDraftCommand(command)
          );
          const isSuccess = err?.length === 0 && success?.length !== 0;
-         context.telemetry.properties.result = isSuccess
+         actionContext.telemetry.properties.result = isSuccess
             ? 'Succeeded'
             : 'Failed';
          const createResponse: InstallationResponse = {

@@ -15,7 +15,7 @@ import {
 import {Context} from './model/context';
 
 export default async function runDraftCreate(
-   context: Context,
+   {actionContext, extensionContext}: Context,
    destination: string
 ): Promise<void> {
    const extensionPath = getExtensionPath();
@@ -75,7 +75,7 @@ export default async function runDraftCreate(
 
          const [success, err] = await runDraftCommand(command);
          const isSuccess = err?.length === 0 && success?.length !== 0;
-         context.telemetry.properties.result = isSuccess
+         actionContext.telemetry.properties.result = isSuccess
             ? 'Succeeded'
             : 'Failed';
          const createResponse: InstallationResponse = {
