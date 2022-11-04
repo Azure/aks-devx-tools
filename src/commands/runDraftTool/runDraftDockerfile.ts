@@ -61,8 +61,8 @@ export async function runDraftDockerfile(
       new PromptPort()
    ];
    const executeSteps: IExecuteStep[] = [
-      new ExecuteDraft()
-      // open generated files
+      new ExecuteDraft(),
+      new ExecuteOpenDockerfiles()
       // save to context
    ];
    const wizard = new AzureWizard(wizardContext, {
@@ -161,7 +161,7 @@ class PromptPort extends AzureWizardPromptStep<WizardContext> {
 
 class PromptDockerfileOverride extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const dockerfilePath = this.getDockerfilePath(wizardContext);
+      const dockerfilePath = getDockerfilePath(wizardContext);
       await wizardContext.ui.showWarningMessage(
          `Override file ${dockerfilePath}`,
          {modal: true},
@@ -169,21 +169,12 @@ class PromptDockerfileOverride extends AzureWizardPromptStep<WizardContext> {
       );
    }
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      const dockerfilePath = this.getDockerfilePath(wizardContext);
+      const dockerfilePath = getDockerfilePath(wizardContext);
       if (fs.existsSync(dockerfilePath)) {
          return true;
       }
 
       return false;
-   }
-
-   private getDockerfilePath(wizardContext: WizardContext) {
-      const sourceCodeFolderPath = wizardContext.sourceCodeFolder?.path;
-      if (sourceCodeFolderPath === undefined) {
-         throw Error('Source code folder is undefined');
-      }
-
-      return path.join(sourceCodeFolderPath, 'Dockerfile');
    }
 }
 
@@ -228,4 +219,49 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
    public shouldExecute(wizardContext: WizardContext): boolean {
       return true;
    }
+}
+
+class ExecuteOpenDockerfiles extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 2;
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const dockerignorePath = getDockerignorePath(wizardContext);
+      const dockerPath = getDockerfilePath(wizardContext);
+
+      for (const filePath of [dockerignorePath, dockerPath]) {
+         const vscodePath = vscode.Uri.file(filePath);
+         await vscode.workspace
+            .openTextDocument(vscodePath)
+            .then((doc) =>
+               vscode.window.showTextDocument(doc, {preview: false})
+            );
+      }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+function getDockerfilePath(wizardContext: WizardContext): string {
+   const sourceCodeFolderPath = wizardContext.sourceCodeFolder?.path;
+   if (sourceCodeFolderPath === undefined) {
+      throw Error('Source code folder is undefined');
+   }
+
+   return path.join(sourceCodeFolderPath, 'Dockerfile');
+}
+
+function getDockerignorePath(wizardContext: WizardContext): string {
+   const sourceCodeFolderPath = wizardContext.sourceCodeFolder?.path;
+   if (sourceCodeFolderPath === undefined) {
+      throw Error('Source code folder is undefined');
+   }
+
+   return path.join(sourceCodeFolderPath, '.dockerignore');
 }
