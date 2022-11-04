@@ -80,7 +80,7 @@ export async function runDraftDockerfile(
 
 class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      wizardContext.sourceCodeFolder = (
+      const sourceCodeFolder = (
          await wizardContext.ui.showOpenDialog({
             canSelectFiles: false,
             canSelectFolders: true,
@@ -91,9 +91,13 @@ class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
          })
       )[0];
 
-      // TODO: validate that source code folder is in workspace
-      // what happens if folder isn't selected?
-      // choose folder from right click if right clicked
+      if (!vscode.workspace.getWorkspaceFolder(sourceCodeFolder)) {
+         throw Error(
+            'Chosen Source Code Folder is not in current workspace. Please choose a folder in the workspace'
+         );
+      }
+
+      wizardContext.sourceCodeFolder = sourceCodeFolder;
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
