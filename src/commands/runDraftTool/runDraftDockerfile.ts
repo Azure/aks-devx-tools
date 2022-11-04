@@ -16,6 +16,7 @@ import {
    buildCreateCommand,
    buildCreateConfig
 } from './helper/draftCommandBuilder';
+import {State, StateApi} from '../../utils/state';
 
 const title = 'Draft a Dockerfile from source code';
 const ignoreFocusOut = true;
@@ -34,6 +35,8 @@ export async function runDraftDockerfile(
    {actionContext, extensionContext}: Context,
    sourceCodeFolder: vscode.Uri
 ) {
+   const state: StateApi = State.construct(extensionContext);
+
    const extensionPath = getExtensionPath();
    if (failed(extensionPath)) {
       vscode.window.showErrorMessage(extensionPath.error);
@@ -62,8 +65,8 @@ export async function runDraftDockerfile(
    ];
    const executeSteps: IExecuteStep[] = [
       new ExecuteDraft(),
-      new ExecuteOpenDockerfiles()
-      // save to context
+      new ExecuteOpenDockerfiles(),
+      new ExecuteSaveState(state)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -241,6 +244,34 @@ class ExecuteOpenDockerfiles extends AzureWizardExecuteStep<WizardContext> {
                vscode.window.showTextDocument(doc, {preview: false})
             );
       }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 3;
+
+   constructor(private state: StateApi) {
+      super();
+   }
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const {port} = wizardContext;
+      if (port !== undefined) {
+         this.state.setPort(port);
+      }
+
+      const dockerfilePath = getDockerfilePath(wizardContext);
+      this.state.setDockerfile(dockerfilePath);
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
