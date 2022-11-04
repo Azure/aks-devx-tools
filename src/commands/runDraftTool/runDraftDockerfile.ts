@@ -17,6 +17,7 @@ import {
    buildCreateConfig
 } from './helper/draftCommandBuilder';
 import {State, StateApi} from '../../utils/state';
+import {ValidatePort} from '../../utils/validation';
 
 const title = 'Draft a Dockerfile from source code';
 const ignoreFocusOut = true;
@@ -153,7 +154,8 @@ class PromptPort extends AzureWizardPromptStep<WizardContext> {
       wizardContext.port = await wizardContext.ui.showInputBox({
          ignoreFocusOut,
          prompt: 'Port (e.g. 8080)',
-         stepName: 'Port'
+         stepName: 'Port',
+         validateInput: ValidatePort
       });
    }
 
