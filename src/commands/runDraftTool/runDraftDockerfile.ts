@@ -2,7 +2,7 @@ import {failed} from '../../utils/errorable';
 import {getExtensionPath, longRunning} from '../../utils/host';
 import {Context} from './model/context';
 import * as vscode from 'vscode';
-import {downloadDraftBinary} from './helper/runDraftHelper';
+import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {DraftLanguage, draftLanguages} from './helper/languages';
 import {
    AzureWizard,
@@ -12,6 +12,10 @@ import {
 } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
 import * as fs from 'fs';
+import {
+   buildCreateCommand,
+   buildCreateConfig
+} from './helper/draftCommandBuilder';
 
 const title = 'Draft a Dockerfile from source code';
 const ignoreFocusOut = true;
@@ -57,7 +61,7 @@ export async function runDraftDockerfile(
       new PromptPort()
    ];
    const executeSteps: IExecuteStep[] = [
-      // build draft
+      new ExecuteDraft()
       // open generated files
       // save to context
    ];
@@ -67,6 +71,7 @@ export async function runDraftDockerfile(
       executeSteps
    });
    await wizard.prompt();
+   await wizard.execute();
 }
 
 class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
@@ -179,5 +184,48 @@ class PromptDockerfileOverride extends AzureWizardPromptStep<WizardContext> {
       }
 
       return path.join(sourceCodeFolderPath, 'Dockerfile');
+   }
+}
+
+class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 1;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const {language, port, sourceCodeFolder, version} = wizardContext;
+      if (language === undefined) {
+         throw Error('Language is undefined');
+      }
+      if (port === undefined) {
+         throw Error('Port is undefined');
+      }
+      if (sourceCodeFolder === undefined) {
+         throw Error('Source code folder is undefined');
+      }
+      if (version === undefined) {
+         throw Error('Version is undefined');
+      }
+
+      const configPath = buildCreateConfig(language.id, port, '', '', version);
+      const command = buildCreateCommand(
+         sourceCodeFolder.path,
+         'dockerfile',
+         configPath
+      );
+
+      const [success, err] = await runDraftCommand(command);
+      const isSuccess = err?.length === 0 && success?.length !== 0;
+      if (!isSuccess) {
+         throw Error(`Draft command failed: ${err}`);
+      }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
    }
 }
