@@ -67,7 +67,8 @@ export async function runDraftDockerfile(
    const executeSteps: IExecuteStep[] = [
       new ExecuteDraft(),
       new ExecuteOpenDockerfiles(),
-      new ExecuteSaveState(state)
+      new ExecuteSaveState(state),
+      new ExecutePromptAcr()
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -280,6 +281,38 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
       this.state.setDockerfile(dockerfilePath);
    }
 
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecutePromptAcr extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 4;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const buildAcrLink = 'Docs';
+      await vscode.window
+         .showInformationMessage(
+            'The Dockerfile was created. The next step is to build the image on ACR.',
+            buildAcrLink
+         )
+         .then((input) => {
+            if (input === buildAcrLink) {
+               vscode.commands.executeCommand(
+                  'vscode.open',
+                  vscode.Uri.parse(
+                     'https://learn.microsoft.com/en-us/azure/container-registry/container-registry-quickstart-task-cli#build-and-push-image-from-a-dockerfile'
+                  )
+               );
+            }
+         });
+   }
    public shouldExecute(wizardContext: WizardContext): boolean {
       return true;
    }
