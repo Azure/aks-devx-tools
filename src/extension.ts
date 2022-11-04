@@ -53,7 +53,7 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
       'aks-draft-extension.runDraftDockerfile',
       (actionContext: IActionContext, folder) => {
          const context: Context = {actionContext, extensionContext};
-         return runDraftDockerfile(context, vscode.Uri.parse(folder).fsPath);
+         return runDraftDockerfile(context, vscode.Uri.parse(folder));
       }
    );
 

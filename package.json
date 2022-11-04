@@ -72,7 +72,7 @@
          ],
          "aksdevx.aksDraftSubMenu": [
             {
-               "command": "aks-draft-extension.runDraftCreate",
+               "command": "aks-draft-extension.runDraftDockerfile",
                "group": "draftnavigation@1"
             },
             {
