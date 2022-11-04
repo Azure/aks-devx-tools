@@ -10,6 +10,8 @@ import {
    AzureWizardPromptStep,
    IActionContext
 } from '@microsoft/vscode-azext-utils';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const title = 'Draft a Dockerfile from source code';
 const ignoreFocusOut = true;
@@ -49,10 +51,10 @@ export async function runDraftDockerfile(
    };
    const promptSteps: IPromptStep[] = [
       new PromptSourceCodeFolder(),
+      new PromptDockerfileOverride(),
       new PromptLanguage(),
       new PromptVersion(),
-      new PromptPort(),
-      new PromptDockerfileOverride()
+      new PromptPort()
    ];
    const executeSteps: IExecuteStep[] = [
       // build draft
@@ -71,7 +73,6 @@ class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       wizardContext.sourceCodeFolder = (
          await wizardContext.ui.showOpenDialog({
-            title,
             canSelectFiles: false,
             canSelectFolders: true,
             canSelectMany: false,
@@ -100,7 +101,6 @@ class PromptLanguage extends AzureWizardPromptStep<WizardContext> {
          languageOptions,
          {
             ignoreFocusOut,
-            title,
             stepName: 'Programming Language',
             placeHolder: 'Select the programming language'
          }
@@ -108,10 +108,6 @@ class PromptLanguage extends AzureWizardPromptStep<WizardContext> {
       const language = draftLanguages.find(
          (lang) => languageToItem(lang).label === languagePick.label
       );
-      if (language === undefined) {
-         // this should never happen
-         throw Error('No match for programming language');
-      }
 
       wizardContext.language = language;
    }
@@ -133,7 +129,6 @@ class PromptVersion extends AzureWizardPromptStep<WizardContext> {
       );
       const versionPick = await wizardContext.ui.showQuickPick(versionOptions, {
          ignoreFocusOut,
-         title,
          stepName: 'Version',
          placeHolder: `Select ${language.name} version`
       });
@@ -149,7 +144,6 @@ class PromptPort extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       wizardContext.port = await wizardContext.ui.showInputBox({
          ignoreFocusOut,
-         title,
          prompt: 'Port (e.g. 8080)',
          stepName: 'Port'
       });
@@ -162,10 +156,28 @@ class PromptPort extends AzureWizardPromptStep<WizardContext> {
 
 class PromptDockerfileOverride extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      await wizardContext.ui.showWarningMessage('Overriding file');
+      const dockerfilePath = this.getDockerfilePath(wizardContext);
+      await wizardContext.ui.showWarningMessage(
+         `Override file ${dockerfilePath}`,
+         {modal: true},
+         {title: 'Ok'}
+      );
    }
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      // todo: only run if dockerfile will be overriden
-      return true;
+      const dockerfilePath = this.getDockerfilePath(wizardContext);
+      if (fs.existsSync(dockerfilePath)) {
+         return true;
+      }
+
+      return false;
+   }
+
+   private getDockerfilePath(wizardContext: WizardContext) {
+      const sourceCodeFolderPath = wizardContext.sourceCodeFolder?.path;
+      if (sourceCodeFolderPath === undefined) {
+         throw Error('Source code folder is undefined');
+      }
+
+      return path.join(sourceCodeFolderPath, 'Dockerfile');
    }
 }
