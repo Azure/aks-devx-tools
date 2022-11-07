@@ -10,7 +10,7 @@ import {
    IActionContext
 } from '@microsoft/vscode-azext-utils';
 import {DraftFormat, draftFormats} from './model/format';
-import {ValidateRfc1123} from '../../utils/validation';
+import {ValidateImage, ValidateRfc1123} from '../../utils/validation';
 import {PromptPort, ignoreFocusOut} from './helper/commonPrompts';
 import {
    KubernetesApi,
@@ -20,10 +20,13 @@ import {
    getKubectl
 } from '../../utils/kubernetes';
 import {failed} from '../../utils/errorable';
-import * as path from 'path';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
+enum imageOption {
+   ACR,
+   Other
+}
 interface PromptContext {
    outputFolder: vscode.Uri;
    applicationName: string;
@@ -31,6 +34,7 @@ interface PromptContext {
    namespace: string;
    newNamespace: boolean;
    image: string;
+   imageOption: imageOption;
    port: string;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
@@ -81,7 +85,9 @@ export async function runDraftDeployment(
       new PromptApplicationName(),
       new PromptPort(),
       new PromptNamespace(k8s),
-      new PromptNewNamespace()
+      new PromptNewNamespace(),
+      new PromptImageOption(),
+      new PromptImage()
    ];
    const executeSteps: IExecuteStep[] = [];
    const wizard = new AzureWizard(wizardContext, {
@@ -222,3 +228,41 @@ class PromptNewNamespace extends AzureWizardPromptStep<WizardContext> {
       return wizardContext.newNamespace === true;
    }
 }
+
+class PromptImageOption extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const acr = 'Azure Container Registry';
+      const other = 'Other';
+      const options: vscode.QuickPickItem[] = [acr, other].map((k) => ({
+         label: k
+      }));
+
+      const imagePick = await wizardContext.ui.showQuickPick(options, {
+         ignoreFocusOut,
+         stepName: 'Image Option',
+         placeHolder: 'Image Option'
+      });
+
+      wizardContext.imageOption =
+         imagePick.label === acr ? imageOption.ACR : imageOption.Other;
+   }
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class PromptImage extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      wizardContext.image = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'Image',
+         stepName: 'Image',
+         validateInput: ValidateImage
+      });
+   }
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.Other;
+   }
+}
+
+// todo warn about files being overwritten

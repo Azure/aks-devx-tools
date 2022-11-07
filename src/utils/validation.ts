@@ -48,3 +48,16 @@ export const ValidateRfc1123: Validator = async (input: string) => {
 
    return passingTestRet;
 };
+
+export const ValidateImage: Validator = async (image: string) => {
+   await validationSleep();
+
+   // TODO: add validation
+   const re =
+      /^([\w.\-_]+((?::\d+|)(?=\/[a-z0-9._-]+\/[a-z0-9._-]+))|)(?:\/|)([a-z0-9.\-_]+(?:\/[a-z0-9.\-_]+|))(:([\w.\-_]{1,127})|)$/;
+   if (!image.match(re)) {
+      return 'Image must be a valid image name';
+   }
+
+   return passingTestRet;
+};
