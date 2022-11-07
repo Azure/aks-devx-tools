@@ -1,7 +1,6 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import runDraftCreate from './commands/runDraftTool/runDraftCreate';
 import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWorkflow';
 import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
 import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
@@ -14,6 +13,7 @@ import {
 } from '@microsoft/vscode-azext-utils';
 import {Context} from './commands/runDraftTool/model/context';
 import {runDraftDockerfile} from './commands/runDraftTool/runDraftDockerfile';
+import {runDraftDeployment} from './commands/runDraftTool/runDraftDeployment';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -42,18 +42,18 @@ function initializeExtensionVariables(context: vscode.ExtensionContext): void {
 
 function registerCommands(extensionContext: vscode.ExtensionContext): void {
    registerCommand(
-      'aks-draft-extension.runDraftCreate',
-      (actionContext: IActionContext, folder) => {
-         const context: Context = {actionContext, extensionContext};
-         return runDraftCreate(context, vscode.Uri.parse(folder).fsPath);
-      }
-   );
-
-   registerCommand(
       'aks-draft-extension.runDraftDockerfile',
       (actionContext: IActionContext, folder) => {
          const context: Context = {actionContext, extensionContext};
          return runDraftDockerfile(context, vscode.Uri.parse(folder));
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDraftDeployment',
+      (actionContext: IActionContext, folder) => {
+         const context: Context = {actionContext, extensionContext};
+         return runDraftDeployment(context, vscode.Uri.parse(folder));
       }
    );
 

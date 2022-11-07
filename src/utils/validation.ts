@@ -7,6 +7,7 @@ type Validator = (
    value: string
 ) => string | undefined | null | Thenable<string | undefined | null>;
 
+const passingTestRet = undefined; // https://code.visualstudio.com/api/references/vscode-api#InputBoxOptions
 export const ValidatePort: Validator = async (port: string) => {
    await validationSleep();
 
@@ -25,5 +26,25 @@ export const ValidatePort: Validator = async (port: string) => {
       return portErr;
    }
 
-   return undefined;
+   return passingTestRet;
+};
+
+// RFC 1123 is a common spec for K8s resources. https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
+export const ValidateRfc1123: Validator = async (input: string) => {
+   await validationSleep();
+
+   const alphanumDash = /^[0-9a-z-]+$/;
+   const maxLen = 63;
+
+   if (!input.match(alphanumDash)) {
+      return "Input must be lowercase alphanumeric plus '-'";
+   }
+   if (input.length > maxLen) {
+      return `Input length must be less than ${maxLen}`;
+   }
+   if (input.charAt(0) === '-' || input.charAt(input.length - 1) === '-') {
+      return 'Input must start and end with a lowercase alphanumeric character';
+   }
+
+   return passingTestRet;
 };

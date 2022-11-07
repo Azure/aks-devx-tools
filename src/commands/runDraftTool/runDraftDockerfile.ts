@@ -1,5 +1,4 @@
-import {failed} from '../../utils/errorable';
-import {getExtensionPath, longRunning} from '../../utils/host';
+import {longRunning} from '../../utils/host';
 import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
@@ -17,10 +16,9 @@ import {
    buildCreateConfig
 } from './helper/draftCommandBuilder';
 import {State, StateApi} from '../../utils/state';
-import {ValidatePort} from '../../utils/validation';
+import {PromptPort, ignoreFocusOut} from './helper/commonPrompts';
 
 const title = 'Draft a Dockerfile from source code';
-const ignoreFocusOut = true;
 
 interface PromptContext {
    sourceCodeFolder: vscode.Uri;
@@ -37,12 +35,6 @@ export async function runDraftDockerfile(
    sourceCodeFolder: vscode.Uri
 ) {
    const state: StateApi = State.construct(extensionContext);
-
-   const extensionPath = getExtensionPath();
-   if (failed(extensionPath)) {
-      vscode.window.showErrorMessage(extensionPath.error);
-      return undefined;
-   }
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
@@ -122,6 +114,9 @@ class PromptLanguage extends AzureWizardPromptStep<WizardContext> {
       const language = draftLanguages.find(
          (lang) => languageToItem(lang).label === languagePick.label
       );
+      if (language === undefined) {
+         throw Error('Language was not recognized'); // this should never happen
+      }
 
       wizardContext.language = language;
    }
@@ -147,21 +142,6 @@ class PromptVersion extends AzureWizardPromptStep<WizardContext> {
          placeHolder: `Select ${language.name} version`
       });
       wizardContext.version = versionPick.label;
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
-}
-
-class PromptPort extends AzureWizardPromptStep<WizardContext> {
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      wizardContext.port = await wizardContext.ui.showInputBox({
-         ignoreFocusOut,
-         prompt: 'Port (e.g. 8080)',
-         stepName: 'Port',
-         validateInput: ValidatePort
-      });
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
