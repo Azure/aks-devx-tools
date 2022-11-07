@@ -119,7 +119,8 @@ export async function runDraftDeployment(
    ];
    const executeSteps: IExecuteStep[] = [
       new ExecuteCreateNamespace(k8s),
-      new ExecuteDraft()
+      new ExecuteDraft(),
+      new ExecuteOpenFiles()
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -613,6 +614,38 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          throw Error(`Draft command failed: ${err}`);
       }
    }
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 3;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const outputPath = getOutputPath(wizardContext);
+      const relativePattern = new vscode.RelativePattern(outputPath, '**/*');
+      const files = await vscode.workspace.findFiles(relativePattern);
+
+      for (const file of files) {
+         if (fs.lstatSync(file.path).isDirectory()) {
+            continue;
+         }
+
+         await vscode.workspace
+            .openTextDocument(file)
+            .then((doc) =>
+               vscode.window.showTextDocument(doc, {preview: false})
+            );
+      }
+   }
+
    public shouldExecute(wizardContext: WizardContext): boolean {
       return true;
    }
