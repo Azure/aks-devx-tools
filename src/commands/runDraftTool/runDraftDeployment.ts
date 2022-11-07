@@ -66,11 +66,9 @@ export async function runDraftDeployment(
       return undefined;
    }
 
-   let applicationNameGuess = path.basename(outputFolder.path);
    const workspaceFolders = vscode.workspace.workspaceFolders;
-   if (workspaceFolders !== undefined) {
-      applicationNameGuess ||= workspaceFolders[0].name;
-   }
+   const applicationNameGuess =
+      workspaceFolders === undefined ? '' : workspaceFolders[0].name;
    const wizardContext: WizardContext = {
       ...actionContext,
       port: state.getPort(),
