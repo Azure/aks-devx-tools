@@ -30,6 +30,8 @@ import {
    getAzureAccount,
    Az
 } from '../../utils/az';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -98,6 +100,7 @@ export async function runDraftDeployment(
    const promptSteps: IPromptStep[] = [
       new PromptOutputFolder(),
       new PromptFormat(),
+      new PromptFileOverride(),
       new PromptApplicationName(),
       new PromptPort(),
       new PromptNamespace(k8s),
@@ -491,11 +494,51 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
       wizardContext.acrTag = tags.find(
          (t) => tagToItem(t).label === tagPick.label
       );
+
+      wizardContext.image = `${wizardContext.acrRegistry.registry.loginServer}/${wizardContext.acrRepository.repositoryName}:${wizardContext.acrTag?.tag.name}`;
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
       return wizardContext.imageOption === imageOption.ACR;
    }
 }
-// todo warn about files being overwritten
+
+class PromptFileOverride extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const output = getOutputPath(wizardContext);
+      await wizardContext.ui.showWarningMessage(
+         `Override files in ${output}`,
+         {
+            modal: true
+         },
+         {title: 'Ok'}
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      const output = getOutputPath(wizardContext);
+      if (fs.existsSync(output)) {
+         return true;
+      }
+
+      return false;
+   }
+}
+
+function getOutputPath(wizardContext: WizardContext): string {
+   const base = wizardContext.outputFolder?.path;
+   if (base === undefined) {
+      throw Error('Output folder is undefined');
+   }
+
+   switch (wizardContext.format) {
+      case DraftFormat.Helm:
+         return path.join(base, 'charts');
+      case DraftFormat.Kustomize:
+         return path.join(base, 'base');
+      default:
+         return path.join(base, 'manifests');
+   }
+}
+
 // TODO: switch up promises to show loading in quick pick
