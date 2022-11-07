@@ -11,16 +11,25 @@ import {
 } from '@microsoft/vscode-azext-utils';
 import {DraftFormat, draftFormats} from './model/format';
 import {ValidateRfc1123} from '../../utils/validation';
-import {PromptPort} from './helper/commonPrompts';
+import {PromptPort, ignoreFocusOut} from './helper/commonPrompts';
+import {
+   KubernetesApi,
+   Kubernetes,
+   getDefaultKubeconfig,
+   getHelm,
+   getKubectl
+} from '../../utils/kubernetes';
+import {failed} from '../../utils/errorable';
+import * as path from 'path';
 
 const title = 'Draft a Kubernetes Deployment and Service';
-const ignoreFocusOut = true;
 
 interface PromptContext {
    outputFolder: vscode.Uri;
    applicationName: string;
    format: DraftFormat;
    namespace: string;
+   newNamespace: boolean;
    image: string;
    port: string;
 }
@@ -33,6 +42,20 @@ export async function runDraftDeployment(
    outputFolder: vscode.Uri
 ) {
    const state: StateApi = State.construct(extensionContext);
+   const kubeconfig = getDefaultKubeconfig();
+   const kubectlReturn = await getKubectl();
+   if (failed(kubectlReturn)) {
+      throw Error(kubectlReturn.error);
+   }
+   const helmReturn = await getHelm();
+   if (failed(helmReturn)) {
+      throw Error(helmReturn.error);
+   }
+   const k8s: KubernetesApi = new Kubernetes(
+      kubeconfig,
+      kubectlReturn.result,
+      helmReturn.result
+   );
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
@@ -43,16 +66,24 @@ export async function runDraftDeployment(
       return undefined;
    }
 
+   let applicationNameGuess = path.basename(outputFolder.path);
+   const workspaceFolders = vscode.workspace.workspaceFolders;
+   if (workspaceFolders !== undefined) {
+      applicationNameGuess ||= workspaceFolders[0].name;
+   }
    const wizardContext: WizardContext = {
       ...actionContext,
       port: state.getPort(),
-      outputFolder
+      outputFolder,
+      applicationName: applicationNameGuess
    };
    const promptSteps: IPromptStep[] = [
       new PromptOutputFolder(),
       new PromptFormat(),
       new PromptApplicationName(),
-      new PromptPort()
+      new PromptPort(),
+      new PromptNamespace(k8s),
+      new PromptNewNamespace()
    ];
    const executeSteps: IExecuteStep[] = [];
    const wizard = new AzureWizard(wizardContext, {
@@ -123,11 +154,73 @@ class PromptApplicationName extends AzureWizardPromptStep<WizardContext> {
          ignoreFocusOut,
          prompt: 'Application name (e.g. myapp-backend)',
          stepName: 'Application name',
-         validateInput: ValidateRfc1123
+         validateInput: ValidateRfc1123,
+         value: wizardContext.applicationName
       });
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
       return true;
+   }
+}
+
+class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
+   constructor(private k8s: KubernetesApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const namespacesReturn = await this.k8s.listNamespaces();
+      if (failed(namespacesReturn)) {
+         throw Error(namespacesReturn.error);
+      }
+      const namespaces = namespacesReturn.result;
+
+      const newOption = 'New Namespace';
+      const namespaceOptions: vscode.QuickPickItem[] = namespaces.map(
+         (version) => ({
+            label: version.metadata?.name || ''
+         })
+      );
+      const options: vscode.QuickPickItem[] = [
+         {label: newOption},
+         {label: '', kind: vscode.QuickPickItemKind.Separator},
+         ...namespaceOptions,
+         {
+            label: 'Existing namespaces',
+            kind: vscode.QuickPickItemKind.Separator
+         }
+      ];
+      const namespacePick = await wizardContext.ui.showQuickPick(options, {
+         ignoreFocusOut,
+         stepName: 'Namespace',
+         placeHolder: 'Namespace'
+      });
+
+      if (namespacePick.label === newOption) {
+         wizardContext.newNamespace = true;
+         return;
+      }
+
+      wizardContext.newNamespace = false;
+      wizardContext.namespace = namespacePick.label;
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class PromptNewNamespace extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      wizardContext.namespace = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'New Namespace',
+         stepName: 'New Namespace',
+         validateInput: ValidateRfc1123
+      });
+   }
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.newNamespace === true;
    }
 }
