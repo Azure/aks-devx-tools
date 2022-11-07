@@ -32,6 +32,10 @@ import {
 } from '../../utils/az';
 import * as path from 'path';
 import * as fs from 'fs';
+import {
+   buildCreateCommand,
+   buildCreateConfig
+} from './helper/draftCommandBuilder';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -113,7 +117,10 @@ export async function runDraftDeployment(
       new PromptAcrRepository(az),
       new PromptAcrTag(az)
    ];
-   const executeSteps: IExecuteStep[] = [];
+   const executeSteps: IExecuteStep[] = [
+      new ExecuteCreateNamespace(k8s),
+      new ExecuteDraft()
+   ];
    const wizard = new AzureWizard(wizardContext, {
       title,
       promptSteps,
@@ -522,6 +529,92 @@ class PromptFileOverride extends AzureWizardPromptStep<WizardContext> {
       }
 
       return false;
+   }
+}
+
+class ExecuteCreateNamespace extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 1;
+
+   constructor(private k8s: KubernetesApi) {
+      super();
+   }
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const {namespace} = wizardContext;
+      if (namespace === undefined) {
+         throw Error('Namespace is undefined');
+      }
+
+      const result = await this.k8s.createNamespace(namespace);
+      if (failed(result)) {
+         throw Error(result.error);
+      }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newNamespace;
+   }
+}
+
+class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 2;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const {outputFolder, image, applicationName, namespace, port, format} =
+         wizardContext;
+      if (outputFolder === undefined) {
+         throw Error('Output folder is undefined');
+      }
+      if (image === undefined) {
+         throw Error('Image is undefined');
+      }
+      if (applicationName === undefined) {
+         throw Error('Application name is undefined');
+      }
+      if (namespace === undefined) {
+         throw Error('Namespace is undefined');
+      }
+      if (port === undefined) {
+         throw Error('Port is undefined');
+      }
+      if (format === undefined) {
+         throw Error('Format is undefined');
+      }
+
+      const configPath = buildCreateConfig(
+         'java', // so it doesn't attempt to autodetect the language
+         port,
+         applicationName,
+         format,
+         '',
+         namespace,
+         image
+      );
+      const command = buildCreateCommand(
+         outputFolder.path,
+         'deployment',
+         configPath
+      );
+      const [success, err] = await runDraftCommand(command);
+      const isSuccess = err?.length === 0 && success?.length !== 0;
+      if (!isSuccess) {
+         throw Error(`Draft command failed: ${err}`);
+      }
+   }
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
    }
 }
 

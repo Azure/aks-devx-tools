@@ -27,12 +27,15 @@ export function buildCreateCommand(
    return args.join(' ');
 }
 
+// todo: touch this up
 export function buildCreateConfig(
    language: string,
    port: string,
    appName: string,
    workflow: string,
-   dotnetVersion: string
+   languageVersion: string,
+   namespace: string,
+   imageName: string
 ): string {
    let data = {
       deployType: workflow,
@@ -60,10 +63,24 @@ export function buildCreateConfig(
       });
    }
 
-   if (dotnetVersion.length > 0) {
+   if (languageVersion.length > 0) {
       data.languageVariables.push({
          name: 'VERSION',
-         value: dotnetVersion
+         value: languageVersion
+      });
+   }
+
+   if (namespace.length > 0) {
+      data.deployVariables.push({
+         name: 'NAMESPACE',
+         value: namespace
+      });
+   }
+
+   if (imageName.length > 0) {
+      data.deployVariables.push({
+         name: 'IMAGENAME',
+         value: imageName
       });
    }
 

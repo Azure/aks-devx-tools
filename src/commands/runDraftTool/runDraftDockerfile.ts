@@ -192,7 +192,15 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          throw Error('Version is undefined');
       }
 
-      const configPath = buildCreateConfig(language.id, port, '', '', version);
+      const configPath = buildCreateConfig(
+         language.id,
+         port,
+         '',
+         '',
+         version,
+         '',
+         ''
+      );
       const command = buildCreateCommand(
          sourceCodeFolder.path,
          'dockerfile',
