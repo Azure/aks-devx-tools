@@ -20,6 +20,16 @@ import {
    getKubectl
 } from '../../utils/kubernetes';
 import {failed} from '../../utils/errorable';
+import {
+   RegistryItem,
+   RepositoryItem,
+   ResourceGroupItem,
+   SubscriptionItem,
+   TagItem,
+   AzApi,
+   getAzureAccount,
+   Az
+} from '../../utils/az';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -35,6 +45,11 @@ interface PromptContext {
    newNamespace: boolean;
    image: string;
    imageOption: imageOption;
+   acrSubscription: SubscriptionItem;
+   acrResourceGroup: ResourceGroupItem;
+   acrRegistry: RegistryItem;
+   acrRepository: RepositoryItem;
+   acrTag: TagItem;
    port: string;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
@@ -60,6 +75,7 @@ export async function runDraftDeployment(
       kubectlReturn.result,
       helmReturn.result
    );
+   const az: AzApi = new Az(getAzureAccount());
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
@@ -87,7 +103,12 @@ export async function runDraftDeployment(
       new PromptNamespace(k8s),
       new PromptNewNamespace(),
       new PromptImageOption(),
-      new PromptImage()
+      new PromptImage(),
+      new PromptAcrSubscription(az),
+      new PromptAcrResourceGroup(az),
+      new PromptAcrRegistry(az),
+      new PromptAcrRepository(az),
+      new PromptAcrTag(az)
    ];
    const executeSteps: IExecuteStep[] = [];
    const wizard = new AzureWizard(wizardContext, {
@@ -221,7 +242,8 @@ class PromptNewNamespace extends AzureWizardPromptStep<WizardContext> {
          ignoreFocusOut,
          prompt: 'New Namespace',
          stepName: 'New Namespace',
-         validateInput: ValidateRfc1123
+         validateInput: ValidateRfc1123,
+         value: wizardContext.namespace || wizardContext.applicationName // application name is a reasonable autofill guess
       });
    }
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -265,4 +287,215 @@ class PromptImage extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const subsReturn = await this.az.listSubscriptions();
+      if (failed(subsReturn)) {
+         throw Error(subsReturn.error);
+      }
+      const subs = subsReturn.result;
+      const subToItem = (sub: SubscriptionItem) => ({
+         label: sub.subscription.displayName || '',
+         description: sub.subscription.subscriptionId || ''
+      });
+      const subOptions: vscode.QuickPickItem[] = subs.map(subToItem);
+      const subPick = await wizardContext.ui.showQuickPick(subOptions, {
+         ignoreFocusOut,
+         stepName: 'ACR Subscription',
+         placeHolder: 'ACR Subscription',
+         noPicksMessage: 'No Subscriptions found'
+      });
+
+      // if something was recently used this text is appened to the descritpion
+      const removeRecentlyUsed = (description: string) =>
+         description.replace(' (recently used)', '');
+      wizardContext.acrSubscription = subs.find(
+         (sub) =>
+            subToItem(sub).description ===
+            removeRecentlyUsed(subPick.description || '')
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.ACR;
+   }
+}
+
+class PromptAcrResourceGroup extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.acrSubscription === undefined) {
+         throw Error('ACR Subscription is undefined');
+      }
+
+      const rgsReturn = await this.az.listResourceGroups(
+         wizardContext.acrSubscription
+      );
+      if (failed(rgsReturn)) {
+         throw Error(rgsReturn.error);
+      }
+      const rgs = rgsReturn.result;
+      const rgToItem = (rg: ResourceGroupItem) => ({
+         label: rg.resourceGroup.name || ''
+      });
+      const rgOptions: vscode.QuickPickItem[] = rgs.map(rgToItem);
+      const rgPick = await wizardContext.ui.showQuickPick(rgOptions, {
+         ignoreFocusOut,
+         stepName: 'ACR Resource Group',
+         placeHolder: 'ACR Resource Group',
+         noPicksMessage: 'No Resource Groups found'
+      });
+
+      wizardContext.acrResourceGroup = rgs.find(
+         (rg) => rgToItem(rg).label === rgPick.label
+      );
+   }
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.ACR;
+   }
+}
+
+class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.acrSubscription === undefined) {
+         throw Error('ACR Subscription is undefined');
+      }
+      if (wizardContext.acrResourceGroup === undefined) {
+         throw Error('ACR Resource Group is undefined');
+      }
+
+      const registriesReturn = await this.az.listContainerRegistries(
+         wizardContext.acrSubscription,
+         wizardContext.acrResourceGroup
+      );
+      if (failed(registriesReturn)) {
+         throw Error(registriesReturn.error);
+      }
+      const registries = registriesReturn.result;
+      const registryToItem = (r: RegistryItem) => ({
+         label: r.registry.name || ''
+      });
+      const registryOptions: vscode.QuickPickItem[] =
+         registries.map(registryToItem);
+      const registryPick = await wizardContext.ui.showQuickPick(
+         registryOptions,
+         {
+            ignoreFocusOut,
+            stepName: 'Registry',
+            placeHolder: 'Registry',
+            noPicksMessage: 'No Registries found'
+         }
+      );
+
+      wizardContext.acrRegistry = registries.find(
+         (r) => registryToItem(r).label === registryPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.ACR;
+   }
+}
+
+class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.acrSubscription === undefined) {
+         throw Error('ACR Subscription is undefined');
+      }
+      if (wizardContext.acrRegistry === undefined) {
+         throw Error('ACR Registry is undefined');
+      }
+
+      const repositoriesReturn = await this.az.listRegistryRepositories(
+         wizardContext.acrSubscription,
+         wizardContext.acrRegistry
+      );
+      if (failed(repositoriesReturn)) {
+         throw Error(repositoriesReturn.error);
+      }
+      const repositories = repositoriesReturn.result;
+
+      const repositoryToItem = (r: RepositoryItem) => ({
+         label: r.repositoryName
+      });
+      const repositoryOptions: vscode.QuickPickItem[] =
+         repositories.map(repositoryToItem);
+      const repositoryPick = await wizardContext.ui.showQuickPick(
+         repositoryOptions,
+         {
+            ignoreFocusOut,
+            stepName: 'Repository',
+            placeHolder: 'Repository',
+            noPicksMessage: 'No Repositories found'
+         }
+      );
+
+      wizardContext.acrRepository = repositories.find(
+         (r) => repositoryToItem(r).label === repositoryPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.ACR;
+   }
+}
+
+class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.acrSubscription === undefined) {
+         throw Error('ACR Subscription is undefined');
+      }
+      if (wizardContext.acrRegistry === undefined) {
+         throw Error('ACR Registry is undefined');
+      }
+      if (wizardContext.acrRepository === undefined) {
+         throw Error('ACR Repository is undefined');
+      }
+
+      const tagsReturn = await this.az.listRepositoryTags(
+         wizardContext.acrSubscription,
+         wizardContext.acrRegistry,
+         wizardContext.acrRepository
+      );
+      if (failed(tagsReturn)) {
+         throw Error(tagsReturn.error);
+      }
+      const tags = tagsReturn.result;
+      const tagToItem = (t: TagItem) => ({label: t.tag.name || ''});
+      const tagOptions: vscode.QuickPickItem[] = tags.map(tagToItem);
+      const tagPick = await wizardContext.ui.showQuickPick(tagOptions, {
+         ignoreFocusOut,
+         stepName: 'Tag',
+         placeHolder: 'Tag',
+         noPicksMessage: 'No tags found'
+      });
+
+      wizardContext.acrTag = tags.find(
+         (t) => tagToItem(t).label === tagPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.ACR;
+   }
+}
 // todo warn about files being overwritten
+// TODO: switch up promises to show loading in quick pick

@@ -9,7 +9,8 @@ import {
 } from '@azure/arm-containerregistry';
 import {
    ContainerRegistryClient,
-   ArtifactTagProperties
+   ArtifactTagProperties,
+   KnownContainerRegistryAudience
 } from '@azure/container-registry';
 import * as vscode from 'vscode';
 import {Errorable} from './errorable';
@@ -34,24 +35,24 @@ export interface AzApi {
    ): Promise<Errorable<TagItem[]>>;
 }
 
-interface SubscriptionItem {
+export interface SubscriptionItem {
    session: AzureSession;
    subscription: Subscription;
 }
 
-interface ResourceGroupItem {
+export interface ResourceGroupItem {
    resourceGroup: ResourceGroup;
 }
 
-interface RegistryItem {
+export interface RegistryItem {
    registry: Registry;
 }
 
-interface RepositoryItem {
+export interface RepositoryItem {
    repositoryName: string;
 }
 
-interface TagItem {
+export interface TagItem {
    tag: ArtifactTagProperties;
 }
 
@@ -190,10 +191,15 @@ export class Az implements AzApi {
       }
 
       const {credentials2} = subscriptionItem.session;
+      (credentials2 as any).signRequest = undefined; // @azure/container-registry doesn't support ADAL tokens at all and will error without this
       try {
          const registryClient = new ContainerRegistryClient(
-            loginServer,
-            credentials2
+            `https://${loginServer}`,
+            credentials2,
+            {
+               audience:
+                  KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
+            }
          );
          const repositories = await listAll(
             registryClient.listRepositoryNames()
@@ -228,14 +234,20 @@ export class Az implements AzApi {
       }
 
       const {credentials2} = subscriptionItem.session;
+      (credentials2 as any).signRequest = undefined; // @azure/container-registry doesn't support ADAL tokens at all and will error without this
       try {
          const registryClient = new ContainerRegistryClient(
-            loginServer,
-            credentials2
+            `https://${loginServer}`,
+            credentials2,
+            {
+               // todo: don't hardcode this
+               audience:
+                  KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
+            }
          );
          const tags = await listAll(
             registryClient
-               .getArtifact(repositoryItem.repositoryName, '') // the second parameter is a tag or digest which makes this a weird but correct usage pattern
+               .getArtifact(repositoryItem.repositoryName, 'latest') // the second parameter is a tag or digest which makes this a weird but correct usage pattern
                .listTagProperties()
          );
          const tagItems: TagItem[] = tags.map((tag) => ({
