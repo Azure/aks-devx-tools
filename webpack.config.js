@@ -4,6 +4,7 @@
 
 const path = require('path');
 const {ContextReplacementPlugin} = require('webpack');
+const TerserPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
 
 //@ts-check
@@ -52,6 +53,17 @@ const extensionConfig = {
                }
             ]
          }
+      ]
+   },
+   optimization: {
+      minimizer: [
+         new TerserPlugin({
+            terserOptions: {
+               // Makes stacktraces nice and makes @microsoft/vscode-azext-utils back + exit actually work. That library uses these things to parse errors
+               keep_classnames: true,
+               keep_fnames: true
+            }
+         })
       ]
    },
    devtool: 'nosources-source-map',
