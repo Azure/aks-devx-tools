@@ -19,7 +19,7 @@ import {
    getHelm,
    getKubectl
 } from '../../utils/kubernetes';
-import {failed} from '../../utils/errorable';
+import {failed, getAysncResult} from '../../utils/errorable';
 import {
    RegistryItem,
    RepositoryItem,
@@ -211,28 +211,26 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const namespacesReturn = await this.k8s.listNamespaces();
-      if (failed(namespacesReturn)) {
-         throw Error(namespacesReturn.error);
-      }
-      const namespaces = namespacesReturn.result;
-
+      const namespaces = getAysncResult(this.k8s.listNamespaces());
       const newOption = 'New Namespace';
-      const namespaceOptions: vscode.QuickPickItem[] = namespaces.map(
-         (version) => ({
+      const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
+         const namespaceOptions: vscode.QuickPickItem[] = (
+            await namespaces
+         ).map((version) => ({
             label: version.metadata?.name || ''
-         })
-      );
-      const options: vscode.QuickPickItem[] = [
-         {label: newOption},
-         {label: '', kind: vscode.QuickPickItemKind.Separator},
-         ...namespaceOptions,
-         {
-            label: 'Existing namespaces',
-            kind: vscode.QuickPickItemKind.Separator
-         }
-      ];
-      const namespacePick = await wizardContext.ui.showQuickPick(options, {
+         }));
+
+         return [
+            {label: newOption},
+            {label: '', kind: vscode.QuickPickItemKind.Separator},
+            ...namespaceOptions,
+            {
+               label: 'Existing namespaces',
+               kind: vscode.QuickPickItemKind.Separator
+            }
+         ];
+      };
+      const namespacePick = await wizardContext.ui.showQuickPick(getOptions(), {
          ignoreFocusOut,
          stepName: 'Namespace',
          placeHolder: 'Namespace'
@@ -309,27 +307,25 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subsReturn = await this.az.listSubscriptions();
-      if (failed(subsReturn)) {
-         throw Error(subsReturn.error);
-      }
-      const subs = subsReturn.result;
+      const subs = getAysncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
       });
-      const subOptions: vscode.QuickPickItem[] = subs.map(subToItem);
-      const subPick = await wizardContext.ui.showQuickPick(subOptions, {
-         ignoreFocusOut,
-         stepName: 'ACR Subscription',
-         placeHolder: 'ACR Subscription',
-         noPicksMessage: 'No Subscriptions found'
-      });
+      const subPick = await wizardContext.ui.showQuickPick(
+         getAsyncOptions(subs, subToItem),
+         {
+            ignoreFocusOut,
+            stepName: 'ACR Subscription',
+            placeHolder: 'ACR Subscription',
+            noPicksMessage: 'No Subscriptions found'
+         }
+      );
 
       // if something was recently used this text is appened to the descritpion
       const removeRecentlyUsed = (description: string) =>
          description.replace(' (recently used)', '');
-      wizardContext.acrSubscription = subs.find(
+      wizardContext.acrSubscription = (await subs).find(
          (sub) =>
             subToItem(sub).description ===
             removeRecentlyUsed(subPick.description || '')
@@ -351,25 +347,23 @@ class PromptAcrResourceGroup extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Subscription is undefined');
       }
 
-      const rgsReturn = await this.az.listResourceGroups(
-         wizardContext.acrSubscription
+      const rgs = getAysncResult(
+         this.az.listResourceGroups(wizardContext.acrSubscription)
       );
-      if (failed(rgsReturn)) {
-         throw Error(rgsReturn.error);
-      }
-      const rgs = rgsReturn.result;
       const rgToItem = (rg: ResourceGroupItem) => ({
          label: rg.resourceGroup.name || ''
       });
-      const rgOptions: vscode.QuickPickItem[] = rgs.map(rgToItem);
-      const rgPick = await wizardContext.ui.showQuickPick(rgOptions, {
-         ignoreFocusOut,
-         stepName: 'ACR Resource Group',
-         placeHolder: 'ACR Resource Group',
-         noPicksMessage: 'No Resource Groups found'
-      });
+      const rgPick = await wizardContext.ui.showQuickPick(
+         getAsyncOptions(rgs, rgToItem),
+         {
+            ignoreFocusOut,
+            stepName: 'ACR Resource Group',
+            placeHolder: 'ACR Resource Group',
+            noPicksMessage: 'No Resource Groups found'
+         }
+      );
 
-      wizardContext.acrResourceGroup = rgs.find(
+      wizardContext.acrResourceGroup = (await rgs).find(
          (rg) => rgToItem(rg).label === rgPick.label
       );
    }
@@ -390,21 +384,17 @@ class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Resource Group is undefined');
       }
 
-      const registriesReturn = await this.az.listContainerRegistries(
-         wizardContext.acrSubscription,
-         wizardContext.acrResourceGroup
+      const registries = getAysncResult(
+         this.az.listContainerRegistries(
+            wizardContext.acrSubscription,
+            wizardContext.acrResourceGroup
+         )
       );
-      if (failed(registriesReturn)) {
-         throw Error(registriesReturn.error);
-      }
-      const registries = registriesReturn.result;
       const registryToItem = (r: RegistryItem) => ({
          label: r.registry.name || ''
       });
-      const registryOptions: vscode.QuickPickItem[] =
-         registries.map(registryToItem);
       const registryPick = await wizardContext.ui.showQuickPick(
-         registryOptions,
+         getAsyncOptions(registries, registryToItem),
          {
             ignoreFocusOut,
             stepName: 'Registry',
@@ -413,7 +403,7 @@ class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
-      wizardContext.acrRegistry = registries.find(
+      wizardContext.acrRegistry = (await registries).find(
          (r) => registryToItem(r).label === registryPick.label
       );
    }
@@ -436,22 +426,17 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Registry is undefined');
       }
 
-      const repositoriesReturn = await this.az.listRegistryRepositories(
-         wizardContext.acrSubscription,
-         wizardContext.acrRegistry
+      const repositories = getAysncResult(
+         this.az.listRegistryRepositories(
+            wizardContext.acrSubscription,
+            wizardContext.acrRegistry
+         )
       );
-      if (failed(repositoriesReturn)) {
-         throw Error(repositoriesReturn.error);
-      }
-      const repositories = repositoriesReturn.result;
-
       const repositoryToItem = (r: RepositoryItem) => ({
          label: r.repositoryName
       });
-      const repositoryOptions: vscode.QuickPickItem[] =
-         repositories.map(repositoryToItem);
       const repositoryPick = await wizardContext.ui.showQuickPick(
-         repositoryOptions,
+         getAsyncOptions(repositories, repositoryToItem),
          {
             ignoreFocusOut,
             stepName: 'Repository',
@@ -460,7 +445,7 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
-      wizardContext.acrRepository = repositories.find(
+      wizardContext.acrRepository = (await repositories).find(
          (r) => repositoryToItem(r).label === repositoryPick.label
       );
    }
@@ -486,25 +471,25 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Repository is undefined');
       }
 
-      const tagsReturn = await this.az.listRepositoryTags(
-         wizardContext.acrSubscription,
-         wizardContext.acrRegistry,
-         wizardContext.acrRepository
+      const tags = getAysncResult(
+         this.az.listRepositoryTags(
+            wizardContext.acrSubscription,
+            wizardContext.acrRegistry,
+            wizardContext.acrRepository
+         )
       );
-      if (failed(tagsReturn)) {
-         throw Error(tagsReturn.error);
-      }
-      const tags = tagsReturn.result;
       const tagToItem = (t: TagItem) => ({label: t.tag.name || ''});
-      const tagOptions: vscode.QuickPickItem[] = tags.map(tagToItem);
-      const tagPick = await wizardContext.ui.showQuickPick(tagOptions, {
-         ignoreFocusOut,
-         stepName: 'Tag',
-         placeHolder: 'Tag',
-         noPicksMessage: 'No tags found'
-      });
+      const tagPick = await wizardContext.ui.showQuickPick(
+         getAsyncOptions(tags, tagToItem),
+         {
+            ignoreFocusOut,
+            stepName: 'Tag',
+            placeHolder: 'Tag',
+            noPicksMessage: 'No tags found'
+         }
+      );
 
-      wizardContext.acrTag = tags.find(
+      wizardContext.acrTag = (await tags).find(
          (t) => tagToItem(t).label === tagPick.label
       );
 
@@ -672,4 +657,9 @@ function getOutputPath(wizardContext: WizardContext): string {
    }
 }
 
-// TODO: switch up promises to show loading in quick pick
+async function getAsyncOptions<T>(
+   arr: Promise<T[]>,
+   callbackfn: (a: T) => vscode.QuickPickItem
+): Promise<vscode.QuickPickItem[]> {
+   return (await arr).map(callbackfn);
+}
