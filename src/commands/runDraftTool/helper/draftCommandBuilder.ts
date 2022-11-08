@@ -27,7 +27,6 @@ export function buildCreateCommand(
    return args.join(' ');
 }
 
-// todo: touch this up
 export function buildCreateConfig(
    language: string,
    port: string,
