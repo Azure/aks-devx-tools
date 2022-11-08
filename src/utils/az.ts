@@ -9,11 +9,12 @@ import {
 } from '@azure/arm-containerregistry';
 import {
    ContainerRegistryClient,
-   ArtifactTagProperties,
-   KnownContainerRegistryAudience
+   ArtifactTagProperties
 } from '@azure/container-registry';
 import * as vscode from 'vscode';
 import {Errorable} from './errorable';
+import {TokenCredential} from '@azure/core-auth';
+import {Environment} from '@azure/ms-rest-azure-env';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -191,14 +192,11 @@ export class Az implements AzApi {
       }
 
       const {credentials2, environment} = subscriptionItem.session;
-      (credentials2 as any).signRequest = undefined; // @azure/container-registry doesn't support ADAL tokens at all and will error without this
       try {
-         const registryClient = new ContainerRegistryClient(
-            `https://${loginServer}`,
+         const registryClient = this.getContainerRegistryClient(
             credentials2,
-            {
-               audience: environment.resourceManagerEndpointUrl
-            }
+            loginServer,
+            environment
          );
          const repositories = await listAll(
             registryClient.listRepositoryNames()
@@ -233,14 +231,11 @@ export class Az implements AzApi {
       }
 
       const {credentials2, environment} = subscriptionItem.session;
-      (credentials2 as any).signRequest = undefined; // @azure/container-registry doesn't support ADAL tokens at all and will error without this
       try {
-         const registryClient = new ContainerRegistryClient(
-            `https://${loginServer}`,
+         const registryClient = this.getContainerRegistryClient(
             credentials2,
-            {
-               audience: environment.resourceManagerEndpointUrl
-            }
+            loginServer,
+            environment
          );
          const tags = await listAll(
             registryClient
@@ -257,6 +252,20 @@ export class Az implements AzApi {
             error: `Failed to list repository tags: ${error}`
          };
       }
+   }
+
+   private getContainerRegistryClient(
+      creds: TokenCredential,
+      loginServer: string,
+      environment: Environment
+   ): ContainerRegistryClient {
+      // @azure/container-registry doesn't support ADAL tokens at all and will error without this
+      // https://github.com/Azure/azure-sdk-for-js/issues/21192
+      (creds as any).signRequest = undefined;
+
+      return new ContainerRegistryClient(`https://${loginServer}`, creds, {
+         audience: environment.resourceManagerEndpointUrl
+      });
    }
 }
 
