@@ -207,7 +207,7 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          ''
       );
       const command = buildCreateCommand(
-         sourceCodeFolder.path,
+         sourceCodeFolder.fsPath,
          'dockerfile',
          configPath
       );

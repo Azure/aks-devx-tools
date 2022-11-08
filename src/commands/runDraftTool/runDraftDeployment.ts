@@ -594,7 +594,7 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          image
       );
       const command = buildCreateCommand(
-         outputFolder.path,
+         outputFolder.fsPath,
          'deployment',
          configPath
       );
@@ -642,7 +642,7 @@ class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
 }
 
 function getOutputPath(wizardContext: WizardContext): string {
-   const base = wizardContext.outputFolder?.path;
+   const base = wizardContext.outputFolder?.fsPath;
    if (base === undefined) {
       throw Error('Output folder is undefined');
    }
