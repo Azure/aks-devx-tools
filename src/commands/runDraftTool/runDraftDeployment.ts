@@ -64,7 +64,7 @@ type IExecuteStep = AzureWizardExecuteStep<WizardContext>;
 
 export async function runDraftDeployment(
    {actionContext, extensionContext}: Context,
-   outputFolder: vscode.Uri
+   outputFolder: vscode.Uri | undefined
 ) {
    const state: StateApi = State.construct(extensionContext);
    const kubeconfig = getDefaultKubeconfig();
@@ -93,11 +93,7 @@ export async function runDraftDeployment(
    }
 
    const workspaceFolders = vscode.workspace.workspaceFolders;
-   if (
-      outputFolder.path === '/undefined' && //vscode default when no folder was selected
-      workspaceFolders &&
-      workspaceFolders.length !== 0
-   ) {
+   if (!outputFolder && workspaceFolders && workspaceFolders.length !== 0) {
       outputFolder = workspaceFolders[0].uri;
    }
 

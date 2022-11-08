@@ -32,7 +32,7 @@ type IExecuteStep = AzureWizardExecuteStep<WizardContext>;
 
 export async function runDraftDockerfile(
    {actionContext, extensionContext}: Context,
-   sourceCodeFolder: vscode.Uri
+   sourceCodeFolder: vscode.Uri | undefined
 ) {
    const state: StateApi = State.construct(extensionContext);
 
@@ -46,11 +46,7 @@ export async function runDraftDockerfile(
    }
 
    const workspaceFolders = vscode.workspace.workspaceFolders;
-   if (
-      sourceCodeFolder.path === '/undefined' && // vscode default when no folder was right clicked
-      workspaceFolders &&
-      workspaceFolders.length !== 0
-   ) {
+   if (!sourceCodeFolder && workspaceFolders && workspaceFolders.length !== 0) {
       sourceCodeFolder = workspaceFolders[0].uri;
    }
    const wizardContext: WizardContext = {

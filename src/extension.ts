@@ -45,7 +45,11 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
       'aks-draft-extension.runDraftDockerfile',
       (actionContext: IActionContext, folder) => {
          const context: Context = {actionContext, extensionContext};
-         return runDraftDockerfile(context, vscode.Uri.parse(folder));
+         let target = undefined;
+         try {
+            target = vscode.Uri.parse(folder, true);
+         } catch {}
+         return runDraftDockerfile(context, target);
       }
    );
 
@@ -53,7 +57,11 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
       'aks-draft-extension.runDraftDeployment',
       (actionContext: IActionContext, folder) => {
          const context: Context = {actionContext, extensionContext};
-         return runDraftDeployment(context, vscode.Uri.parse(folder));
+         let target = undefined;
+         try {
+            target = vscode.Uri.parse(folder, true);
+         } catch {}
+         return runDraftDeployment(context, target);
       }
    );
 
