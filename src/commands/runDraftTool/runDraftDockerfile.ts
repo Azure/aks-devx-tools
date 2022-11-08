@@ -45,9 +45,17 @@ export async function runDraftDockerfile(
       return undefined;
    }
 
+   const workspaceFolders = vscode.workspace.workspaceFolders;
+   if (
+      sourceCodeFolder.path === '/undefined' && // vscode default when no folder was right clicked
+      workspaceFolders &&
+      workspaceFolders.length !== 0
+   ) {
+      sourceCodeFolder = workspaceFolders[0].uri;
+   }
    const wizardContext: WizardContext = {
       ...actionContext,
-      sourceCodeFolder
+      sourceCodeFolder: sourceCodeFolder
    };
    const promptSteps: IPromptStep[] = [
       new PromptSourceCodeFolder(),
@@ -80,6 +88,7 @@ class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
             canSelectMany: false,
             stepName: 'Source Code Folder',
             openLabel: 'Choose Source Code Folder',
+            title: 'Choose Source Code Folder',
             defaultUri: wizardContext.sourceCodeFolder
          })
       )[0];

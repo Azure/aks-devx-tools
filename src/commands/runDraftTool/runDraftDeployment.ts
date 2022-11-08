@@ -93,12 +93,20 @@ export async function runDraftDeployment(
    }
 
    const workspaceFolders = vscode.workspace.workspaceFolders;
+   if (
+      outputFolder.path === '/undefined' && //vscode default when no folder was selected
+      workspaceFolders &&
+      workspaceFolders.length !== 0
+   ) {
+      outputFolder = workspaceFolders[0].uri;
+   }
+
    const applicationNameGuess =
       workspaceFolders === undefined ? '' : workspaceFolders[0].name;
    const wizardContext: WizardContext = {
       ...actionContext,
       port: state.getPort(),
-      outputFolder,
+      outputFolder: outputFolder,
       applicationName: applicationNameGuess
    };
    const promptSteps: IPromptStep[] = [
@@ -140,6 +148,7 @@ class PromptOutputFolder extends AzureWizardPromptStep<WizardContext> {
             canSelectMany: false,
             stepName: 'Output Folder',
             openLabel: 'Choose Output Folder',
+            title: 'Choose Output Folder',
             defaultUri: wizardContext.outputFolder
          })
       )[0];
