@@ -190,15 +190,14 @@ export class Az implements AzApi {
          return {succeeded: false, error: 'registry login server undefined'};
       }
 
-      const {credentials2} = subscriptionItem.session;
+      const {credentials2, environment} = subscriptionItem.session;
       (credentials2 as any).signRequest = undefined; // @azure/container-registry doesn't support ADAL tokens at all and will error without this
       try {
          const registryClient = new ContainerRegistryClient(
             `https://${loginServer}`,
             credentials2,
             {
-               audience:
-                  KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
+               audience: environment.resourceManagerEndpointUrl
             }
          );
          const repositories = await listAll(
@@ -233,16 +232,14 @@ export class Az implements AzApi {
          return {succeeded: false, error: 'registry login server undefined'};
       }
 
-      const {credentials2} = subscriptionItem.session;
+      const {credentials2, environment} = subscriptionItem.session;
       (credentials2 as any).signRequest = undefined; // @azure/container-registry doesn't support ADAL tokens at all and will error without this
       try {
          const registryClient = new ContainerRegistryClient(
             `https://${loginServer}`,
             credentials2,
             {
-               // todo: don't hardcode this
-               audience:
-                  KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
+               audience: environment.resourceManagerEndpointUrl
             }
          );
          const tags = await listAll(
