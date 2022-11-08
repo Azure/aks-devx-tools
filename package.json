@@ -16,10 +16,7 @@
    ],
    "activationEvents": [
       "onCommand:aks-draft-extension.runDraftDockerfile",
-      "onCommand:aks-draft-extension.runDraftDeployment",
-      "onCommand:aks-draft-extension.runDraftSetupGH",
-      "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
-      "onCommand:aks-draft-extension.runDraftUpdate"
+      "onCommand:aks-draft-extension.runDraftDeployment"
    ],
    "main": "./dist/extension.js",
    "contributes": {
@@ -42,18 +39,6 @@
          {
             "command": "aks-draft-extension.runDraftDeployment",
             "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
-         },
-         {
-            "command": "aks-draft-extension.runDraftSetupGH",
-            "title": "Set Up GitHub OpenID Connect"
-         },
-         {
-            "command": "aks-draft-extension.runDraftGenerateWorkflow",
-            "title": "Generate Workflow"
-         },
-         {
-            "command": "aks-draft-extension.runDraftUpdate",
-            "title": "Add Web App Routing Annotations"
          }
       ],
       "menus": {
@@ -66,30 +51,12 @@
          ],
          "aksdevx.submenuDraft": [
             {
-               "submenu": "aksdevx.aksDraftSubMenu",
-               "group": "draftnavigation"
-            }
-         ],
-         "aksdevx.aksDraftSubMenu": [
-            {
                "command": "aks-draft-extension.runDraftDockerfile",
                "group": "draftnavigation@1"
             },
             {
                "command": "aks-draft-extension.runDraftDeployment",
                "group": "draftnavigation@2"
-            },
-            {
-               "command": "aks-draft-extension.runDraftSetupGH",
-               "group": "draftnavigation@3"
-            },
-            {
-               "command": "aks-draft-extension.runDraftGenerateWorkflow",
-               "group": "draftnavigation@4"
-            },
-            {
-               "command": "aks-draft-extension.runDraftUpdate",
-               "group": "draftnavigation@5"
             }
          ]
       },
