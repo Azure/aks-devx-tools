@@ -624,7 +624,7 @@ class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
       const files = await vscode.workspace.findFiles(relativePattern);
 
       for (const file of files) {
-         if (fs.lstatSync(file.path).isDirectory()) {
+         if (fs.lstatSync(file.fsPath).isDirectory()) {
             continue;
          }
 
