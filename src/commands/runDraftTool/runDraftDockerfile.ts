@@ -292,7 +292,7 @@ class ExecutePromptAcr extends AzureWizardExecuteStep<WizardContext> {
       const buildAcrLink = 'Docs';
       await vscode.window
          .showInformationMessage(
-            'The Dockerfile was created. The next step is to build the image on Azure Container Registry.',
+            'The Dockerfile was created. Next, build the image on Azure Container Registry.',
             buildAcrLink
          )
          .then((input) => {

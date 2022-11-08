@@ -322,7 +322,7 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
-      // if something was recently used this text is appened to the descritpion
+      // if something was recently used this text is appened to the description
       const removeRecentlyUsed = (description: string) =>
          description.replace(' (recently used)', '');
       wizardContext.acrSubscription = (await subs).find(
