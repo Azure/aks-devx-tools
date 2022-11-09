@@ -12,7 +12,7 @@ import {buildGenerateWorkflowCommand} from './helper/draftCommandBuilder';
 import {Context} from './model/context';
 
 export default async function runDraftGenerateWorkflow(
-   context: Context,
+   {actionContext, extensionContext}: Context,
    destination: string
 ): Promise<void> {
    const extensionPath = getExtensionPath();
@@ -79,7 +79,7 @@ export default async function runDraftGenerateWorkflow(
             stdout: success,
             stderr: err
          };
-         context.telemetry.properties.result = isSuccess
+         actionContext.telemetry.properties.result = isSuccess
             ? 'Succeeded'
             : 'Failed';
 

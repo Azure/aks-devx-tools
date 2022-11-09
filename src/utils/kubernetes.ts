@@ -1,4 +1,5 @@
 import {KubeConfig, CoreV1Api, V1Namespace} from '@kubernetes/client-node';
+import {ActionOnInvalid} from '@kubernetes/client-node/dist/config_types';
 import {
    extension as kubernetesExtension,
    HelmV1,
@@ -19,7 +20,11 @@ export interface KubernetesApi {
 
 export function getDefaultKubeconfig(): KubeConfig {
    const kc = new KubeConfig();
-   kc.loadFromDefault();
+   try {
+      kc.loadFromDefault({onInvalidEntry: ActionOnInvalid.FILTER});
+   } catch (err) {
+      throw Error(`Failed to load default Kubeconfig: ${err}`);
+   }
    return kc;
 }
 

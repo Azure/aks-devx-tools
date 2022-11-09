@@ -15,10 +15,8 @@
       "Azure"
    ],
    "activationEvents": [
-      "onCommand:aks-draft-extension.runDraftCreate",
-      "onCommand:aks-draft-extension.runDraftSetupGH",
-      "onCommand:aks-draft-extension.runDraftGenerateWorkflow",
-      "onCommand:aks-draft-extension.runDraftUpdate"
+      "onCommand:aks-draft-extension.runDraftDockerfile",
+      "onCommand:aks-draft-extension.runDraftDeployment"
    ],
    "main": "./dist/extension.js",
    "contributes": {
@@ -27,7 +25,7 @@
          "properties": {
             "aks.draft.releaseTag": {
                "type": "string",
-               "default": "v0.0.22",
+               "default": "v0.0.25",
                "title": "Draft repository release tag",
                "description": "Release tag for the stable Draft tool release."
             }
@@ -35,20 +33,12 @@
       },
       "commands": [
          {
-            "command": "aks-draft-extension.runDraftCreate",
-            "title": "Create Deployment Files"
+            "command": "aks-draft-extension.runDraftDockerfile",
+            "title": "AKS Developer: Draft a Dockerfile"
          },
          {
-            "command": "aks-draft-extension.runDraftSetupGH",
-            "title": "Set Up GitHub OpenID Connect"
-         },
-         {
-            "command": "aks-draft-extension.runDraftGenerateWorkflow",
-            "title": "Generate Workflow"
-         },
-         {
-            "command": "aks-draft-extension.runDraftUpdate",
-            "title": "Add Web App Routing Annotations"
+            "command": "aks-draft-extension.runDraftDeployment",
+            "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
          }
       ],
       "menus": {
@@ -61,26 +51,12 @@
          ],
          "aksdevx.submenuDraft": [
             {
-               "submenu": "aksdevx.aksDraftSubMenu",
-               "group": "draftnavigation"
-            }
-         ],
-         "aksdevx.aksDraftSubMenu": [
-            {
-               "command": "aks-draft-extension.runDraftCreate",
+               "command": "aks-draft-extension.runDraftDockerfile",
                "group": "draftnavigation@1"
             },
             {
-               "command": "aks-draft-extension.runDraftSetupGH",
+               "command": "aks-draft-extension.runDraftDeployment",
                "group": "draftnavigation@2"
-            },
-            {
-               "command": "aks-draft-extension.runDraftGenerateWorkflow",
-               "group": "draftnavigation@3"
-            },
-            {
-               "command": "aks-draft-extension.runDraftUpdate",
-               "group": "draftnavigation@4"
             }
          ]
       },
@@ -96,7 +72,8 @@
       ]
    },
    "extensionDependencies": [
-      "ms-kubernetes-tools.vscode-kubernetes-tools"
+      "ms-kubernetes-tools.vscode-kubernetes-tools",
+      "ms-vscode.azure-account"
    ],
    "scripts": {
       "vscode:prepublish": "npm run package",
@@ -109,9 +86,6 @@
       "lint": "eslint src --ext ts",
       "test": "node ./out/test/runTest.js"
    },
-   "extensionDependencies": [
-      "ms-vscode.azure-account"
-   ],
    "devDependencies": {
       "@types/download": "^8.0.1",
       "@types/glob": "^7.2.0",
@@ -127,6 +101,7 @@
       "glob": "^8.0.1",
       "mocha": "^9.2.2",
       "prettier": "^2.7.1",
+      "terser-webpack-plugin": "^5.3.6",
       "ts-loader": "^9.2.8",
       "typescript": "^4.6.4",
       "webpack": "^5.73.0",
@@ -155,5 +130,8 @@
    "repository": {
       "type": "git",
       "url": "https://github.com/Azure/aks-devx-tools"
+   },
+   "bugs": {
+      "url": "https://github.com/Azure/aks-devx-tools/issues"
    }
 }
