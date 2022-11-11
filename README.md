@@ -22,7 +22,7 @@ Draft makes it easier for developers to get started building apps that run on Ku
 
 To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. Another viable option is to press ctrl + shift + p and open up the command palette and type "AKS Developer"
 
-![Draft commands](resources/draft-extension-homepage.png)
+![Draft commands](resources/devx-command-palette.png)
 
 To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order:
 
