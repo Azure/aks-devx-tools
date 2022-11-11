@@ -1,4 +1,4 @@
-# Azure Kubernetes Service (AKS) DevX (Developer experience) Extension for Visual Studio Code (Preview)
+# Azure Kubernetes Service (AKS) DevX Extension for Visual Studio Code (Preview)
 
 The AKS DevX extension for Visual Studio Code (Preview) is an extension focused on enhancing your day-to-day life as a developer on Azure Kubernetes Service. This extension is focused on non-cluster developer experiences. If you are more interested in cluster operations, download the [aks-extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-aks-tools).
 
