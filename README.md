@@ -20,7 +20,7 @@ The current list of experiences in this extension are:
 
 Draft makes it easier for developers to get started building apps that run on Kubernetes by taking a non-containerized application and generating the Dockerfiles, Kubernetes manifests, Helm charts, Kustomize configuration, and other artifacts associated with a containerized application.
 
-To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. Another viable option is to press ctrl + shift + p and open up the command palette and type "AKS Developer"
+To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. Another viable option is to press ctrl + shift + p and open up the command palette and type "AKS Developer".
 
 ![Draft commands](resources/devx-command-palette.png)
 
