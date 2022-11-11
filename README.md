@@ -26,8 +26,8 @@ To get started with Draft, right click your directory in your Visual Studio Code
 
 To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order:
 
--   Draft a Dockerfile
--   Draft a Kubernetes Deployment and Service
+-  Draft a Dockerfile
+-  Draft a Kubernetes Deployment and Service
 
 **Note:** Draft currently has a dependency on [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) and [GitHub CLI](https://cli.github.com/).
 
