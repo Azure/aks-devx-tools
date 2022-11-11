@@ -1,4 +1,4 @@
-# Azure Kubernetes Service (AKS) DevX (Developer experience) Extension for Visual Studio Code (Preview)
+# Azure Kubernetes Service (AKS) DevX Extension for Visual Studio Code (Preview)
 
 The AKS DevX extension for Visual Studio Code (Preview) is an extension focused on enhancing your day-to-day life as a developer on Azure Kubernetes Service. This extension is focused on non-cluster developer experiences. If you are more interested in cluster operations, download the [aks-extension](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-aks-tools).
 
@@ -18,17 +18,16 @@ The current list of experiences in this extension are:
 
 ### Draft
 
-Draft makes it easier for developers to get started building apps that run on Kubernetes by taking a non-containerized application and generating the Dockerfiles, Kubernetes manifests, Helm charts, Kustomize configuration, and other artifacts associated with a containerized application. Draft can also generate a GitHub Actions workflow file to quickly build and deploy applications onto an AKS cluster.
+Draft makes it easier for developers to get started building apps that run on Kubernetes by taking a non-containerized application and generating the Dockerfiles, Kubernetes manifests, Helm charts, Kustomize configuration, and other artifacts associated with a containerized application.
 
-To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you.
+To get started with Draft, right click your directory in your Visual Studio Code window. The window “Run AKS DevX Tool” holds the menu for Draft. Here, you can see all the Draft commands available to you. Another viable option is to press ctrl + shift + p and open up the command palette and type "AKS Developer".
 
-![Draft commands](resources/draft-extension-homepage.png)
+![Draft commands](resources/devx-command-palette.png)
 
 To properly use Draft to containerize your application, create manifest files, and deploy your application, you must use the commands in the following order:
 
--  Create Deployment Files
--  Setup GitHub OpenID Connect
--  Generate Workflow.
+-   Draft a Dockerfile
+-   Draft a Kubernetes Deployment and Service
 
 **Note:** Draft currently has a dependency on [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) and [GitHub CLI](https://cli.github.com/).
 
@@ -38,15 +37,11 @@ To properly use Draft to containerize your application, create manifest files, a
 
 -  Supported deployment types: Helm, Kustomize, Kubernetes manifest.
 
-**Draft Set Up GitHub OpenID Connect** automates the GitHub OIDC setup process for your project.
-
-**Draft Generate Workflow** generates a GitHub Actions workflow for automatic build and deploy to a Kubernetes cluster.
-
-**Draft Add Web App Routing Annotations** annotates your Kubernetes service manifest to expose it to the internet through Web App Routing.
-
 ## Telemetry
 
-This extension collects telemetry data to help us build a better experience for building applications with Azure Kubernetes Service and VS Code.
+This extension collects telemetry data to help us build a better experience for building applications with Azure Kubernetes Service and VS Code. We only collect the following data:
+
+-  Which commands are executed.
 
 We do not collect any information about image names, paths, etc. Read our [privacy statement](https://privacy.microsoft.com/privacystatement) to learn more. If you don’t wish to send usage data to Microsoft, you can set the `telemetry.enableTelemetry` setting to `false`. Learn more in our [FAQ](https://code.visualstudio.com/docs/supporting/faq#_how-to-disable-telemetry-reporting).
 
