@@ -1,83 +1,96 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import runDraftCreate from './commands/runDraftTool/runDraftCreate';
 import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWorkflow';
 import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
 import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
-import {Reporter, reporter} from './utils/reporter';
+import {
+   IActionContext,
+   callWithTelemetryAndErrorHandling,
+   createAzExtOutputChannel,
+   registerUIExtensionVariables,
+   registerCommand
+} from '@microsoft/vscode-azext-utils';
+import {Context} from './commands/runDraftTool/model/context';
+import {runDraftDockerfile} from './commands/runDraftTool/runDraftDockerfile';
+import {runDraftDeployment} from './commands/runDraftTool/runDraftDeployment';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-   // Use the console to output diagnostic information (console.log) and errors (console.error)
-   // This line of code will only be executed once when your extension is activated
-   console.log(
-      'Congratulations, your extension "aks-draft-extension" is now active!'
-   );
-   context.subscriptions.push(new Reporter(context));
+export async function activate(context: vscode.ExtensionContext) {
+   initializeExtensionVariables(context);
 
-   // The command has been defined in the package.json file
-   // Now provide the implementation of the command with registerCommand
-   // The commandId parameter must match the command field in package.json
+   await callWithTelemetryAndErrorHandling(
+      'aks-devx-tools.activate',
+      async (activateContext: IActionContext) => {
+         activateContext.errorHandling.rethrow = true;
+         activateContext.telemetry.properties.isActivationEvent = 'true';
 
-   let disposableCreate = vscode.commands.registerCommand(
-      'aks-draft-extension.runDraftCreate',
-      async (folder) => {
-         if (reporter) {
-            reporter.sendTelemetryEvent('command', {
-               command: 'aks-draft-extension.runDraftCreate'
-            });
-         }
-         // The code you place here will be executed every time your command is executed
-         // Display a message box to the user
-         runDraftCreate(context, vscode.Uri.parse(folder).fsPath);
+         registerCommands(context);
       }
    );
-   let disposableSetupGH = vscode.commands.registerCommand(
+}
+
+function initializeExtensionVariables(context: vscode.ExtensionContext): void {
+   const outputChannel = createAzExtOutputChannel('AKS DevX Tools', '');
+   context.subscriptions.push(outputChannel);
+   registerUIExtensionVariables({
+      context,
+      outputChannel
+   });
+}
+
+function registerCommands(extensionContext: vscode.ExtensionContext): void {
+   registerCommand(
+      'aks-draft-extension.runDraftDockerfile',
+      (actionContext: IActionContext, folder) => {
+         const context: Context = {actionContext, extensionContext};
+         let target = undefined;
+         try {
+            target = vscode.Uri.parse(folder, true);
+         } catch {}
+         return runDraftDockerfile(context, target);
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDraftDeployment',
+      (actionContext: IActionContext, folder) => {
+         const context: Context = {actionContext, extensionContext};
+         let target = undefined;
+         try {
+            target = vscode.Uri.parse(folder, true);
+         } catch {}
+         return runDraftDeployment(context, target);
+      }
+   );
+
+   registerCommand(
       'aks-draft-extension.runDraftSetupGH',
-      async (folder) => {
-         if (reporter) {
-            reporter.sendTelemetryEvent('command', {
-               command: 'aks-draft-extension.runDraftSetupGH'
-            });
-         }
-         // The code you place here will be executed every time your command is executed
-         // Display a message box to the user
-         runDraftSetupGH(context);
-      }
-   );
-   let disposableGenerateWorkflow = vscode.commands.registerCommand(
-      'aks-draft-extension.runDraftGenerateWorkflow',
-      async (folder) => {
-         if (reporter) {
-            reporter.sendTelemetryEvent('command', {
-               command: 'aks-draft-extension.runDraftGenerateWorkflow'
-            });
-         }
-         // The code you place here will be executed every time your command is executed
-         // Display a message box to the user
-         runDraftGenerateWorkflow(context, vscode.Uri.parse(folder).fsPath);
-      }
-   );
-   let disposableUpdate = vscode.commands.registerCommand(
-      'aks-draft-extension.runDraftUpdate',
-      async (folder) => {
-         if (reporter) {
-            reporter.sendTelemetryEvent('command', {
-               command: 'aks-draft-extension.runDraftUpdate'
-            });
-         }
-         // The code you place here will be executed every time your command is executed
-         // Display a message box to the user
-         runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
+      (actionContext: IActionContext) => {
+         const context: Context = {actionContext, extensionContext};
+         return runDraftSetupGH(context);
       }
    );
 
-   context.subscriptions.push(disposableCreate);
-   context.subscriptions.push(disposableSetupGH);
-   context.subscriptions.push(disposableGenerateWorkflow);
-   context.subscriptions.push(disposableUpdate);
+   registerCommand(
+      'aks-draft-extension.runDraftGenerateWorkflow',
+      (actionContext: IActionContext, folder) => {
+         const context: Context = {actionContext, extensionContext};
+         return runDraftGenerateWorkflow(
+            context,
+            vscode.Uri.parse(folder).fsPath
+         );
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDraftUpdate',
+      (actionContext: IActionContext, folder) => {
+         const context: Context = {actionContext, extensionContext};
+         return runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
+      }
+   );
 }
 
 // this method is called when your extension is deactivated

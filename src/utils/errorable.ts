@@ -18,6 +18,15 @@ export function failed<T>(e: Errorable<T>): e is Failed {
    return !e.succeeded;
 }
 
+export async function getAysncResult<T>(e: Promise<Errorable<T>>): Promise<T> {
+   const awaited = await e;
+   if (failed(awaited)) {
+      throw Error(awaited.error);
+   }
+
+   return awaited.result;
+}
+
 export function map<T, U>(e: Errorable<T>, fn: (t: T) => U): Errorable<U> {
    if (failed(e)) {
       return {succeeded: false, error: e.error};
