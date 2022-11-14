@@ -1,9 +1,6 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import runDraftGenerateWorkflow from './commands/runDraftTool/runDraftGenerateWorkflow';
-import runDraftSetupGH from './commands/runDraftTool/runDraftSetupGH';
-import runDraftUpdate from './commands/runDraftTool/runDraftUpdate';
 import {
    IActionContext,
    callWithTelemetryAndErrorHandling,
@@ -62,33 +59,6 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
             target = vscode.Uri.parse(folder, true);
          } catch {}
          return runDraftDeployment(context, target);
-      }
-   );
-
-   registerCommand(
-      'aks-draft-extension.runDraftSetupGH',
-      (actionContext: IActionContext) => {
-         const context: Context = {actionContext, extensionContext};
-         return runDraftSetupGH(context);
-      }
-   );
-
-   registerCommand(
-      'aks-draft-extension.runDraftGenerateWorkflow',
-      (actionContext: IActionContext, folder) => {
-         const context: Context = {actionContext, extensionContext};
-         return runDraftGenerateWorkflow(
-            context,
-            vscode.Uri.parse(folder).fsPath
-         );
-      }
-   );
-
-   registerCommand(
-      'aks-draft-extension.runDraftUpdate',
-      (actionContext: IActionContext, folder) => {
-         const context: Context = {actionContext, extensionContext};
-         return runDraftUpdate(context, vscode.Uri.parse(folder).fsPath);
       }
    );
 }
