@@ -1,4 +1,3 @@
-import * as shell from 'shelljs';
 import * as os from 'os';
 import path = require('path');
 const {exec} = require('child_process');

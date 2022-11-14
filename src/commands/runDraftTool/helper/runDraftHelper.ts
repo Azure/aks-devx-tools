@@ -1,111 +1,12 @@
 import * as vscode from 'vscode';
-import {InstallationResponse} from '../model/installationResponse';
-import {getRenderedContent, getResourceUri} from '../../../utils/webview';
 import * as fs from 'fs';
-import fetch from 'node-fetch';
 import * as os from 'os';
 import * as download from '../../../component/download';
 import {baseInstallFolder} from '../../../utils/commandHelper';
 import * as path from 'path';
 import {combine, Errorable, failed, succeeded} from '../../../utils/errorable';
 import {shell} from '../../../utils/shell';
-import internal = require('stream');
 import {DraftConfig} from '../model/DraftConfig';
-
-interface InstallResult {
-   succeeded?: boolean;
-   mainMessage?: string;
-   output?: string;
-   logs?: LogSection[];
-}
-
-interface LogSection {
-   title?: string;
-   messages?: string;
-}
-
-export function createDraftWebView(
-   command: string,
-   webview: vscode.Webview,
-   extensionPath: string,
-   installationResponse: InstallationResponse,
-   getUserInput = false
-) {
-   // For the case of successful run of the tool we render webview with the output information.
-   webview.html = getWebviewContent(
-      command,
-      installationResponse.name,
-      extensionPath,
-      installationResponse,
-      getUserInput
-   );
-}
-
-function getWebviewContent(
-   command: string,
-   clustername: string,
-   aksExtensionPath: string,
-   installationResponse: InstallationResponse,
-   getUserInput: boolean
-): string {
-   const styleUri = getResourceUri(
-      aksExtensionPath,
-      'rundrafttool',
-      'draft_style.css'
-   );
-   const templateUri = getResourceUri(
-      aksExtensionPath,
-      'rundrafttool',
-      `draft_${command}.html`
-   );
-
-   const installHtmlResult = getOrganisedInstallResult(
-      clustername,
-      installationResponse
-   );
-   const data = {
-      cssuri: styleUri,
-      name: clustername,
-      mainMessage: installHtmlResult.mainMessage,
-      resultLogs: installHtmlResult.logs,
-      isSuccess: installHtmlResult.succeeded,
-      output: installHtmlResult.output,
-      getUserInput: getUserInput
-   };
-
-   return getRenderedContent(templateUri, data);
-}
-
-function getOrganisedInstallResult(
-   clustername: string,
-   installationResponse: InstallationResponse
-) {
-   const stdout = installationResponse.stdout || '';
-   const stderr = installationResponse.stderr || '';
-   const succeeded = stderr?.length === 0 && stdout?.length !== 0;
-   const output = succeeded ? stdout : stderr;
-
-   let logs: LogSection[] = [];
-   const mainMessage = succeeded
-      ? 'Draft was executed successfully!'
-      : 'Draft was not executed successfully.';
-   const logsText = output?.split('\n');
-   for (let i = 0; i < logsText.length; i++) {
-      if (logsText[i].length > 0) {
-         const log: LogSection = {messages: logsText[i]};
-         logs.push(log);
-      }
-   }
-
-   const installResults: InstallResult = {
-      mainMessage: mainMessage,
-      logs: logs,
-      succeeded: succeeded,
-      output
-   };
-
-   return installResults;
-}
 
 async function getLatestDraftReleaseTag() {
    const draftConfig = getDraftConfig();

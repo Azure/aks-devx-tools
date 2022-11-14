@@ -64,10 +64,6 @@
          {
             "id": "aksdevx.submenuDraft",
             "label": "Run AKS DevX Tool"
-         },
-         {
-            "id": "aksdevx.aksDraftSubMenu",
-            "label": "Draft Tools"
          }
       ]
    },
