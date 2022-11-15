@@ -16,7 +16,8 @@
    ],
    "activationEvents": [
       "onCommand:aks-draft-extension.runDraftDockerfile",
-      "onCommand:aks-draft-extension.runDraftDeployment"
+      "onCommand:aks-draft-extension.runDraftDeployment",
+      "onCommand:aks-draft-extension.runBuildAcrImage"
    ],
    "main": "./dist/extension.js",
    "contributes": {
@@ -39,6 +40,10 @@
          {
             "command": "aks-draft-extension.runDraftDeployment",
             "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
+         },
+         {
+            "command": "aks-draft-extension.runBuildAcrImage",
+            "title": "AKS Developer: Build an Image on Azure Container Registry"
          }
       ],
       "menus": {
@@ -57,6 +62,10 @@
             {
                "command": "aks-draft-extension.runDraftDeployment",
                "group": "draftnavigation@2"
+            },
+            {
+               "command": "aks-draft-extension.runBuildAcrImage",
+               "group": "draftnavigation@2"
             }
          ]
       },
@@ -69,7 +78,8 @@
    },
    "extensionDependencies": [
       "ms-kubernetes-tools.vscode-kubernetes-tools",
-      "ms-vscode.azure-account"
+      "ms-vscode.azure-account",
+      "ms-azuretools.vscode-docker"
    ],
    "scripts": {
       "vscode:prepublish": "npm run package",
@@ -87,6 +97,7 @@
       "@types/glob": "^7.2.0",
       "@types/mocha": "^9.1.1",
       "@types/node": "14.x",
+      "@types/semver": "^7.3.13",
       "@types/shelljs": "^0.8.11",
       "@types/tmp": "^0.2.3",
       "@types/vscode": "^1.67.0",
@@ -112,10 +123,12 @@
       "@azure/ms-rest-azure-env": "^2.0.0",
       "@azure/ms-rest-nodeauth": "^3.1.1",
       "@kubernetes/client-node": "^0.17.1",
+      "@microsoft/vscode-azext-azureutils": "^0.3.5",
       "@microsoft/vscode-azext-utils": "^0.3.15",
       "download": "^8.0.0",
       "handlebars": "^4.7.7",
       "node-fetch": "^3.2.5",
+      "semver": "^7.3.8",
       "shelljs": "^0.8.5",
       "tmp": "^0.2.1",
       "ts-mockito": "^2.6.1",

@@ -16,7 +16,9 @@ import {
    buildCreateConfig
 } from './helper/draftCommandBuilder';
 import {State, StateApi} from '../../utils/state';
-import {PromptPort, ignoreFocusOut} from './helper/commonPrompts';
+import {ignoreFocusOut} from './helper/commonPrompts';
+import {CompletedSteps} from './model/guidedExperience';
+import {ValidatePort} from '../../utils/validation';
 
 const title = 'Draft a Dockerfile from source code';
 
@@ -32,7 +34,8 @@ type IExecuteStep = AzureWizardExecuteStep<WizardContext>;
 
 export async function runDraftDockerfile(
    {actionContext, extensionContext}: Context,
-   sourceCodeFolder: vscode.Uri | undefined
+   sourceCodeFolder: vscode.Uri | undefined,
+   completedSteps: CompletedSteps
 ) {
    const state: StateApi = State.construct(extensionContext);
 
@@ -64,7 +67,7 @@ export async function runDraftDockerfile(
       new ExecuteDraft(),
       new ExecuteOpenDockerfiles(),
       new ExecuteSaveState(state),
-      new ExecutePromptAcr()
+      new ExecutePromptAcr(completedSteps)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -170,6 +173,28 @@ class PromptDockerfileOverride extends AzureWizardPromptStep<WizardContext> {
       }
 
       return false;
+   }
+}
+
+export class PromptPort extends AzureWizardPromptStep<
+   IActionContext & Partial<{port: string}>
+> {
+   public async prompt(
+      wizardContext: IActionContext & Partial<{port: string}>
+   ): Promise<void> {
+      wizardContext.port = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'Port (e.g. 8080)',
+         stepName: 'Port',
+         validateInput: ValidatePort,
+         value: wizardContext.port
+      });
+   }
+
+   public shouldPrompt(
+      wizardContext: IActionContext & Partial<{port: string}>
+   ): boolean {
+      return true;
    }
 }
 
@@ -282,6 +307,10 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
 class ExecutePromptAcr extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 4;
 
+   constructor(private completedSteps: CompletedSteps) {
+      super();
+   }
+
    public async execute(
       wizardContext: WizardContext,
       progress: vscode.Progress<{
@@ -289,19 +318,18 @@ class ExecutePromptAcr extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
-      const buildAcrLink = 'Docs';
+      const buildAcrButton = 'Build';
       await vscode.window
          .showInformationMessage(
             'The Dockerfile was created. Next, build the image on Azure Container Registry.',
-            buildAcrLink
+            buildAcrButton
          )
          .then((input) => {
-            if (input === buildAcrLink) {
+            if (input === buildAcrButton) {
+               this.completedSteps.draftDockerfile = true;
                vscode.commands.executeCommand(
-                  'vscode.open',
-                  vscode.Uri.parse(
-                     'https://learn.microsoft.com/en-us/azure/container-registry/container-registry-quickstart-task-cli#build-and-push-image-from-a-dockerfile'
-                  )
+                  'aks-draft-extension.runBuildAcrImage',
+                  this.completedSteps
                );
             }
          });
