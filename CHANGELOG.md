@@ -1,6 +1,6 @@
 # Change Log
 
-## 0.1.0
+## [0.1.0]
 
 -  New UI changes seen at [Kubecon NA 2022](https://azuredaywithkubernetes2022.com/from-cloud-to-code-quickly-with-aks-spencer-libbing-brandon-foley/) released.
 -  New experiences for
@@ -10,13 +10,13 @@
 
 Thanks to Ahmed, Jaiveer, David, Oliver, Hariharan, Brandon, Tatsat, and the whole AKS ATL Team!
 
-## 0.0.2
+## [0.0.2]
 
 -  Improve docs links and details.
 
 Thanks to Karen, Quentin
 
-## 0.0.1
+## [0.0.1]
 
 -  Draft feature release.
 
