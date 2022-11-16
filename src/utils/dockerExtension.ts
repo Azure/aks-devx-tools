@@ -3,6 +3,10 @@ import * as vscode from 'vscode';
 import * as semver from 'semver';
 
 const REQUIRED_VERSION = '^1.23.0';
+enum RootStrategy {
+   Default = 'Default',
+   DockerfileFolder = 'DockerfileFolder'
+}
 
 function ensureDockerExtension() {
    const extension = vscode.extensions.getExtension(
@@ -20,10 +24,14 @@ function ensureDockerExtension() {
    }
 }
 
-export async function buildAcrImage(): Promise<Run | undefined> {
+export async function buildAcrImage(
+   dockerfile?: vscode.Uri | undefined
+): Promise<Run | undefined> {
    ensureDockerExtension();
 
    return await vscode.commands.executeCommand(
-      'vscode-docker.registries.azure.buildImage'
+      'vscode-docker.registries.azure.buildImage',
+      dockerfile,
+      RootStrategy.DockerfileFolder
    );
 }

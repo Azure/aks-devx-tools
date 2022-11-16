@@ -12,7 +12,17 @@ export async function runBuildAcrImage(
    {actionContext, extensionContext}: Context,
    completedSteps: CompletedSteps
 ) {
-   const run = await longRunning('Building ACR Image', () => buildAcrImage());
+   const state: StateApi = State.construct(extensionContext);
+
+   let chosenDockerfile: vscode.Uri | undefined = undefined;
+   const dockerfile = state.getDockerfile();
+   if (completedSteps.draftDockerfile && dockerfile) {
+      chosenDockerfile = vscode.Uri.file(dockerfile);
+   }
+
+   const run = await longRunning('Building ACR Image', () =>
+      buildAcrImage(chosenDockerfile)
+   );
    if (run === undefined) {
       // they cancelled experience in the Docker extension
       return;
@@ -40,7 +50,6 @@ export async function runBuildAcrImage(
       throw Error('Tag is undefined');
    }
    const {subscriptionId, resourceGroup} = parseAzureResourceId(id);
-   const state: StateApi = State.construct(extensionContext);
    state.setAcrName(registry);
    state.setAcrRepo(repository);
    state.setAcrTag(tag);
