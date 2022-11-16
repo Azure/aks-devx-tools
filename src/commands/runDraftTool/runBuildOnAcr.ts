@@ -14,6 +14,7 @@ export async function runBuildAcrImage(
 ) {
    const state: StateApi = State.construct(extensionContext);
 
+   // this will avoid prompting user to select which Dockerfile to build if one was just Drafted
    let chosenDockerfile: vscode.Uri | undefined = undefined;
    const dockerfile = state.getDockerfile();
    if (completedSteps.draftDockerfile && dockerfile) {
