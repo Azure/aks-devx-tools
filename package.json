@@ -60,11 +60,11 @@
                "group": "draftnavigation@1"
             },
             {
-               "command": "aks-draft-extension.runDraftDeployment",
+               "command": "aks-draft-extension.runBuildAcrImage",
                "group": "draftnavigation@2"
             },
             {
-               "command": "aks-draft-extension.runBuildAcrImage",
+               "command": "aks-draft-extension.runDraftDeployment",
                "group": "draftnavigation@3"
             }
          ]
