@@ -65,7 +65,7 @@
             },
             {
                "command": "aks-draft-extension.runBuildAcrImage",
-               "group": "draftnavigation@2"
+               "group": "draftnavigation@3"
             }
          ]
       },
