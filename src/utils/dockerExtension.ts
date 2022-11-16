@@ -19,7 +19,6 @@ function ensureDockerExtension() {
 
    const version = semver.coerce(extension.packageJSON.version) || '';
    if (!semver.satisfies(version, REQUIRED_VERSION)) {
-      // ideally would like them to prompt to install
       vscode.commands.executeCommand(
          'workbench.extensions.search',
          'ms-azuretools.vscode-docker'
