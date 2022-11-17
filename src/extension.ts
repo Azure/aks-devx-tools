@@ -11,6 +11,11 @@ import {
 import {Context} from './commands/runDraftTool/model/context';
 import {runDraftDockerfile} from './commands/runDraftTool/runDraftDockerfile';
 import {runDraftDeployment} from './commands/runDraftTool/runDraftDeployment';
+import {runBuildAcrImage} from './commands/runDraftTool/runBuildOnAcr';
+import {
+   CompletedSteps,
+   noCompletedSteps
+} from './commands/runDraftTool/model/guidedExperience';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -40,25 +45,56 @@ function initializeExtensionVariables(context: vscode.ExtensionContext): void {
 function registerCommands(extensionContext: vscode.ExtensionContext): void {
    registerCommand(
       'aks-draft-extension.runDraftDockerfile',
-      (actionContext: IActionContext, folder) => {
+      (
+         actionContext: IActionContext,
+         folder,
+         completedSteps: CompletedSteps | undefined
+      ) => {
          const context: Context = {actionContext, extensionContext};
          let target = undefined;
          try {
             target = vscode.Uri.parse(folder, true);
          } catch {}
-         return runDraftDockerfile(context, target);
+
+         if (completedSteps === undefined) {
+            completedSteps = noCompletedSteps();
+         }
+         return runDraftDockerfile(context, target, completedSteps);
       }
    );
 
    registerCommand(
       'aks-draft-extension.runDraftDeployment',
-      (actionContext: IActionContext, folder) => {
+      (
+         actionContext: IActionContext,
+         folder,
+         completedSteps: CompletedSteps | undefined
+      ) => {
          const context: Context = {actionContext, extensionContext};
          let target = undefined;
          try {
             target = vscode.Uri.parse(folder, true);
          } catch {}
-         return runDraftDeployment(context, target);
+
+         if (completedSteps === undefined) {
+            completedSteps = noCompletedSteps();
+         }
+         return runDraftDeployment(context, target, completedSteps);
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runBuildAcrImage',
+      (
+         actionContext: IActionContext,
+         completedSteps: CompletedSteps | undefined
+      ) => {
+         const context: Context = {actionContext, extensionContext};
+
+         if (completedSteps === undefined) {
+            completedSteps = noCompletedSteps();
+         }
+         return runBuildAcrImage(context, completedSteps);
       }
    );
 }
