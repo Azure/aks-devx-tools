@@ -10,8 +10,12 @@ import {
    IActionContext
 } from '@microsoft/vscode-azext-utils';
 import {DraftFormat, draftFormats} from './model/format';
-import {ValidateImage, ValidateRfc1123} from '../../utils/validation';
-import {PromptPort, ignoreFocusOut} from './helper/commonPrompts';
+import {
+   ValidateImage,
+   ValidatePort,
+   ValidateRfc1123
+} from '../../utils/validation';
+import {ignoreFocusOut} from './helper/commonPrompts';
 import {
    KubernetesApi,
    Kubernetes,
@@ -36,6 +40,8 @@ import {
    buildCreateCommand,
    buildCreateConfig
 } from './helper/draftCommandBuilder';
+import {image} from '../../utils/acr';
+import {CompletedSteps} from './model/guidedExperience';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -64,7 +70,8 @@ type IExecuteStep = AzureWizardExecuteStep<WizardContext>;
 
 export async function runDraftDeployment(
    {actionContext, extensionContext}: Context,
-   outputFolder: vscode.Uri | undefined
+   outputFolder: vscode.Uri | undefined,
+   completedSteps: CompletedSteps
 ) {
    const state: StateApi = State.construct(extensionContext);
    const kubeconfig = getDefaultKubeconfig();
@@ -103,17 +110,18 @@ export async function runDraftDeployment(
       ...actionContext,
       port: state.getPort(),
       outputFolder: outputFolder,
-      applicationName: applicationNameGuess
+      applicationName: applicationNameGuess,
+      image: state.getImage()
    };
    const promptSteps: IPromptStep[] = [
       new PromptOutputFolder(),
       new PromptFormat(),
       new PromptFileOverride(),
       new PromptApplicationName(),
-      new PromptPort(),
+      new PromptPort(completedSteps),
       new PromptNamespace(k8s),
       new PromptNewNamespace(),
-      new PromptImageOption(),
+      new PromptImageOption(completedSteps),
       new PromptImage(),
       new PromptAcrSubscription(az),
       new PromptAcrResourceGroup(az),
@@ -266,6 +274,10 @@ class PromptNewNamespace extends AzureWizardPromptStep<WizardContext> {
 }
 
 class PromptImageOption extends AzureWizardPromptStep<WizardContext> {
+   constructor(private completedSteps: CompletedSteps) {
+      super();
+   }
+
    public async prompt(wizardContext: WizardContext): Promise<void> {
       const acr = 'Azure Container Registry';
       const other = 'Other';
@@ -283,7 +295,7 @@ class PromptImageOption extends AzureWizardPromptStep<WizardContext> {
          imagePick.label === acr ? imageOption.ACR : imageOption.Other;
    }
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
+      return !(this.completedSteps.buildOnAcr && !!wizardContext.image);
    }
 }
 
@@ -293,7 +305,8 @@ class PromptImage extends AzureWizardPromptStep<WizardContext> {
          ignoreFocusOut,
          prompt: 'Image',
          stepName: 'Image',
-         validateInput: ValidateImage
+         validateInput: ValidateImage,
+         value: wizardContext.image
       });
    }
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -493,7 +506,19 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
          (t) => tagToItem(t).label === tagPick.label
       );
 
-      wizardContext.image = `${wizardContext.acrRegistry.registry.loginServer}/${wizardContext.acrRepository.repositoryName}:${wizardContext.acrTag?.tag.name}`;
+      const server = wizardContext.acrRegistry.registry.loginServer;
+      if (server === undefined) {
+         throw Error('Server is undefined');
+      }
+      const repository = wizardContext.acrRepository.repositoryName;
+      if (repository === undefined) {
+         throw Error('Repository is undefined');
+      }
+      const tag = wizardContext.acrTag?.tag.name;
+      if (tag === undefined) {
+         throw Error('Tag is undefined');
+      }
+      wizardContext.image = image(server, repository, tag);
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -520,6 +545,32 @@ class PromptFileOverride extends AzureWizardPromptStep<WizardContext> {
       }
 
       return false;
+   }
+}
+
+export class PromptPort extends AzureWizardPromptStep<
+   IActionContext & Partial<{port: string}>
+> {
+   constructor(private completedSteps: CompletedSteps) {
+      super();
+   }
+
+   public async prompt(
+      wizardContext: IActionContext & Partial<{port: string}>
+   ): Promise<void> {
+      wizardContext.port = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'Port (e.g. 8080)',
+         stepName: 'Port',
+         validateInput: ValidatePort,
+         value: wizardContext.port
+      });
+   }
+
+   public shouldPrompt(
+      wizardContext: IActionContext & Partial<{port: string}>
+   ): boolean {
+      return !(this.completedSteps.draftDockerfile && !!wizardContext.port);
    }
 }
 
