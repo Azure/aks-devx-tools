@@ -83,12 +83,8 @@ export async function runDeploy(
       throw Error(`Failed to deploy`);
    }
    outputChannel.appendLine(resp.result);
-
    outputChannel.appendLine('Deployed successfully');
    vscode.window.showInformationMessage(`Deployed successfully`);
 
-   // show external IP link if one exists after web app routing is complete
-
-   // is your cluster attached to your acr?
-   // if no, attach it
+   // TODO: show external IP link if one exists after web app routing feature is complete
 }
