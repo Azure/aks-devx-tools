@@ -12,6 +12,7 @@ import {DraftFormat} from './model/format';
 import {CompletedSteps} from './model/guidedExperience';
 import * as vscode from 'vscode';
 import {IAzExtOutputChannel} from '@microsoft/vscode-azext-utils';
+import {longRunning} from '../../utils/host';
 
 export async function runDeploy(
    {actionContext, extensionContext}: Context,
@@ -27,11 +28,15 @@ export async function runDeploy(
    const state: StateApi = State.construct(extensionContext);
    const format = state.getDeploymentFormat();
    const path = state.getDeploymentPath();
+   const namespace = state.getNamespace();
    if (format === undefined) {
       throw Error('Format is undefined');
    }
    if (path === undefined) {
       throw Error('Path is undefined');
+   }
+   if (namespace === undefined) {
+      throw Error('Namespace is undefined');
    }
 
    const kubeconfig = getDefaultKubeconfig();
@@ -56,13 +61,17 @@ export async function runDeploy(
    let resp: Errorable<string>;
    switch (draftFormat) {
       case DraftFormat.Helm:
-         resp = await k8s.installHelm(path);
+         resp = await longRunning('Running Helm', () => k8s.installHelm(path));
          break;
       case DraftFormat.Kustomize:
-         resp = await k8s.applyKustomize(path);
+         resp = await longRunning('Running Kustomize', () =>
+            k8s.applyKustomize(path)
+         );
          break;
       case DraftFormat.Manifests:
-         resp = await k8s.applyManifests([path]);
+         resp = await longRunning('Running Kubectl', () =>
+            k8s.applyManifests(path, namespace)
+         );
          break;
       default:
          throw Error(`Format '${draftFormat}' not recognized`);
@@ -70,15 +79,15 @@ export async function runDeploy(
 
    outputChannel.show();
    if (failed(resp)) {
-      outputChannel.appendLine('Deploy failed');
       outputChannel.appendLine(resp.error);
-      throw Error(`Failed to deploy. Check the logs for more information.`);
+      throw Error(`Failed to deploy`);
    }
-
-   outputChannel.appendLine('Deploy succeeded');
    outputChannel.appendLine(resp.result);
+
+   outputChannel.appendLine('Deployed successfully');
    vscode.window.showInformationMessage(`Deployed successfully`);
-   // show service link if one exists
+
+   // show external IP link if one exists after web app routing is complete
 
    // is your cluster attached to your acr?
    // if no, attach it

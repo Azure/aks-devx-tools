@@ -129,7 +129,7 @@ suite('Kubernetes Utility Test Suite', () => {
       const kubeconfig = instance(kubeconfigMock);
 
       // success case
-      const files = ['file1', './file2', '/path/to/file3'];
+      const files = '/path/to/file3';
       const stdout = 'output from command';
       const successKubectlMock = mock<KubectlV1>();
       when(successKubectlMock.invokeCommand(anyString())).thenResolve({
@@ -148,7 +148,7 @@ suite('Kubernetes Utility Test Suite', () => {
       verify(kubeconfigMock.exportConfig()).once();
       verify(
          successKubectlMock.invokeCommand(
-            new ContainsStr(`apply -f ${files.join(' ')}`) as any
+            new ContainsStr(`apply -f "${files}"`) as any
          )
       ).once();
 
@@ -196,7 +196,7 @@ suite('Kubernetes Utility Test Suite', () => {
       verify(kubeconfigMock.exportConfig()).once();
       verify(
          successKubectlMock.invokeCommand(
-            new ContainsStr(`apply -k ${directory}`) as any
+            new ContainsStr(`apply -k "${directory}"`) as any
          )
       ).once();
 
@@ -244,7 +244,7 @@ suite('Kubernetes Utility Test Suite', () => {
       verify(kubeconfigMock.exportConfig()).once();
       verify(
          successHelmMock.invokeCommand(
-            new ContainsStr(`install ${directory} --generate-name`) as any
+            new ContainsStr(`install "${directory}" --generate-name`) as any
          )
       ).once();
 
@@ -271,7 +271,9 @@ class ContainsStr extends Matcher {
    }
 
    match(value: any): boolean {
-      if (typeof value !== 'string') return false;
+      if (typeof value !== 'string') {
+         return false;
+      }
 
       return value.includes(this.expected);
    }

@@ -11,7 +11,8 @@ const keys = [
    'image',
    'dockerfile',
    'deploymentFormat',
-   'deploymentPath'
+   'deploymentPath',
+   'namespace'
 ] as const;
 
 type GetMethodName = `get${Capitalize<typeof keys[number]>}`;
