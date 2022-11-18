@@ -6,7 +6,8 @@ import {
    callWithTelemetryAndErrorHandling,
    createAzExtOutputChannel,
    registerUIExtensionVariables,
-   registerCommand
+   registerCommand,
+   IAzExtOutputChannel
 } from '@microsoft/vscode-azext-utils';
 import {Context} from './commands/runDraftTool/model/context';
 import {runDraftDockerfile} from './commands/runDraftTool/runDraftDockerfile';
@@ -21,7 +22,9 @@ import {runDeploy} from './commands/runDraftTool/runDeploy';
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
-   initializeExtensionVariables(context);
+   const outputChannel = createAzExtOutputChannel('AKS DevX Tools', '');
+   context.subscriptions.push(outputChannel);
+   initializeExtensionVariables(context, outputChannel);
 
    await callWithTelemetryAndErrorHandling(
       'aks-devx-tools.activate',
@@ -29,21 +32,25 @@ export async function activate(context: vscode.ExtensionContext) {
          activateContext.errorHandling.rethrow = true;
          activateContext.telemetry.properties.isActivationEvent = 'true';
 
-         registerCommands(context);
+         registerCommands(context, outputChannel);
       }
    );
 }
 
-function initializeExtensionVariables(context: vscode.ExtensionContext): void {
-   const outputChannel = createAzExtOutputChannel('AKS DevX Tools', '');
-   context.subscriptions.push(outputChannel);
+function initializeExtensionVariables(
+   context: vscode.ExtensionContext,
+   outputChannel: IAzExtOutputChannel
+): void {
    registerUIExtensionVariables({
       context,
       outputChannel
    });
 }
 
-function registerCommands(extensionContext: vscode.ExtensionContext): void {
+function registerCommands(
+   extensionContext: vscode.ExtensionContext,
+   outputChannel: IAzExtOutputChannel
+): void {
    registerCommand(
       'aks-draft-extension.runDraftDockerfile',
       (
@@ -110,7 +117,7 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
          if (completedSteps === undefined) {
             completedSteps = noCompletedSteps();
          }
-         return runDeploy(context, completedSteps);
+         return runDeploy(context, completedSteps, outputChannel);
       }
    );
 }

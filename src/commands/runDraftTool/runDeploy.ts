@@ -11,10 +11,12 @@ import {Context} from './model/context';
 import {DraftFormat} from './model/format';
 import {CompletedSteps} from './model/guidedExperience';
 import * as vscode from 'vscode';
+import {IAzExtOutputChannel} from '@microsoft/vscode-azext-utils';
 
 export async function runDeploy(
    {actionContext, extensionContext}: Context,
-   completedSteps: CompletedSteps
+   completedSteps: CompletedSteps,
+   outputChannel: IAzExtOutputChannel
 ) {
    if (!completedSteps.draftDeployment) {
       throw Error(
@@ -48,6 +50,9 @@ export async function runDeploy(
    );
 
    const draftFormat = <DraftFormat>format;
+   outputChannel.appendLine(
+      `Running deploy for format ${draftFormat} on path ${path}`
+   );
    let resp: Errorable<string>;
    switch (draftFormat) {
       case DraftFormat.Helm:
@@ -63,13 +68,16 @@ export async function runDeploy(
          throw Error(`Format '${draftFormat}' not recognized`);
    }
 
+   outputChannel.show();
    if (failed(resp)) {
-      throw Error(`Failed to deploy: ${resp.error}`);
+      outputChannel.appendLine('Deploy failed');
+      outputChannel.appendLine(resp.error);
+      throw Error(`Failed to deploy. Check the logs for more information.`);
    }
 
-   vscode.window.showInformationMessage(
-      `Deployed successfully: ${resp.result}`
-   );
+   outputChannel.appendLine('Deploy succeeded');
+   outputChannel.appendLine(resp.result);
+   vscode.window.showInformationMessage(`Deployed successfully`);
    // show service link if one exists
 
    // is your cluster attached to your acr?
