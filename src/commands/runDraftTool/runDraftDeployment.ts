@@ -132,7 +132,9 @@ export async function runDraftDeployment(
    const executeSteps: IExecuteStep[] = [
       new ExecuteCreateNamespace(k8s),
       new ExecuteDraft(),
-      new ExecuteOpenFiles()
+      new ExecuteOpenFiles(),
+      new ExecuteSaveState(state),
+      new ExecutePromptDeploy(completedSteps)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -600,7 +602,10 @@ class ExecuteCreateNamespace extends AzureWizardExecuteStep<WizardContext> {
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
-      return !!wizardContext.newNamespace;
+      return (
+         !!wizardContext.newNamespace &&
+         wizardContext.format !== DraftFormat.Helm // Draft creates namespace manifest for Helm
+      );
    }
 }
 
@@ -685,6 +690,73 @@ class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
                vscode.window.showTextDocument(doc, {preview: false})
             );
       }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 4;
+
+   constructor(private state: StateApi) {
+      super();
+   }
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const {port, format} = wizardContext;
+      if (port !== undefined) {
+         this.state.setPort(port);
+      }
+      if (format !== undefined) {
+         this.state.setDeploymentFormat(format);
+      }
+
+      const deploymentPath = getOutputPath(wizardContext);
+      this.state.setDeploymentPath(deploymentPath);
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 5;
+
+   constructor(private completedSteps: CompletedSteps) {
+      super();
+   }
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const deployButton = 'Deploy';
+      await vscode.window
+         .showInformationMessage(
+            'The Kubernetes Deployment and Service was created. Next, deploy to the cluster.',
+            deployButton
+         )
+         .then((input) => {
+            if (input === deployButton) {
+               this.completedSteps.draftDeployment = true;
+               vscode.commands.executeCommand(
+                  'aks-draft-extension.runDeploy',
+                  this.completedSteps
+               );
+            }
+         });
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {

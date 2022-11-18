@@ -16,6 +16,7 @@ import {
    CompletedSteps,
    noCompletedSteps
 } from './commands/runDraftTool/model/guidedExperience';
+import {runDeploy} from './commands/runDraftTool/runDeploy';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -95,6 +96,21 @@ function registerCommands(extensionContext: vscode.ExtensionContext): void {
             completedSteps = noCompletedSteps();
          }
          return runBuildAcrImage(context, completedSteps);
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDeploy',
+      (
+         actionContext: IActionContext,
+         completedSteps: CompletedSteps | undefined
+      ) => {
+         const context: Context = {actionContext, extensionContext};
+
+         if (completedSteps === undefined) {
+            completedSteps = noCompletedSteps();
+         }
+         return runDeploy(context, completedSteps);
       }
    );
 }
