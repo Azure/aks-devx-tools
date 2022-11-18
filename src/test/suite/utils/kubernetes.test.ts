@@ -12,6 +12,8 @@ import * as http from 'http';
 import * as assert from 'assert';
 import {failed, succeeded} from '../../../utils/errorable';
 
+const ns = 'namespace1';
+
 suite('Kubernetes Utility Test Suite', () => {
    test('it can list namespaces', async () => {
       const kubectlMock = mock<KubectlV1>();
@@ -140,12 +142,12 @@ suite('Kubernetes Utility Test Suite', () => {
       const successKubectl = instance(successKubectlMock);
 
       const successK8s = new Kubernetes(kubeconfig, successKubectl, helm);
-      const successResponse = await successK8s.applyManifests(files);
+      const successResponse = await successK8s.applyManifests(files, ns);
       if (failed(successResponse)) {
          assert.fail(`Apply manifests failed: ${successResponse.error}`);
       }
-      assert.strictEqual(successResponse.result, stdout);
-      verify(kubeconfigMock.exportConfig()).once();
+      assert.strictEqual(successResponse.result, `${stdout}\n${stdout}`);
+      verify(kubeconfigMock.exportConfig()).twice();
       verify(
          successKubectlMock.invokeCommand(
             new ContainsStr(`apply -f "${files}"`) as any
@@ -162,7 +164,7 @@ suite('Kubernetes Utility Test Suite', () => {
       const failKubectl = instance(failKubectlMock);
 
       const failK8s = new Kubernetes(kubeconfig, failKubectl, helm);
-      const failedResponse = await failK8s.applyManifests(files);
+      const failedResponse = await failK8s.applyManifests(files, ns);
       if (succeeded(failedResponse)) {
          assert.fail(`Apply manifests succeeded`);
       }
@@ -188,12 +190,12 @@ suite('Kubernetes Utility Test Suite', () => {
       const successKubectl = instance(successKubectlMock);
 
       const successK8s = new Kubernetes(kubeconfig, successKubectl, helm);
-      const successResponse = await successK8s.applyKustomize(directory);
+      const successResponse = await successK8s.applyKustomize(directory, ns);
       if (failed(successResponse)) {
          assert.fail(`Apply Kustomize failed: ${successResponse.error}`);
       }
-      assert.strictEqual(successResponse.result, stdout);
-      verify(kubeconfigMock.exportConfig()).once();
+      assert.strictEqual(successResponse.result, `${stdout}\n${stdout}`);
+      verify(kubeconfigMock.exportConfig()).thrice();
       verify(
          successKubectlMock.invokeCommand(
             new ContainsStr(`apply -k "${directory}"`) as any
@@ -210,7 +212,7 @@ suite('Kubernetes Utility Test Suite', () => {
       const failKubectl = instance(failKubectlMock);
 
       const failK8s = new Kubernetes(kubeconfig, failKubectl, helm);
-      const failedResponse = await failK8s.applyKustomize(directory);
+      const failedResponse = await failK8s.applyKustomize(directory, ns);
       if (succeeded(failedResponse)) {
          assert.fail('Apply Kustomize succeeded');
       }
