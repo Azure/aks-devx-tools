@@ -17,7 +17,10 @@ export interface KubernetesApi {
       manifestPaths: string,
       namespace: string
    ): Promise<Errorable<string>>;
-   applyKustomize(kustomizationDirectory: string): Promise<Errorable<string>>;
+   applyKustomize(
+      kustomizationDirectory: string,
+      namespace: string
+   ): Promise<Errorable<string>>;
    installHelm(chartDirectory: string): Promise<Errorable<string>>;
 }
 
@@ -117,10 +120,46 @@ export class Kubernetes implements KubernetesApi {
    }
 
    async applyKustomize(
-      kustomizationDirectory: string
+      kustomizationDirectory: string,
+      namespace: string
    ): Promise<Errorable<string>> {
       const command = `apply -k "${kustomizationDirectory}"`;
-      return await this.invokeKubectl(command);
+      const invokeResp = await this.invokeKubectl(command);
+      if (failed(invokeResp)) {
+         return invokeResp;
+      }
+
+      const waitResp = await this.waitKustomize(
+         kustomizationDirectory,
+         namespace
+      );
+      if (failed(waitResp)) {
+         return {
+            error: `${invokeResp.result}\n${waitResp.error}`,
+            succeeded: false
+         };
+      }
+
+      return {
+         succeeded: true,
+         result: `${invokeResp.result}\n${waitResp.result}`
+      };
+   }
+
+   private async waitKustomize(
+      manifestPath: string,
+      namespace: string
+   ): Promise<Errorable<string>> {
+      const command = `kustomize "${manifestPath}"`;
+      const bakeResp = await this.invokeKubectl(command);
+      if (failed(bakeResp)) {
+         return bakeResp;
+      }
+
+      const baked = bakeResp.result;
+      return withTempFile(baked, (baked) => {
+         return this.waitManifests(baked, namespace);
+      });
    }
 
    async installHelm(chartDirectory: string): Promise<Errorable<string>> {

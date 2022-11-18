@@ -65,7 +65,7 @@ export async function runDeploy(
          break;
       case DraftFormat.Kustomize:
          resp = await longRunning('Running Kustomize', () =>
-            k8s.applyKustomize(path)
+            k8s.applyKustomize(path, namespace)
          );
          break;
       case DraftFormat.Manifests:
