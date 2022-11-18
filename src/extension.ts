@@ -51,6 +51,15 @@ function registerCommands(
    extensionContext: vscode.ExtensionContext,
    outputChannel: IAzExtOutputChannel
 ): void {
+   registerCommand('aks-draft-extension.prerequisites', () => {
+      const openInSplitView = false;
+      vscode.commands.executeCommand(
+         'workbench.action.openWalkthrough',
+         'ms-kubernetes-tools.aks-devx-tools#prerequisites',
+         openInSplitView
+      );
+   });
+
    registerCommand(
       'aks-draft-extension.runDraftDockerfile',
       (

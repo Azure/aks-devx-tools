@@ -15,6 +15,7 @@
       "Azure"
    ],
    "activationEvents": [
+      "onCommand:aks-draft-extension.prerequisites",
       "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftDeployment",
       "onCommand:aks-draft-extension.runBuildAcrImage"
@@ -33,6 +34,10 @@
          }
       },
       "commands": [
+         {
+            "command": "aks-draft-extension.prerequisites",
+            "title": "AKS Developer: Prerequisites"
+         },
          {
             "command": "aks-draft-extension.runDraftDockerfile",
             "title": "AKS Developer: Draft a Dockerfile"
@@ -56,6 +61,10 @@
          ],
          "aksdevx.submenuDraft": [
             {
+               "command": "aks-draft-extension.prerequisites",
+               "group": "draftnavigation@0"
+            },
+            {
                "command": "aks-draft-extension.runDraftDockerfile",
                "group": "draftnavigation@1"
             },
@@ -73,6 +82,58 @@
          {
             "id": "aksdevx.submenuDraft",
             "label": "Run AKS DevX Tool"
+         }
+      ],
+      "walkthroughs": [
+         {
+            "id": "prerequisites",
+            "description": "Required tasks to fully use this extension",
+            "title": "Prerequisites",
+            "steps": [
+               {
+                  "id": "create-acr",
+                  "title": "Create an ACR",
+                  "media": {
+                     "markdown": "./resources/create-acr.md"
+                  }
+               },
+               {
+                  "id": "create-cluster",
+                  "title": "Create an AKS Cluster",
+                  "media": {
+                     "markdown": "./resources/create-cluster.md"
+                  }
+               },
+               {
+                  "id": "attach-acr",
+                  "title": "Attach ACR to AKS Cluster",
+                  "media": {
+                     "markdown": "./resources/attach-acr.md"
+                  }
+               },
+               {
+                  "id": "get-kubeconfig",
+                  "title": "Set AKS Cluster Kubeconfig",
+                  "media": {
+                     "markdown": "./resources/get-kubeconfig.md"
+                  }
+               },
+               {
+                  "id": "login-to-azure",
+                  "title": "Log in to Azure Account Extension",
+                  "media": {
+                     "markdown": "./resources/login-to-azure.md"
+                  }
+               },
+               {
+                  "id": "done",
+                  "title": "Done",
+                  "description": "You're ready to get started\n[Draft a Dockerfile](command:aks-draft-extension.runDraftDockerfile)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               }
+            ]
          }
       ]
    },
