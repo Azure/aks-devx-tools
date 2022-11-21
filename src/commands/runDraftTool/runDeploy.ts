@@ -29,6 +29,7 @@ export async function runDeploy(
    const format = state.getDeploymentFormat();
    const path = state.getDeploymentPath();
    const namespace = state.getNamespace();
+   const applicationName = state.getApplicationName();
    if (format === undefined) {
       throw Error('Format is undefined');
    }
@@ -37,6 +38,9 @@ export async function runDeploy(
    }
    if (namespace === undefined) {
       throw Error('Namespace is undefined');
+   }
+   if (applicationName === undefined) {
+      throw Error('Application name is undefined');
    }
 
    const kubeconfig = getDefaultKubeconfig();
@@ -65,12 +69,12 @@ export async function runDeploy(
          break;
       case DraftFormat.Kustomize:
          resp = await longRunning('Running Kustomize', () =>
-            k8s.applyKustomize(path, namespace)
+            k8s.applyKustomize(path, namespace, applicationName)
          );
          break;
       case DraftFormat.Manifests:
          resp = await longRunning('Running Kubectl', () =>
-            k8s.applyManifests(path, namespace)
+            k8s.applyManifests(path, namespace, applicationName)
          );
          break;
       default:

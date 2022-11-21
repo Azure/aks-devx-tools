@@ -8,18 +8,20 @@ import {
 import {Errorable, failed} from './errorable';
 import {withTempFile} from './temp';
 
-kubernetesExtension.kubectl.v1;
+const WAIT_TIMEOUT = '5m';
 
 export interface KubernetesApi {
    listNamespaces(): Promise<Errorable<V1Namespace[]>>;
    createNamespace(name: string): Promise<Errorable<void>>;
    applyManifests(
       manifestPaths: string,
-      namespace: string
+      namespace: string,
+      applicationName: string
    ): Promise<Errorable<string>>;
    applyKustomize(
       kustomizationDirectory: string,
-      namespace: string
+      namespace: string,
+      applicationName: string
    ): Promise<Errorable<string>>;
    installHelm(chartDirectory: string): Promise<Errorable<string>>;
 }
@@ -89,7 +91,8 @@ export class Kubernetes implements KubernetesApi {
 
    async applyManifests(
       manifestPath: string,
-      namespace: string
+      namespace: string,
+      applicationName: string
    ): Promise<Errorable<string>> {
       const command = `apply -f "${manifestPath}"`;
       const invokeResp = await this.invokeKubectl(command);
@@ -97,7 +100,7 @@ export class Kubernetes implements KubernetesApi {
          return invokeResp;
       }
 
-      const waitResp = await this.waitManifests(manifestPath, namespace);
+      const waitResp = await this.waitManifests(namespace, applicationName);
       if (failed(waitResp)) {
          return {
             error: `${invokeResp.result}\n${waitResp.error}`,
@@ -112,16 +115,17 @@ export class Kubernetes implements KubernetesApi {
    }
 
    private async waitManifests(
-      manifestsPath: string,
-      namespace: string
+      namespace: string,
+      applicationName: string
    ): Promise<Errorable<string>> {
-      const command = `wait --for=condition=Ready -f "${manifestsPath}" -R --namespace ${namespace}`;
+      const command = `rollout status deployment/${applicationName} --namespace ${namespace} --timeout ${WAIT_TIMEOUT}`;
       return await this.invokeKubectl(command);
    }
 
    async applyKustomize(
       kustomizationDirectory: string,
-      namespace: string
+      namespace: string,
+      applicationName: string
    ): Promise<Errorable<string>> {
       const command = `apply -k "${kustomizationDirectory}"`;
       const invokeResp = await this.invokeKubectl(command);
@@ -131,7 +135,8 @@ export class Kubernetes implements KubernetesApi {
 
       const waitResp = await this.waitKustomize(
          kustomizationDirectory,
-         namespace
+         namespace,
+         applicationName
       );
       if (failed(waitResp)) {
          return {
@@ -148,22 +153,14 @@ export class Kubernetes implements KubernetesApi {
 
    private async waitKustomize(
       manifestPath: string,
-      namespace: string
+      namespace: string,
+      applicationName: string
    ): Promise<Errorable<string>> {
-      const command = `kustomize "${manifestPath}"`;
-      const bakeResp = await this.invokeKubectl(command);
-      if (failed(bakeResp)) {
-         return bakeResp;
-      }
-
-      const baked = bakeResp.result;
-      return withTempFile(baked, (baked) => {
-         return this.waitManifests(baked, namespace);
-      });
+      return this.waitManifests(namespace, applicationName);
    }
 
    async installHelm(chartDirectory: string): Promise<Errorable<string>> {
-      const command = `install "${chartDirectory}" --generate-name --wait --timeout 3m`;
+      const command = `install "${chartDirectory}" --generate-name --wait --timeout ${WAIT_TIMEOUT}`;
       return await this.invokeHelm(command);
    }
 
