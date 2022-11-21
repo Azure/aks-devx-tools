@@ -5,7 +5,7 @@ import {
    HelmV1,
    KubectlV1
 } from 'vscode-kubernetes-tools-api';
-import {Errorable} from './errorable';
+import {Errorable, failed} from './errorable';
 import {withTempFile} from './temp';
 
 kubernetesExtension.kubectl.v1;
@@ -13,8 +13,14 @@ kubernetesExtension.kubectl.v1;
 export interface KubernetesApi {
    listNamespaces(): Promise<Errorable<V1Namespace[]>>;
    createNamespace(name: string): Promise<Errorable<void>>;
-   applyManifests(manifestPaths: string[]): Promise<Errorable<string>>;
-   applyKustomize(kustomizationDirectory: string): Promise<Errorable<string>>;
+   applyManifests(
+      manifestPaths: string,
+      namespace: string
+   ): Promise<Errorable<string>>;
+   applyKustomize(
+      kustomizationDirectory: string,
+      namespace: string
+   ): Promise<Errorable<string>>;
    installHelm(chartDirectory: string): Promise<Errorable<string>>;
 }
 
@@ -81,20 +87,83 @@ export class Kubernetes implements KubernetesApi {
       }
    }
 
-   async applyManifests(manifestPaths: string[]): Promise<Errorable<string>> {
-      const command = `apply -f ${manifestPaths.join(' ')}`;
+   async applyManifests(
+      manifestPath: string,
+      namespace: string
+   ): Promise<Errorable<string>> {
+      const command = `apply -f "${manifestPath}"`;
+      const invokeResp = await this.invokeKubectl(command);
+      if (failed(invokeResp)) {
+         return invokeResp;
+      }
+
+      const waitResp = await this.waitManifests(manifestPath, namespace);
+      if (failed(waitResp)) {
+         return {
+            error: `${invokeResp.result}\n${waitResp.error}`,
+            succeeded: false
+         };
+      }
+
+      return {
+         succeeded: true,
+         result: `${invokeResp.result}\n${waitResp.result}`
+      };
+   }
+
+   private async waitManifests(
+      manifestsPath: string,
+      namespace: string
+   ): Promise<Errorable<string>> {
+      const command = `wait --for=condition=Ready -f "${manifestsPath}" -R --namespace ${namespace}`;
       return await this.invokeKubectl(command);
    }
 
    async applyKustomize(
-      kustomizationDirectory: string
+      kustomizationDirectory: string,
+      namespace: string
    ): Promise<Errorable<string>> {
-      const command = `apply -k ${kustomizationDirectory}`;
-      return await this.invokeKubectl(command);
+      const command = `apply -k "${kustomizationDirectory}"`;
+      const invokeResp = await this.invokeKubectl(command);
+      if (failed(invokeResp)) {
+         return invokeResp;
+      }
+
+      const waitResp = await this.waitKustomize(
+         kustomizationDirectory,
+         namespace
+      );
+      if (failed(waitResp)) {
+         return {
+            error: `${invokeResp.result}\n${waitResp.error}`,
+            succeeded: false
+         };
+      }
+
+      return {
+         succeeded: true,
+         result: `${invokeResp.result}\n${waitResp.result}`
+      };
+   }
+
+   private async waitKustomize(
+      manifestPath: string,
+      namespace: string
+   ): Promise<Errorable<string>> {
+      const command = `kustomize "${manifestPath}"`;
+      const bakeResp = await this.invokeKubectl(command);
+      if (failed(bakeResp)) {
+         return bakeResp;
+      }
+
+      const baked = bakeResp.result;
+      return withTempFile(baked, (baked) => {
+         return this.waitManifests(baked, namespace);
+      });
    }
 
    async installHelm(chartDirectory: string): Promise<Errorable<string>> {
-      const command = `install ${chartDirectory} --generate-name`;
+      const command = `install "${chartDirectory}" --generate-name --wait --timeout 3m`;
       return await this.invokeHelm(command);
    }
 

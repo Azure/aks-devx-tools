@@ -9,15 +9,10 @@ import * as vscode from 'vscode';
 const keys = [
    'port',
    'image',
-   'acrSubscription',
-   'acrResourceGroup',
-   'acrName',
-   'acrRepo',
-   'acrTag',
    'dockerfile',
-   'deploymentType',
-   'manifestPath',
-   'chartPath'
+   'deploymentFormat',
+   'deploymentPath',
+   'namespace'
 ] as const;
 
 type GetMethodName = `get${Capitalize<typeof keys[number]>}`;
