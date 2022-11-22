@@ -106,7 +106,9 @@ export async function runDraftDeployment(
    }
 
    const applicationNameGuess =
-      workspaceFolders === undefined ? '' : workspaceFolders[0].name;
+      workspaceFolders === undefined
+         ? ''
+         : workspaceFolders[0].name.toLowerCase().replace(/[^a-z0-9-]+/g, '');
    const wizardContext: WizardContext = {
       ...actionContext,
       port: state.getPort(),
