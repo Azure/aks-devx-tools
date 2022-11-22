@@ -36,7 +36,7 @@
       "commands": [
          {
             "command": "aks-draft-extension.prerequisites",
-            "title": "AKS Developer: Prerequisites"
+            "title": "AKS Developer: Get Started"
          },
          {
             "command": "aks-draft-extension.runDraftDockerfile",
@@ -88,27 +88,35 @@
          {
             "id": "prerequisites",
             "description": "Required tasks to fully use this extension",
-            "title": "Prerequisites",
+            "title": "Get Started with Development on AKS",
             "steps": [
                {
                   "id": "create-acr",
-                  "title": "Create an ACR",
+                  "title": "Create an Azure Container Registry",
                   "media": {
                      "markdown": "./resources/create-acr.md"
                   }
                },
                {
                   "id": "create-cluster",
-                  "title": "Create an AKS Cluster",
+                  "title": "Create an Azure Kubernetes Service (AKS) Cluster",
                   "media": {
                      "markdown": "./resources/create-cluster.md"
                   }
                },
                {
                   "id": "attach-acr",
-                  "title": "Attach ACR to AKS Cluster",
+                  "title": "Connect an AKS Cluster to an Azure Container Registry",
                   "media": {
                      "markdown": "./resources/attach-acr.md"
+                  }
+               },
+               {
+                  "id": "login-to-azure",
+                  "title": "Sign into the Azure Account Extension",
+                  "description": "Use one of the options below\n[Browser Login](command:azure-account.login)\n[Device Code Login](command:azure-account.loginWithDeviceCode)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
                   }
                },
                {
@@ -116,13 +124,6 @@
                   "title": "Set AKS Cluster Kubeconfig",
                   "media": {
                      "markdown": "./resources/get-kubeconfig.md"
-                  }
-               },
-               {
-                  "id": "login-to-azure",
-                  "title": "Log in to Azure Account Extension",
-                  "media": {
-                     "markdown": "./resources/login-to-azure.md"
                   }
                },
                {
