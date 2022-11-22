@@ -711,7 +711,7 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
-      const {port, format, namespace} = wizardContext;
+      const {port, format, namespace, applicationName} = wizardContext;
       if (port === undefined) {
          throw Error('port undefined');
       }
@@ -721,10 +721,14 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
       if (namespace === undefined) {
          throw Error('namespace undefined');
       }
+      if (applicationName === undefined) {
+         throw Error('application name undefined');
+      }
 
       this.state.setPort(port);
       this.state.setDeploymentFormat(format);
       this.state.setNamespace(namespace);
+      this.state.setApplicationName(applicationName);
 
       const deploymentPath = getOutputPath(wizardContext);
       this.state.setDeploymentPath(deploymentPath);
