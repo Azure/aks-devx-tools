@@ -1,4 +1,9 @@
-import {KubeConfig, CoreV1Api, V1Namespace} from '@kubernetes/client-node';
+import {
+   KubeConfig,
+   CoreV1Api,
+   V1Namespace,
+   V1Service
+} from '@kubernetes/client-node';
 import {ActionOnInvalid} from '@kubernetes/client-node/dist/config_types';
 import {
    extension as kubernetesExtension,
@@ -16,6 +21,7 @@ enum ROLLOUT_STATUS_RESOURCE {
 }
 
 export interface KubernetesApi {
+   getService(name: string, namespace: string): Promise<Errorable<V1Service>>;
    listNamespaces(): Promise<Errorable<V1Namespace[]>>;
    createNamespace(name: string): Promise<Errorable<void>>;
    applyManifests(
@@ -65,6 +71,23 @@ export class Kubernetes implements KubernetesApi {
       private kubectl: KubectlV1,
       private helm: HelmV1
    ) {}
+
+   async getService(
+      name: string,
+      namespace: string
+   ): Promise<Errorable<V1Service>> {
+      const api = this.kubeconfig.makeApiClient(CoreV1Api);
+
+      try {
+         const {body} = await api.readNamespacedService(name, namespace);
+         return {succeeded: true, result: body};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to read service: ${error}`
+         };
+      }
+   }
 
    async listNamespaces(): Promise<Errorable<V1Namespace[]>> {
       const api = this.kubeconfig.makeApiClient(CoreV1Api);

@@ -13,6 +13,9 @@ import {CompletedSteps} from './model/guidedExperience';
 import * as vscode from 'vscode';
 import {IAzExtOutputChannel} from '@microsoft/vscode-azext-utils';
 import {longRunning} from '../../utils/host';
+import {sleep} from '../../utils/sleep';
+
+const EXTERNAL_IP_WAIT_MS = 4000;
 
 export async function runDeploy(
    {actionContext, extensionContext}: Context,
@@ -88,7 +91,46 @@ export async function runDeploy(
    }
    outputChannel.appendLine(resp.result);
    outputChannel.appendLine('Deployed successfully');
-   vscode.window.showInformationMessage(`Deployed successfully`);
 
-   // TODO: show external IP link if one exists after web app routing feature is complete
+   outputChannel.appendLine('Waiting for external IP');
+   const getExternalIp = async (): Promise<string | undefined> => {
+      const serviceResp = await k8s.getService(applicationName, namespace);
+      if (failed(serviceResp)) {
+         throw Error(serviceResp.error);
+      }
+
+      const service = serviceResp.result;
+      const ingresses = service.status?.loadBalancer?.ingress;
+      if (ingresses === undefined || ingresses.length === 0) {
+         return undefined;
+      }
+      const ip = ingresses[0].ip;
+
+      const ports = service.spec?.ports;
+      if (ports === undefined || ports.length === 0) {
+         throw Error('Port not defined');
+      }
+      const port = ports[0].port;
+
+      return `${ip}:${port}`;
+   };
+   let externalIp = await getExternalIp();
+   while (externalIp === undefined) {
+      await sleep(EXTERNAL_IP_WAIT_MS);
+      externalIp = await getExternalIp();
+   }
+   // add timeout and waiting indicator
+   outputChannel.appendLine(`External IP ${externalIp} found`);
+
+   const openExternalIpButton = 'Open External IP';
+   vscode.window
+      .showInformationMessage(`Deployed successfully`, openExternalIpButton)
+      .then((input) => {
+         if (input === openExternalIpButton) {
+            vscode.commands.executeCommand(
+               'vscode.open',
+               vscode.Uri.parse(`http://${externalIp}`)
+            );
+         }
+      });
 }
