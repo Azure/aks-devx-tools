@@ -42,6 +42,7 @@ import {
 } from './helper/draftCommandBuilder';
 import {image} from '../../utils/acr';
 import {CompletedSteps} from './model/guidedExperience';
+import {sort} from '../../utils/sort';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -240,11 +241,14 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
             }
          ];
       };
-      const namespacePick = await wizardContext.ui.showQuickPick(getOptions(), {
-         ignoreFocusOut,
-         stepName: 'Namespace',
-         placeHolder: 'Namespace'
-      });
+      const namespacePick = await wizardContext.ui.showQuickPick(
+         sort(getOptions()),
+         {
+            ignoreFocusOut,
+            stepName: 'Namespace',
+            placeHolder: 'Namespace'
+         }
+      );
 
       if (namespacePick.label === newOption) {
          wizardContext.newNamespace = true;
@@ -328,7 +332,7 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
          description: sub.subscription.subscriptionId || ''
       });
       const subPick = await wizardContext.ui.showQuickPick(
-         getAsyncOptions(subs, subToItem),
+         sort(getAsyncOptions(subs, subToItem)),
          {
             ignoreFocusOut,
             stepName: 'ACR Subscription',
@@ -369,7 +373,7 @@ class PromptAcrResourceGroup extends AzureWizardPromptStep<WizardContext> {
          label: rg.resourceGroup.name || ''
       });
       const rgPick = await wizardContext.ui.showQuickPick(
-         getAsyncOptions(rgs, rgToItem),
+         sort(getAsyncOptions(rgs, rgToItem)),
          {
             ignoreFocusOut,
             stepName: 'ACR Resource Group',
@@ -409,7 +413,7 @@ class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
          label: r.registry.name || ''
       });
       const registryPick = await wizardContext.ui.showQuickPick(
-         getAsyncOptions(registries, registryToItem),
+         sort(getAsyncOptions(registries, registryToItem)),
          {
             ignoreFocusOut,
             stepName: 'Registry',
@@ -451,7 +455,7 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
          label: r.repositoryName
       });
       const repositoryPick = await wizardContext.ui.showQuickPick(
-         getAsyncOptions(repositories, repositoryToItem),
+         sort(getAsyncOptions(repositories, repositoryToItem)),
          {
             ignoreFocusOut,
             stepName: 'Repository',
@@ -495,7 +499,7 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
       );
       const tagToItem = (t: TagItem) => ({label: t.tag.name || ''});
       const tagPick = await wizardContext.ui.showQuickPick(
-         getAsyncOptions(tags, tagToItem),
+         sort(getAsyncOptions(tags, tagToItem)),
          {
             ignoreFocusOut,
             stepName: 'Tag',
