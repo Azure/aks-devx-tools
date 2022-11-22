@@ -9,6 +9,11 @@ import {Errorable, failed} from './errorable';
 import {withTempFile} from './temp';
 
 const WAIT_TIMEOUT = '5m';
+enum ROLLOUT_STATUS_RESOURCE {
+   Deployment = 'deployment',
+   Daemonset = 'daemonset',
+   StatefulStet = 'statefulset'
+}
 
 export interface KubernetesApi {
    listNamespaces(): Promise<Errorable<V1Namespace[]>>;
@@ -100,43 +105,10 @@ export class Kubernetes implements KubernetesApi {
          return invokeResp;
       }
 
-      const waitResp = await this.waitManifests(namespace, applicationName);
-      if (failed(waitResp)) {
-         return {
-            error: `${invokeResp.result}\n${waitResp.error}`,
-            succeeded: false
-         };
-      }
-
-      return {
-         succeeded: true,
-         result: `${invokeResp.result}\n${waitResp.result}`
-      };
-   }
-
-   private async waitManifests(
-      namespace: string,
-      applicationName: string
-   ): Promise<Errorable<string>> {
-      const command = `rollout status deployment/${applicationName} --namespace ${namespace} --timeout ${WAIT_TIMEOUT}`;
-      return await this.invokeKubectl(command);
-   }
-
-   async applyKustomize(
-      kustomizationDirectory: string,
-      namespace: string,
-      applicationName: string
-   ): Promise<Errorable<string>> {
-      const command = `apply -k "${kustomizationDirectory}"`;
-      const invokeResp = await this.invokeKubectl(command);
-      if (failed(invokeResp)) {
-         return invokeResp;
-      }
-
-      const waitResp = await this.waitKustomize(
-         kustomizationDirectory,
-         namespace,
-         applicationName
+      const waitResp = await this.waitRollout(
+         ROLLOUT_STATUS_RESOURCE.Deployment,
+         applicationName,
+         namespace
       );
       if (failed(waitResp)) {
          return {
@@ -151,12 +123,52 @@ export class Kubernetes implements KubernetesApi {
       };
    }
 
-   private async waitKustomize(
-      manifestPath: string,
+   private async waitRollout(
+      resourceType: ROLLOUT_STATUS_RESOURCE,
+      resourceName: string,
+      namespace: string
+   ): Promise<Errorable<string>> {
+      const command = `rollout status ${resourceType}/${resourceName} --namespace ${namespace} --timeout ${WAIT_TIMEOUT}`;
+      return await this.invokeKubectl(command);
+   }
+
+   async applyKustomize(
+      kustomizationDirectory: string,
       namespace: string,
       applicationName: string
    ): Promise<Errorable<string>> {
-      return this.waitManifests(namespace, applicationName);
+      const command = `apply -k "${kustomizationDirectory}"`;
+      const invokeResp = await this.invokeKubectl(command);
+      if (failed(invokeResp)) {
+         return invokeResp;
+      }
+
+      const waitResp = await this.waitKustomizeRollout(
+         kustomizationDirectory,
+         ROLLOUT_STATUS_RESOURCE.Deployment,
+         applicationName,
+         namespace
+      );
+      if (failed(waitResp)) {
+         return {
+            error: `${invokeResp.result}\n${waitResp.error}`,
+            succeeded: false
+         };
+      }
+
+      return {
+         succeeded: true,
+         result: `${invokeResp.result}\n${waitResp.result}`
+      };
+   }
+
+   private async waitKustomizeRollout(
+      manifestPath: string,
+      resourceType: ROLLOUT_STATUS_RESOURCE,
+      resourceName: string,
+      namespace: string
+   ): Promise<Errorable<string>> {
+      return this.waitRollout(resourceType, resourceName, namespace);
    }
 
    async installHelm(chartDirectory: string): Promise<Errorable<string>> {
