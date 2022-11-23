@@ -243,14 +243,11 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
             }
          ];
       };
-      const namespacePick = await wizardContext.ui.showQuickPick(
-         sort(getOptions()),
-         {
-            ignoreFocusOut,
-            stepName: 'Namespace',
-            placeHolder: 'Namespace'
-         }
-      );
+      const namespacePick = await wizardContext.ui.showQuickPick(getOptions(), {
+         ignoreFocusOut,
+         stepName: 'Namespace',
+         placeHolder: 'Namespace'
+      });
 
       if (namespacePick.label === newOption) {
          wizardContext.newNamespace = true;
