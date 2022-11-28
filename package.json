@@ -18,6 +18,7 @@
       "onCommand:aks-draft-extension.prerequisites",
       "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftDeployment",
+      "onCommand:aks-draft-extension.runDraftIngress",
       "onCommand:aks-draft-extension.runBuildAcrImage"
    ],
    "main": "./dist/extension.js",
@@ -47,6 +48,10 @@
             "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
          },
          {
+            "command": "aks-draft-extension.runDraftIngress",
+            "title": "AKS Developer: Draft a Kubernetes Ingress with Web App Routing"
+         },
+         {
             "command": "aks-draft-extension.runBuildAcrImage",
             "title": "AKS Developer: Build an Image on Azure Container Registry"
          }
@@ -73,8 +78,12 @@
                "group": "draftnavigation@2"
             },
             {
-               "command": "aks-draft-extension.runDraftDeployment",
+               "command": "aks-draft-extension.runDraftIngress",
                "group": "draftnavigation@3"
+            },
+            {
+               "command": "aks-draft-extension.runDraftDeployment",
+               "group": "draftnavigation@4"
             }
          ]
       },
