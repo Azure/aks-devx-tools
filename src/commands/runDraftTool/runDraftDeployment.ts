@@ -43,6 +43,7 @@ import {
 import {image} from '../../utils/acr';
 import {CompletedSteps} from './model/guidedExperience';
 import {sort} from '../../utils/sort';
+import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -340,9 +341,6 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
-      // if something was recently used this text is appened to the description
-      const removeRecentlyUsed = (description: string) =>
-         description.replace(' (recently used)', '');
       wizardContext.acrSubscription = (await subs).find(
          (sub) =>
             subToItem(sub).description ===
@@ -792,11 +790,4 @@ function getOutputPath(wizardContext: WizardContext): string {
       default:
          return path.join(base, 'manifests');
    }
-}
-
-async function getAsyncOptions<T>(
-   arr: Promise<T[]>,
-   callbackfn: (a: T) => vscode.QuickPickItem
-): Promise<vscode.QuickPickItem[]> {
-   return (await arr).map(callbackfn);
 }
