@@ -15,6 +15,7 @@ import * as vscode from 'vscode';
 import {Errorable} from './errorable';
 import {TokenCredential} from '@azure/core-auth';
 import {Environment} from '@azure/ms-rest-azure-env';
+import {KeyVaultManagementClient, Vault} from '@azure/arm-keyvault';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -34,6 +35,10 @@ export interface AzApi {
       registryItem: RegistryItem,
       repositoryItem: RepositoryItem
    ): Promise<Errorable<TagItem[]>>;
+   listKeyVaults(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<KeyVaultItem[]>>;
 }
 
 export interface SubscriptionItem {
@@ -55,6 +60,10 @@ export interface RepositoryItem {
 
 export interface TagItem {
    tag: ArtifactTagProperties;
+}
+
+export interface KeyVaultItem {
+   vault: Vault;
 }
 
 export class Az implements AzApi {
@@ -250,6 +259,43 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to list repository tags: ${error}`
+         };
+      }
+   }
+
+   async listKeyVaults(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<KeyVaultItem[]>> {
+      const loginResult = await this.checkLoginAndFilters();
+      if (!loginResult.succeeded) {
+         return loginResult;
+      }
+
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (typeof subscriptionId === 'undefined') {
+         return {succeeded: false, error: 'subscriptionId undefined'};
+      }
+      const resourceGroupName = resourceGroupItem.resourceGroup.name;
+      if (typeof resourceGroupName === 'undefined') {
+         return {succeeded: false, error: 'resourceGroup name undefined'};
+      }
+
+      const {credentials2} = subscriptionItem.session;
+      try {
+         const client = new KeyVaultManagementClient(
+            credentials2,
+            subscriptionId
+         );
+         const vaults = await listAll(
+            client.vaults.listByResourceGroup(resourceGroupName)
+         );
+         const vaultItems: KeyVaultItem[] = vaults.map((vault) => ({vault}));
+         return {succeeded: true, result: vaultItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list key vaults for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
          };
       }
    }

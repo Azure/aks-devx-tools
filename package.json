@@ -187,6 +187,7 @@
    },
    "dependencies": {
       "@azure/arm-containerregistry": "^10.0.0",
+      "@azure/arm-keyvault": "^2.0.0",
       "@azure/arm-resources": "^5.0.1",
       "@azure/arm-subscriptions": "^5.0.1",
       "@azure/container-registry": "^1.0.0",
