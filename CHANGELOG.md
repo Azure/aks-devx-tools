@@ -8,7 +8,7 @@
 -  New deploy experience
    -  Pop up prompts that guide you through the whole deployment process.
 
-Thanks to Oliver, David, Ahmed, and the whole AKS ATL Team!
+Thanks to Oliver, David, Ahmed, Tats, and the whole AKS ATL Team!
 
 ## [0.1.0]
 
