@@ -5,7 +5,7 @@
 -  New commands
    -  `Build an image on Azure Container Registry`
    -  `Prerequisites`
-- New deploy experience
+-  New deploy experience
    -  Pop up prompts that guide you through the whole deployment process.
 
 Thanks to Oliver, David, Ahmed, and the whole AKS ATL Team!
