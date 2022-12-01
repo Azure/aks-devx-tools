@@ -39,7 +39,7 @@ To properly use Draft to containerize your application, create manifest files, a
 
 -  Supported deployment types: Helm, Kustomize, Kubernetes manifest.
 
-**Build an image on Azure Container Registry** easily build an image on an ACR through the command palette to use for your deployment files.
+**Build an image on Azure Container Registry** easily build an image on an ACR to later use for your deployment files.
 
 **Prerequisites** shows you all the steps that you need to get up and running on AKS. By the end of this checklist you will have an application up and running on AKS!
 
