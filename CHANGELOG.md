@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.1.1]
+
+-  New commands
+   -  `Build an image on Azure Container Registry`
+   -  `Prerequisites`
+
+Thanks to Oliver, David, Ahmed, and the whole AKS ATL Team!
+
 ## [0.1.0]
 
 -  New UI changes seen at [Kubecon NA 2022](https://azuredaywithkubernetes2022.com/from-cloud-to-code-quickly-with-aks-spencer-libbing-brandon-foley/) released.
