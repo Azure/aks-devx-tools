@@ -3,7 +3,7 @@
    "displayName": "Developer Tools for Azure Kubernetes Service (AKS)",
    "description": "Create deployment files and configure GitHub Actions workflows to deploy applications to Azure Kubernetes Service (AKS).",
    "publisher": "ms-kubernetes-tools",
-   "version": "0.1.0",
+   "version": "0.1.1",
    "icon": "resources/aks-devx.png",
    "preview": true,
    "engines": {
