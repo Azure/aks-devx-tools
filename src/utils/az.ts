@@ -16,6 +16,11 @@ import {Errorable} from './errorable';
 import {TokenCredential} from '@azure/core-auth';
 import {Environment} from '@azure/ms-rest-azure-env';
 import {KeyVaultManagementClient, Vault} from '@azure/arm-keyvault';
+import {
+   CertificateClient,
+   CertificateProperties
+} from '@azure/keyvault-certificates';
+import {DefaultAzureCredential} from '@azure/identity';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -39,6 +44,10 @@ export interface AzApi {
       subscriptionItem: SubscriptionItem,
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<KeyVaultItem[]>>;
+   listCertificates(
+      subscriptionItem: SubscriptionItem,
+      keyVaultItem: KeyVaultItem
+   ): Promise<Errorable<CertificateItem[]>>;
 }
 
 export interface SubscriptionItem {
@@ -64,6 +73,10 @@ export interface TagItem {
 
 export interface KeyVaultItem {
    vault: Vault;
+}
+
+export interface CertificateItem {
+   certificate: CertificateProperties;
 }
 
 export class Az implements AzApi {
@@ -296,6 +309,39 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to list key vaults for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
+         };
+      }
+   }
+
+   async listCertificates(
+      subscriptionItem: SubscriptionItem,
+      keyVaultItem: KeyVaultItem
+   ): Promise<Errorable<CertificateItem[]>> {
+      const loginResult = await this.checkLoginAndFilters();
+      if (!loginResult.succeeded) {
+         return loginResult;
+      }
+
+      const vaultUri = keyVaultItem.vault.properties.vaultUri;
+      if (vaultUri === undefined) {
+         return {succeeded: false, error: 'vault URI undefined'};
+      }
+
+      let {credentials2} = subscriptionItem.session;
+      const credential = new DefaultAzureCredential({});
+      try {
+         const client = new CertificateClient(vaultUri, credential);
+         const certs = await listAll(
+            client.listPropertiesOfCertificates({includePending: true})
+         );
+         const certItems: CertificateItem[] = certs.map((certificate) => ({
+            certificate
+         }));
+         return {succeeded: true, result: certItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list certificates for key vault "${keyVaultItem.vault.name}": ${error}`
          };
       }
    }

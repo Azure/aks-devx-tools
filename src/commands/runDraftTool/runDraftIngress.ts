@@ -13,6 +13,7 @@ import {
 import {
    Az,
    AzApi,
+   CertificateItem,
    getAzureAccount,
    KeyVaultItem,
    ResourceGroupItem,
@@ -31,6 +32,8 @@ interface PromptContext {
    kvSubscription: SubscriptionItem;
    kvResourceGroup: ResourceGroupItem;
    kv: KeyVaultItem;
+   newSSLCert: boolean;
+   certificate: CertificateItem;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
 type IPromptStep = AzureWizardPromptStep<WizardContext>;
@@ -68,7 +71,9 @@ export async function runDraftIngress(
       new PromptOutputFolder(completedSteps),
       new PromptKvSubscription(az),
       new PromptKvResourceGroup(az),
-      new PromptKv(az)
+      new PromptKv(az),
+      new PromptNewSslCert(),
+      new PromptCertificate(az)
    ];
    const executeSteps: IExecuteStep[] = [];
    const wizard = new AzureWizard(wizardContext, {
@@ -220,5 +225,67 @@ class PromptKv extends AzureWizardPromptStep<WizardContext> {
    }
    public shouldPrompt(wizardContext: WizardContext): boolean {
       return true;
+   }
+}
+
+class PromptNewSslCert extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const createNewSsl = 'Create New SSL Certificate';
+      const opts: vscode.QuickPickItem[] = [
+         createNewSsl,
+         'Use Existing SSL Certificate'
+      ].map((label) => ({label}));
+      const {label} = await wizardContext.ui.showQuickPick(opts, {
+         ignoreFocusOut,
+         placeHolder: 'Choose SSL Option',
+         title
+      });
+      wizardContext.newSSLCert = label === createNewSsl;
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.kvSubscription === undefined) {
+         throw Error('Key Vault Subscription undefined');
+      }
+      if (wizardContext.kv === undefined) {
+         throw Error('Key Vault undefined');
+      }
+
+      const certs = getAysncResult(
+         this.az.listCertificates(
+            wizardContext.kvSubscription,
+            wizardContext.kv
+         )
+      );
+      const certToItem = (cert: CertificateItem) => ({
+         label: cert.certificate.name || ''
+      });
+      const certPick = await wizardContext.ui.showQuickPick(
+         sort(getAsyncOptions(certs, certToItem)),
+         {
+            ignoreFocusOut,
+            stepName: 'Certificate',
+            placeHolder: 'Certificate',
+            noPicksMessage: 'No certificates found'
+         }
+      );
+
+      wizardContext.certificate = (await certs).find(
+         (cert) => certToItem(cert).label === certPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return !wizardContext.newSSLCert;
    }
 }
