@@ -327,8 +327,14 @@ export class Az implements AzApi {
          return {succeeded: false, error: 'vault URI undefined'};
       }
 
-      let {credentials2} = subscriptionItem.session;
-      const credential = new DefaultAzureCredential({});
+      // const {credentials2} = subscriptionItem.session; I would prefer to use this cred but it doesn't work right now
+      // the current cred below defaults to using the azure cli creds which is not good
+      // unforunately there's no workaround right now
+      // this issue tracks the fix: https://github.com/Azure/azure-sdk-for-net/issues/30525
+      // this tracks the issue https://github.com/microsoft/vscode-azure-account/issues/443
+      // I need to rework this before this gets merged in. Either commit to using az cli creds or find a workaround.
+      // constructor for this object should take a creds getter rather than the azure account api (refactor to that)
+      const credential = new DefaultAzureCredential();
       try {
          const client = new CertificateClient(vaultUri, credential);
          const certs = await listAll(
