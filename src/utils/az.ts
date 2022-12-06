@@ -15,6 +15,7 @@ import * as vscode from 'vscode';
 import {Errorable} from './errorable';
 import {TokenCredential} from '@azure/core-auth';
 import {Environment} from '@azure/ms-rest-azure-env';
+import { ContainerServiceClient, ManagedCluster } from '@azure/arm-containerservice';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -34,6 +35,10 @@ export interface AzApi {
       registryItem: RegistryItem,
       repositoryItem: RepositoryItem
    ): Promise<Errorable<TagItem[]>>;
+   listManagedClustersBySubAndRG(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<ManagedClusterItem[]>>;
 }
 
 export interface SubscriptionItem {
@@ -55,6 +60,10 @@ export interface RepositoryItem {
 
 export interface TagItem {
    tag: ArtifactTagProperties;
+}
+
+export interface ManagedClusterItem {
+   managedCluster: ManagedCluster;
 }
 
 export class Az implements AzApi {
@@ -254,6 +263,43 @@ export class Az implements AzApi {
       }
    }
 
+   async listManagedClustersBySubAndRG(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<ManagedClusterItem[]>> {
+      const loginResult = await this.checkLoginAndFilters();
+      if (!loginResult.succeeded) {
+         return loginResult;
+      }
+
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (typeof subscriptionId === 'undefined') {
+         return {succeeded: false, error: 'subscriptionId undefined'};
+      }
+
+      const resourceGroup = resourceGroupItem.resourceGroup.name;
+      if (typeof resourceGroup === 'undefined') {
+         return {succeeded: false, error: 'resourceGroup undefined'};
+      }
+
+      const {credentials2, environment} = subscriptionItem.session;
+      try {
+         const containerServiceClient = this.getContainerServiceClient(credentials2, subscriptionId);
+
+
+         const managedClusters = listAll(containerServiceClient.managedClusters.listByResourceGroup(resourceGroup));
+         const mcItems: ManagedClusterItem[] = (await managedClusters).map((mc) => ({
+            managedCluster: mc
+         }));
+         return {succeeded: true, result: mcItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list managed clusters by resourcce group: ${error}`
+         };
+      }
+   }
+
    private getContainerRegistryClient(
       creds: TokenCredential,
       loginServer: string,
@@ -266,6 +312,13 @@ export class Az implements AzApi {
       return new ContainerRegistryClient(`https://${loginServer}`, creds, {
          audience: environment.resourceManagerEndpointUrl
       });
+   }
+
+   private getContainerServiceClient(
+      creds: TokenCredential,
+      subscriptionId: string
+   ): ContainerServiceClient {
+      return new ContainerServiceClient(creds, subscriptionId);
    }
 }
 

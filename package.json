@@ -18,6 +18,7 @@
       "onCommand:aks-draft-extension.prerequisites",
       "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftDeployment",
+      "onCommand:aks-draft-extension.runDraftWorkflow",
       "onCommand:aks-draft-extension.runBuildAcrImage"
    ],
    "main": "./dist/extension.js",
@@ -45,6 +46,10 @@
          {
             "command": "aks-draft-extension.runDraftDeployment",
             "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
+         },
+         {
+            "command": "aks-draft-extension.runDraftWorkflow",
+            "title": "AKS Developer: Draft a GitHub Action Deployment Workflow"
          },
          {
             "command": "aks-draft-extension.runBuildAcrImage",
@@ -75,6 +80,10 @@
             {
                "command": "aks-draft-extension.runDraftDeployment",
                "group": "draftnavigation@3"
+            },
+            {
+               "command": "aks-draft-extension.runDraftWorkflow",
+               "group": "draftnavigation@5"
             }
          ]
       },
@@ -178,6 +187,7 @@
    },
    "dependencies": {
       "@azure/arm-containerregistry": "^10.0.0",
+      "@azure/arm-containerservice": "^17.2.0",
       "@azure/arm-resources": "^5.0.1",
       "@azure/arm-subscriptions": "^5.0.1",
       "@azure/container-registry": "^1.0.0",
