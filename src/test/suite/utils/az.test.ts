@@ -1,10 +1,11 @@
+import {KnownContainerRegistryAudience} from '@azure/container-registry';
 import {
    getPagedAsyncIterator,
    PagedResult,
    PageSettings
 } from '@azure/core-paging';
 import * as assert from 'assert';
-import {listAll} from '../../../utils/az';
+import {audienceFromLocation, listAll} from '../../../utils/az';
 
 suite('Az Utility Test Suite', () => {
    test('it lists all from an iterator', async () => {
@@ -37,5 +38,28 @@ suite('Az Utility Test Suite', () => {
       const returned = await listAll(iterator);
       assert.deepStrictEqual(returned, collection);
       assert.strictEqual(returned.length, n);
+   });
+
+   test('it returns audience from a location', async () => {
+      assert.strictEqual(
+         audienceFromLocation('eastus'),
+         KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
+      );
+      assert.strictEqual(
+         audienceFromLocation('northcentralus'),
+         KnownContainerRegistryAudience.AzureResourceManagerPublicCloud
+      );
+      assert.strictEqual(
+         audienceFromLocation('usgovtexas'),
+         KnownContainerRegistryAudience.AzureResourceManagerGovernment
+      );
+      assert.strictEqual(
+         audienceFromLocation('chinanorth2'),
+         KnownContainerRegistryAudience.AzureResourceManagerChina
+      );
+      assert.strictEqual(
+         audienceFromLocation('germanynortheast'),
+         KnownContainerRegistryAudience.AzureResourceManagerGermany
+      );
    });
 });
