@@ -9,7 +9,8 @@ import {
 } from '@azure/arm-containerregistry';
 import {
    ContainerRegistryClient,
-   ArtifactTagProperties
+   ArtifactTagProperties,
+   KnownContainerRegistryAudience
 } from '@azure/container-registry';
 import * as vscode from 'vscode';
 import {Errorable} from './errorable';
@@ -32,11 +33,9 @@ export interface AzApi {
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<RegistryItem[]>>;
    listRegistryRepositories(
-      subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem
    ): Promise<Errorable<RepositoryItem[]>>;
    listRepositoryTags(
-      subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem,
       repositoryItem: RepositoryItem
    ): Promise<Errorable<TagItem[]>>;
@@ -45,13 +44,11 @@ export interface AzApi {
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<KeyVaultItem[]>>;
    listCertificates(
-      subscriptionItem: SubscriptionItem,
       keyVaultItem: KeyVaultItem
    ): Promise<Errorable<CertificateItem[]>>;
 }
 
 export interface SubscriptionItem {
-   session: AzureSession;
    subscription: Subscription;
 }
 
@@ -79,65 +76,40 @@ export interface CertificateItem {
    certificate: CertificateProperties;
 }
 
+type CredGetter = () => TokenCredential;
+
 export class Az implements AzApi {
-   constructor(private azAccount: AzureAccountExtensionApi) {}
-
-   private async checkLoginAndFilters(): Promise<Errorable<void>> {
-      if (!(await this.azAccount.waitForLogin())) {
-         vscode.commands.executeCommand('azure-account.askForLogin');
-         return {succeeded: false, error: 'failed to login'};
-      }
-
-      await this.azAccount.waitForFilters();
-      return {succeeded: true, result: undefined};
-   }
+   constructor(private getCreds: CredGetter) {}
 
    async listSubscriptions(): Promise<Errorable<SubscriptionItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
+      try {
+         const creds = this.getCreds();
+         const subClient = new SubscriptionClient(creds);
+         const subs = await listAll(subClient.subscriptions.list());
+         const subItems = subs.map((subscription) => ({
+            subscription
+         }));
+         return {succeeded: true, result: subItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list subscriptions: ${error}`
+         };
       }
-
-      const subscriptionItems: SubscriptionItem[] = [];
-      for (const session of this.azAccount.sessions) {
-         try {
-            const subClient = new SubscriptionClient(session.credentials2);
-            const sessionSubscriptions = await listAll(
-               subClient.subscriptions.list()
-            );
-            subscriptionItems.push(
-               ...sessionSubscriptions.map((subscription) => ({
-                  session,
-                  subscription
-               }))
-            );
-         } catch (error) {
-            // we don't want to fail if only one session is failing to list.
-            // there could be incorrect credentials for that session
-            console.error(`Failed to list subscriptions for a session`);
-         }
-      }
-
-      return {succeeded: true, result: subscriptionItems};
    }
 
    async listResourceGroups(
       subscriptionItem: SubscriptionItem
    ): Promise<Errorable<ResourceGroupItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
-      }
-
       const subscriptionId = subscriptionItem.subscription.subscriptionId;
       if (typeof subscriptionId === 'undefined') {
          return {succeeded: false, error: 'subscriptionId undefined'};
       }
 
-      const {credentials2} = subscriptionItem.session;
       try {
+         const creds = this.getCreds();
          const resourceGroupClient = new ResourceManagementClient(
-            credentials2,
+            creds,
             subscriptionId
          );
          const resourceGroups = await listAll(
@@ -162,11 +134,6 @@ export class Az implements AzApi {
       subscriptionItem: SubscriptionItem,
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<RegistryItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
-      }
-
       const subscriptionId = subscriptionItem.subscription.subscriptionId;
       if (typeof subscriptionId === 'undefined') {
          return {succeeded: false, error: 'subscriptionId undefined'};
@@ -176,10 +143,10 @@ export class Az implements AzApi {
          return {succeeded: false, error: 'resourceGroup name undefined'};
       }
 
-      const {credentials2} = subscriptionItem.session;
       try {
+         const creds = this.getCreds();
          const registryManagementClient = new ContainerRegistryManagementClient(
-            credentials2,
+            creds,
             subscriptionId
          );
          const registries = await listAll(
@@ -200,25 +167,21 @@ export class Az implements AzApi {
    }
 
    async listRegistryRepositories(
-      subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem
    ): Promise<Errorable<RepositoryItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
-      }
-
       const loginServer = registryItem.registry.loginServer;
       if (typeof loginServer === 'undefined') {
          return {succeeded: false, error: 'registry login server undefined'};
       }
 
-      const {credentials2, environment} = subscriptionItem.session;
       try {
+         const location = registryItem.registry.location;
+         const audience = audienceFromLocation(location);
+         const creds = this.getCreds();
          const registryClient = this.getContainerRegistryClient(
-            credentials2,
+            creds,
             loginServer,
-            environment
+            audience
          );
          const repositories = await listAll(
             registryClient.listRepositoryNames()
@@ -238,26 +201,22 @@ export class Az implements AzApi {
    }
 
    async listRepositoryTags(
-      subscriptionItem: SubscriptionItem,
       registryItem: RegistryItem,
       repositoryItem: RepositoryItem
    ): Promise<Errorable<TagItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
-      }
-
       const loginServer = registryItem.registry.loginServer;
       if (typeof loginServer === 'undefined') {
          return {succeeded: false, error: 'registry login server undefined'};
       }
 
-      const {credentials2, environment} = subscriptionItem.session;
       try {
+         const location = registryItem.registry.location;
+         const audience = audienceFromLocation(location);
+         const creds = this.getCreds();
          const registryClient = this.getContainerRegistryClient(
-            credentials2,
+            creds,
             loginServer,
-            environment
+            audience
          );
          const tags = await listAll(
             registryClient
@@ -280,11 +239,6 @@ export class Az implements AzApi {
       subscriptionItem: SubscriptionItem,
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<KeyVaultItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
-      }
-
       const subscriptionId = subscriptionItem.subscription.subscriptionId;
       if (typeof subscriptionId === 'undefined') {
          return {succeeded: false, error: 'subscriptionId undefined'};
@@ -294,12 +248,9 @@ export class Az implements AzApi {
          return {succeeded: false, error: 'resourceGroup name undefined'};
       }
 
-      const {credentials2} = subscriptionItem.session;
       try {
-         const client = new KeyVaultManagementClient(
-            credentials2,
-            subscriptionId
-         );
+         const creds = this.getCreds();
+         const client = new KeyVaultManagementClient(creds, subscriptionId);
          const vaults = await listAll(
             client.vaults.listByResourceGroup(resourceGroupName)
          );
@@ -314,29 +265,16 @@ export class Az implements AzApi {
    }
 
    async listCertificates(
-      subscriptionItem: SubscriptionItem,
       keyVaultItem: KeyVaultItem
    ): Promise<Errorable<CertificateItem[]>> {
-      const loginResult = await this.checkLoginAndFilters();
-      if (!loginResult.succeeded) {
-         return loginResult;
-      }
-
       const vaultUri = keyVaultItem.vault.properties.vaultUri;
       if (vaultUri === undefined) {
          return {succeeded: false, error: 'vault URI undefined'};
       }
 
-      // const {credentials2} = subscriptionItem.session; I would prefer to use this cred but it doesn't work right now
-      // the current cred below defaults to using the azure cli creds which is not good
-      // unforunately there's no workaround right now
-      // this issue tracks the fix: https://github.com/Azure/azure-sdk-for-net/issues/30525
-      // this tracks the issue https://github.com/microsoft/vscode-azure-account/issues/443
-      // I need to rework this before this gets merged in. Either commit to using az cli creds or find a workaround.
-      // constructor for this object should take a creds getter rather than the azure account api (refactor to that)
-      const credential = new DefaultAzureCredential();
       try {
-         const client = new CertificateClient(vaultUri, credential);
+         const creds = this.getCreds();
+         const client = new CertificateClient(vaultUri, creds);
          const certs = await listAll(
             client.listPropertiesOfCertificates({includePending: true})
          );
@@ -355,23 +293,15 @@ export class Az implements AzApi {
    private getContainerRegistryClient(
       creds: TokenCredential,
       loginServer: string,
-      environment: Environment
+      audience: KnownContainerRegistryAudience
    ): ContainerRegistryClient {
-      // @azure/container-registry doesn't support ADAL tokens at all and will error without this
-      // https://github.com/Azure/azure-sdk-for-js/issues/21192
-      (creds as any).signRequest = undefined;
-
       return new ContainerRegistryClient(`https://${loginServer}`, creds, {
-         audience: environment.resourceManagerEndpointUrl
+         audience
       });
    }
 }
 
-export function getAzureAccount(): AzureAccountExtensionApi {
-   return (<AzureExtensionApiProvider>(
-      vscode.extensions.getExtension('ms-vscode.azure-account')!.exports
-   )).getApi('1.0.0');
-}
+export const getAzCreds: CredGetter = () => new DefaultAzureCredential();
 
 export async function listAll<T>(
    iterator: PagedAsyncIterableIterator<T>
@@ -381,4 +311,23 @@ export async function listAll<T>(
       all.push(...page);
    }
    return all;
+}
+
+export function audienceFromLocation(
+   location: string
+): KnownContainerRegistryAudience {
+   const lowercased = location.toLowerCase();
+
+   if (lowercased.startsWith('china')) {
+      return KnownContainerRegistryAudience.AzureResourceManagerChina;
+   }
+   if (lowercased.startsWith('germany')) {
+      return KnownContainerRegistryAudience.AzureResourceManagerGermany;
+   }
+   if (lowercased.startsWith('usgov')) {
+      return KnownContainerRegistryAudience.AzureResourceManagerGovernment;
+   }
+
+   // list of locations https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/identity/identity/src/regionalAuthority.ts
+   return KnownContainerRegistryAudience.AzureResourceManagerPublicCloud;
 }

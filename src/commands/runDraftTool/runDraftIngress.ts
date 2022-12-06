@@ -14,7 +14,7 @@ import {
    Az,
    AzApi,
    CertificateItem,
-   getAzureAccount,
+   getAzCreds,
    KeyVaultItem,
    ResourceGroupItem,
    SubscriptionItem
@@ -55,7 +55,7 @@ export async function runDraftIngress(
       return undefined;
    }
 
-   const az: AzApi = new Az(getAzureAccount());
+   const az: AzApi = new Az(getAzCreds);
 
    const state: StateApi = State.construct(extensionContext);
    const deploymentPath = state.getDeploymentPath();
@@ -254,19 +254,11 @@ class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.kvSubscription === undefined) {
-         throw Error('Key Vault Subscription undefined');
-      }
       if (wizardContext.kv === undefined) {
          throw Error('Key Vault undefined');
       }
 
-      const certs = getAysncResult(
-         this.az.listCertificates(
-            wizardContext.kvSubscription,
-            wizardContext.kv
-         )
-      );
+      const certs = getAysncResult(this.az.listCertificates(wizardContext.kv));
       const certToItem = (cert: CertificateItem) => ({
          label: cert.certificate.name || ''
       });

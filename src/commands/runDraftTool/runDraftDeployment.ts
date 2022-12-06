@@ -31,7 +31,7 @@ import {
    SubscriptionItem,
    TagItem,
    AzApi,
-   getAzureAccount,
+   getAzCreds,
    Az
 } from '../../utils/az';
 import * as path from 'path';
@@ -90,7 +90,7 @@ export async function runDraftDeployment(
       kubectlReturn.result,
       helmReturn.result
    );
-   const az: AzApi = new Az(getAzureAccount());
+   const az: AzApi = new Az(getAzCreds);
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
@@ -435,18 +435,12 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
-      }
       if (wizardContext.acrRegistry === undefined) {
          throw Error('ACR Registry is undefined');
       }
 
       const repositories = getAysncResult(
-         this.az.listRegistryRepositories(
-            wizardContext.acrSubscription,
-            wizardContext.acrRegistry
-         )
+         this.az.listRegistryRepositories(wizardContext.acrRegistry)
       );
       const repositoryToItem = (r: RepositoryItem) => ({
          label: r.repositoryName
@@ -477,9 +471,6 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
-      }
       if (wizardContext.acrRegistry === undefined) {
          throw Error('ACR Registry is undefined');
       }
@@ -489,7 +480,6 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
 
       const tags = getAysncResult(
          this.az.listRepositoryTags(
-            wizardContext.acrSubscription,
             wizardContext.acrRegistry,
             wizardContext.acrRepository
          )

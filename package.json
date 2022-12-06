@@ -149,7 +149,6 @@
    },
    "extensionDependencies": [
       "ms-kubernetes-tools.vscode-kubernetes-tools",
-      "ms-vscode.azure-account",
       "ms-azuretools.vscode-docker"
    ],
    "scripts": {
