@@ -150,7 +150,8 @@
    "extensionDependencies": [
       "ms-kubernetes-tools.vscode-kubernetes-tools",
       "ms-vscode.azure-account",
-      "ms-azuretools.vscode-docker"
+      "ms-azuretools.vscode-docker",
+      "vscode.git"
    ],
    "scripts": {
       "vscode:prepublish": "npm run package",

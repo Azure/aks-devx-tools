@@ -15,7 +15,10 @@ import * as vscode from 'vscode';
 import {Errorable} from './errorable';
 import {TokenCredential} from '@azure/core-auth';
 import {Environment} from '@azure/ms-rest-azure-env';
-import { ContainerServiceClient, ManagedCluster } from '@azure/arm-containerservice';
+import {
+   ContainerServiceClient,
+   ManagedCluster
+} from '@azure/arm-containerservice';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -284,13 +287,21 @@ export class Az implements AzApi {
 
       const {credentials2, environment} = subscriptionItem.session;
       try {
-         const containerServiceClient = this.getContainerServiceClient(credentials2, subscriptionId);
+         const containerServiceClient = this.getContainerServiceClient(
+            credentials2,
+            subscriptionId
+         );
 
-
-         const managedClusters = listAll(containerServiceClient.managedClusters.listByResourceGroup(resourceGroup));
-         const mcItems: ManagedClusterItem[] = (await managedClusters).map((mc) => ({
-            managedCluster: mc
-         }));
+         const managedClusters = listAll(
+            containerServiceClient.managedClusters.listByResourceGroup(
+               resourceGroup
+            )
+         );
+         const mcItems: ManagedClusterItem[] = (await managedClusters).map(
+            (mc) => ({
+               managedCluster: mc
+            })
+         );
          return {succeeded: true, result: mcItems};
       } catch (error) {
          return {
