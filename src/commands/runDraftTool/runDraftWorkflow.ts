@@ -23,7 +23,7 @@ import {
 import {getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {getBranches} from '../../utils/gitExtension';
-import {Branch} from '../../utils/git';
+import {Branch, Ref} from '../../utils/git';
 
 const title = 'Draft a GitHub Actions Workflow';
 
@@ -37,6 +37,7 @@ interface PromptContext {
    registry: RegistryItem;
    acrRepository: RepositoryItem;
    branch: string;
+   selectRepoDir: boolean;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
 type IPromptStep = AzureWizardPromptStep<WizardContext>;
@@ -57,19 +58,14 @@ export async function runDraftWorkflow({
       return undefined;
    }
 
-   let outputDirectory = undefined;
-   const workspaceFolders = vscode.workspace.workspaceFolders;
-   if (workspaceFolders && workspaceFolders.length !== 0) {
-      outputDirectory = workspaceFolders[0].uri;
-   }
-
    const promptSteps: IPromptStep[] = [
+      new PromptRepoRootSelection(),
       new PromptAKSSubscriptionSelection(az),
       new PromptAKSResourceGroupSelection(az),
       new PromptAKSClusterSelection(az),
-      // Currently we dont allow seperate sub/rg for ACR selection while generating through draft
-      //new PromptACRSubscriptionSelection(az),
-      //new PromptACRResourceGroupSelection(az),
+      // Currently we dont allow seperate sub for ACR selection while generating through draft
+      // new PromptACRSubscriptionSelection(az),
+      new PromptACRResourceGroupSelection(az),
       new PromptACRSelection(az),
       new PromptACRRegistrySelection(az),
       new PromptGitHubBranchSelection()
@@ -77,8 +73,7 @@ export async function runDraftWorkflow({
    const executeSteps: IExecuteStep[] = [new ExecuteDraftWorkflow()];
 
    const wizardContext: WizardContext = {
-      ...actionContext,
-      destination: outputDirectory
+      ...actionContext
    };
 
    const wizard = new AzureWizard(wizardContext, {
@@ -247,12 +242,12 @@ class PromptACRResourceGroupSelection extends AzureWizardPromptStep<WizardContex
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
+      if (wizardContext.clusterSubscription === undefined) {
          throw Error('ACR Subscription is undefined');
       }
 
       const rgs = getAysncResult(
-         this.az.listResourceGroups(wizardContext.acrSubscription)
+         this.az.listResourceGroups(wizardContext.clusterSubscription)
       );
       const rgToItem = (rg: ResourceGroupItem) => ({
          label: rg.resourceGroup.name || ''
@@ -286,14 +281,14 @@ class PromptACRSelection extends AzureWizardPromptStep<WizardContext> {
       if (wizardContext.clusterSubscription === undefined) {
          throw Error('ACR Subscription is undefined');
       }
-      if (wizardContext.clusterResourceGroup === undefined) {
+      if (wizardContext.acrResourceGroup === undefined) {
          throw Error('ACR Resource Group is undefined');
       }
 
       const registries = getAysncResult(
          this.az.listContainerRegistries(
             wizardContext.clusterSubscription,
-            wizardContext.clusterResourceGroup
+            wizardContext.acrResourceGroup
          )
       );
 
@@ -364,6 +359,41 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptRepoRootSelection extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (
+         !vscode.workspace.workspaceFolders ||
+         vscode.workspace.workspaceFolders.length === 0
+      ) {
+         throw Error('No directories within current vscode wokspace.');
+      }
+
+      const sourceCodeFolder = (
+         await wizardContext.ui.showOpenDialog({
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: false,
+            stepName: 'Choose Repository Root Directory',
+            openLabel: 'Choose Repository Root Directory',
+            title: 'Choose Repository Root Directory',
+            defaultUri: vscode.workspace.workspaceFolders[0].uri
+         })
+      )[0];
+
+      if (!vscode.workspace.getWorkspaceFolder(sourceCodeFolder)) {
+         throw Error(
+            'Chosen Repository Directory is not in current workspace. Please choose a folder in the workspace'
+         );
+      }
+
+      wizardContext.destination = sourceCodeFolder;
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
 class PromptGitHubBranchSelection extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       if (wizardContext.destination === undefined) {
@@ -388,7 +418,7 @@ class PromptGitHubBranchSelection extends AzureWizardPromptStep<WizardContext> {
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      return !!!wizardContext.branch;
+      return true;
    }
 }
 
@@ -424,6 +454,9 @@ class ExecuteDraftWorkflow extends AzureWizardExecuteStep<WizardContext> {
       }
       if (cluster === undefined) {
          throw Error('AKS Cluster is undefined');
+      }
+      if (acrResourceGroup === undefined) {
+         throw Error('AKS Resource Group is undefined');
       }
       if (registry === undefined) {
          throw Error('ACR Registry is undefined');
