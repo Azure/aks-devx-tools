@@ -1,5 +1,3 @@
-import {AzureAccountExtensionApi, AzureSession} from './azureAccount.api';
-import type {AzureExtensionApiProvider} from '@microsoft/vscode-azext-utils/api';
 import {SubscriptionClient, Subscription} from '@azure/arm-subscriptions';
 import {ResourceManagementClient, ResourceGroup} from '@azure/arm-resources';
 import {PagedAsyncIterableIterator} from '@azure/core-paging';
@@ -12,16 +10,15 @@ import {
    ArtifactTagProperties,
    KnownContainerRegistryAudience
 } from '@azure/container-registry';
-import * as vscode from 'vscode';
 import {Errorable} from './errorable';
 import {TokenCredential} from '@azure/core-auth';
-import {Environment} from '@azure/ms-rest-azure-env';
 import {KeyVaultManagementClient, Vault} from '@azure/arm-keyvault';
 import {
    CertificateClient,
    CertificateProperties
 } from '@azure/keyvault-certificates';
 import {DefaultAzureCredential} from '@azure/identity';
+import {DnsManagementClient, Zone} from '@azure/arm-dns';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -46,6 +43,10 @@ export interface AzApi {
    listCertificates(
       keyVaultItem: KeyVaultItem
    ): Promise<Errorable<CertificateItem[]>>;
+   listDnsZones(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<DnsZoneItem[]>>;
 }
 
 export interface SubscriptionItem {
@@ -74,6 +75,10 @@ export interface KeyVaultItem {
 
 export interface CertificateItem {
    certificate: CertificateProperties;
+}
+
+export interface DnsZoneItem {
+   dnsZone: Zone;
 }
 
 type CredGetter = () => TokenCredential;
@@ -260,6 +265,37 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to list key vaults for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
+         };
+      }
+   }
+
+   async listDnsZones(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<DnsZoneItem[]>> {
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (typeof subscriptionId === 'undefined') {
+         return {succeeded: false, error: 'subscriptionId undefined'};
+      }
+      const resourceGroupName = resourceGroupItem.resourceGroup.name;
+      if (typeof resourceGroupName === 'undefined') {
+         return {succeeded: false, error: 'resource group name undefined'};
+      }
+
+      try {
+         const creds = this.getCreds();
+         const client = new DnsManagementClient(creds, subscriptionId);
+         const zones = await listAll(
+            client.zones.listByResourceGroup(resourceGroupName)
+         );
+         const zoneItems: DnsZoneItem[] = zones.map((zone) => ({
+            dnsZone: zone
+         }));
+         return {succeeded: true, result: zoneItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list DNS zones for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
          };
       }
    }

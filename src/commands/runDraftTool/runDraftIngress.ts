@@ -14,6 +14,7 @@ import {
    Az,
    AzApi,
    CertificateItem,
+   DnsZoneItem,
    getAzCreds,
    KeyVaultItem,
    ResourceGroupItem,
@@ -32,6 +33,9 @@ interface PromptContext {
    kvSubscription: SubscriptionItem;
    kvResourceGroup: ResourceGroupItem;
    kv: KeyVaultItem;
+   dnsSubscription: SubscriptionItem;
+   dnsResourceGroup: ResourceGroupItem;
+   dns: DnsZoneItem;
    newSSLCert: boolean;
    certificate: CertificateItem;
 }
@@ -73,7 +77,10 @@ export async function runDraftIngress(
       new PromptKvResourceGroup(az),
       new PromptKv(az),
       new PromptNewSslCert(),
-      new PromptCertificate(az)
+      new PromptCertificate(az),
+      new PromptDnsSubscription(az),
+      new PromptDnsResourceGroup(az),
+      new PromptDnsZone(az)
    ];
    const executeSteps: IExecuteStep[] = [];
    const wizard = new AzureWizard(wizardContext, {
@@ -248,6 +255,115 @@ class PromptNewSslCert extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptDnsSubscription extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const subs = getAysncResult(this.az.listSubscriptions());
+      const subToItem = (sub: SubscriptionItem) => ({
+         label: sub.subscription.displayName || '',
+         description: sub.subscription.subscriptionId || ''
+      });
+      const subPick = await wizardContext.ui.showQuickPick(
+         sort(getAsyncOptions(subs, subToItem)),
+         {
+            ignoreFocusOut,
+            stepName: 'DNS Zone Subscription',
+            placeHolder: 'DNS Zone Subscription',
+            noPicksMessage: 'No Subscriptions found'
+         }
+      );
+
+      wizardContext.dnsSubscription = (await subs).find(
+         (sub) =>
+            subToItem(sub).description ===
+            removeRecentlyUsed(subPick.description || '')
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newSSLCert;
+   }
+}
+
+class PromptDnsResourceGroup extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.dnsSubscription === undefined) {
+         throw Error('DNS Zone subscription is undefined');
+      }
+
+      const rgs = getAysncResult(
+         this.az.listResourceGroups(wizardContext.dnsSubscription)
+      );
+      const rgToItem = (rg: ResourceGroupItem) => ({
+         label: rg.resourceGroup.name || ''
+      });
+      const rgPick = await wizardContext.ui.showQuickPick(
+         sort(getAsyncOptions(rgs, rgToItem)),
+         {
+            ignoreFocusOut,
+            stepName: 'DNS Zone Resource Group',
+            placeHolder: 'DNS Zone Resource Group',
+            noPicksMessage: 'No Resource Group found'
+         }
+      );
+
+      wizardContext.dnsResourceGroup = (await rgs).find(
+         (rg) => rgToItem(rg).label === rgPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newSSLCert;
+   }
+}
+
+class PromptDnsZone extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.dnsSubscription === undefined) {
+         throw Error('DNS Zone subscription is undefined');
+      }
+      if (wizardContext.dnsResourceGroup === undefined) {
+         throw Error('DNS Zone resource group is undefined');
+      }
+
+      const dnsZones = getAysncResult(
+         this.az.listDnsZones(
+            wizardContext.dnsSubscription,
+            wizardContext.dnsResourceGroup
+         )
+      );
+      const dnsToItem = (dns: DnsZoneItem) => ({label: dns.dnsZone.name || ''});
+      const dnsPick = await wizardContext.ui.showQuickPick(
+         sort(getAsyncOptions(dnsZones, dnsToItem)),
+         {
+            ignoreFocusOut,
+            stepName: 'DNS Zone',
+            placeHolder: 'DNS Zone',
+            noPicksMessage: 'No DNS Zones found'
+         }
+      );
+
+      wizardContext.dns = (await dnsZones).find(
+         (dns) => dnsToItem(dns).label === dnsPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newSSLCert;
+   }
+}
+
 class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
       super();
@@ -281,3 +397,5 @@ class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
       return !wizardContext.newSSLCert;
    }
 }
+
+// select azure dns
