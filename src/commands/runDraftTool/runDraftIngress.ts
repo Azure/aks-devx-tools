@@ -22,7 +22,11 @@ import {
 } from '../../utils/az';
 import {failed, getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
-import {ignoreFocusOut, PromptSubscription} from './helper/commonPrompts';
+import {
+   ignoreFocusOut,
+   PromptResourceGroup,
+   PromptSubscription
+} from './helper/commonPrompts';
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
 
@@ -41,6 +45,7 @@ interface PromptContext {
    certificate: CertificateItem;
    certificateName: string;
    aksSubscription: SubscriptionItem;
+   aksResourceGroup: ResourceGroupItem;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
 type IPromptStep = AzureWizardPromptStep<WizardContext>;
@@ -76,18 +81,36 @@ export async function runDraftIngress(
    };
    const promptSteps: IPromptStep[] = [
       new PromptOutputFolder(completedSteps),
-      new PromptKvSubscription(az),
-      new PromptKvResourceGroup(az),
+      new PromptSubscription(az, 'kvSubscription', {
+         placeholder: 'Key Vault Subscription',
+         stepName: 'Key Vault Subscription'
+      }),
+      new PromptResourceGroup(az, 'kvSubscription', 'kvResourceGroup', {
+         placeholder: 'Key Vault Resource Group',
+         stepName: 'Key Vault Resource Group'
+      }),
       new PromptKv(az),
       new PromptNewSslCert(),
       new PromptCertName(),
       new PromptCertificate(az),
-      new PromptDnsSubscription(az),
-      new PromptDnsResourceGroup(az),
-      new PromptDnsZone(az),
       new PromptSubscription(az, 'dnsSubscription', {
+         placeholder: 'DNS Zone Subscription',
+         stepName: 'DNS Zone Subscription',
+         prompt: (ctx: WizardContext) => !!ctx.newSSLCert
+      }),
+      new PromptResourceGroup(az, 'dnsSubscription', 'dnsResourceGroup', {
+         placeholder: 'DNS Zone Resource Group',
+         stepName: 'DNS Zone Resource Group',
+         prompt: (ctx: WizardContext) => !!ctx.newSSLCert
+      }),
+      new PromptDnsZone(az),
+      new PromptSubscription(az, 'aksSubscription', {
          placeholder: 'AKS Cluster Subscription',
          stepName: 'AKS Cluster Subscription'
+      }),
+      new PromptResourceGroup(az, 'aksSubscription', 'aksResourceGroup', {
+         placeholder: 'AKS Cluster Resource Group',
+         stepName: 'AKS Cluster Resource Group'
       })
    ];
    const executeSteps: IExecuteStep[] = [new ExecuteCreateCertificate(az)];
@@ -132,75 +155,6 @@ class PromptOutputFolder extends AzureWizardPromptStep<WizardContext> {
          wizardContext.outputFolder !== undefined &&
          this.completedSteps.draftDeployment
       );
-   }
-}
-
-class PromptKvSubscription extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
-      const subToItem = (sub: SubscriptionItem) => ({
-         label: sub.subscription.displayName || '',
-         description: sub.subscription.subscriptionId || ''
-      });
-      const subPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(subs, subToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'Key Vault Subscription',
-            placeHolder: 'Key Vault Subscription',
-            noPicksMessage: 'No Subscriptions found'
-         }
-      );
-
-      wizardContext.kvSubscription = (await subs).find(
-         (sub) =>
-            subToItem(sub).description ===
-            removeRecentlyUsed(subPick.description || '')
-      );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
-}
-
-class PromptKvResourceGroup extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.kvSubscription === undefined) {
-         throw Error('Key Vault Subscription is undefined');
-      }
-
-      const rgs = getAysncResult(
-         this.az.listResourceGroups(wizardContext.kvSubscription)
-      );
-      const rgToItem = (rg: ResourceGroupItem) => ({
-         label: rg.resourceGroup.name || ''
-      });
-      const rgPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(rgs, rgToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'KV Resource Group',
-            placeHolder: 'Key Vault Resource Group',
-            noPicksMessage: 'No Resource Groups found'
-         }
-      );
-
-      wizardContext.kvResourceGroup = (await rgs).find(
-         (rg) => rgToItem(rg).label === rgPick.label
-      );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
    }
 }
 
@@ -272,75 +226,6 @@ class PromptCertName extends AzureWizardPromptStep<WizardContext> {
          value: wizardContext.certificateName,
          validateInput: ValidateRfc1123
       });
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return !!wizardContext.newSSLCert;
-   }
-}
-
-class PromptDnsSubscription extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
-      const subToItem = (sub: SubscriptionItem) => ({
-         label: sub.subscription.displayName || '',
-         description: sub.subscription.subscriptionId || ''
-      });
-      const subPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(subs, subToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'DNS Zone Subscription',
-            placeHolder: 'DNS Zone Subscription',
-            noPicksMessage: 'No Subscriptions found'
-         }
-      );
-
-      wizardContext.dnsSubscription = (await subs).find(
-         (sub) =>
-            subToItem(sub).description ===
-            removeRecentlyUsed(subPick.description || '')
-      );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return !!wizardContext.newSSLCert;
-   }
-}
-
-class PromptDnsResourceGroup extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.dnsSubscription === undefined) {
-         throw Error('DNS Zone subscription is undefined');
-      }
-
-      const rgs = getAysncResult(
-         this.az.listResourceGroups(wizardContext.dnsSubscription)
-      );
-      const rgToItem = (rg: ResourceGroupItem) => ({
-         label: rg.resourceGroup.name || ''
-      });
-      const rgPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(rgs, rgToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'DNS Zone Resource Group',
-            placeHolder: 'DNS Zone Resource Group',
-            noPicksMessage: 'No Resource Group found'
-         }
-      );
-
-      wizardContext.dnsResourceGroup = (await rgs).find(
-         (rg) => rgToItem(rg).label === rgPick.label
-      );
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -485,5 +370,3 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
       return !!wizardContext.newSSLCert;
    }
 }
-
-// select azure dns
