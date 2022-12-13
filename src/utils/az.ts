@@ -15,10 +15,15 @@ import {TokenCredential} from '@azure/core-auth';
 import {KeyVaultManagementClient, Vault} from '@azure/arm-keyvault';
 import {
    CertificateClient,
-   CertificateProperties
+   CertificatePolicy,
+   CertificateProperties,
+   KeyVaultCertificateWithPolicy
 } from '@azure/keyvault-certificates';
 import {DefaultAzureCredential} from '@azure/identity';
 import {DnsManagementClient, Zone} from '@azure/arm-dns';
+import {timeout} from './timeout';
+
+const CREATE_CERT_TIMEOUT = 300_000;
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -47,6 +52,11 @@ export interface AzApi {
       subscriptionItem: SubscriptionItem,
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<DnsZoneItem[]>>;
+   createCertificate(
+      keyVaultItem: KeyVaultItem,
+      name: string,
+      policy: CertificatePolicy
+   ): Promise<Errorable<KeyVaultCertificateWithPolicy>>;
 }
 
 export interface SubscriptionItem {
@@ -322,6 +332,32 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to list certificates for key vault "${keyVaultItem.vault.name}": ${error}`
+         };
+      }
+   }
+
+   async createCertificate(
+      keyVaultItem: KeyVaultItem,
+      name: string,
+      policy: CertificatePolicy
+   ): Promise<Errorable<KeyVaultCertificateWithPolicy>> {
+      const vaultUri = keyVaultItem.vault.properties.vaultUri;
+      if (vaultUri === undefined) {
+         return {succeeded: false, error: 'vault URI undefined'};
+      }
+
+      try {
+         const creds = this.getCreds();
+         const client = new CertificateClient(vaultUri, creds);
+         const poller = await client.beginCreateCertificate(name, policy);
+         return {
+            succeeded: true,
+            result: await timeout(CREATE_CERT_TIMEOUT, poller.pollUntilDone())
+         };
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to create or update certificate for key vault "${keyVaultItem.vault.name}": ${error}`
          };
       }
    }

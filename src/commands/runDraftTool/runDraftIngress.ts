@@ -20,7 +20,7 @@ import {
    ResourceGroupItem,
    SubscriptionItem
 } from '../../utils/az';
-import {getAysncResult} from '../../utils/errorable';
+import {failed, getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {ignoreFocusOut} from './helper/commonPrompts';
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
@@ -82,7 +82,7 @@ export async function runDraftIngress(
       new PromptDnsResourceGroup(az),
       new PromptDnsZone(az)
    ];
-   const executeSteps: IExecuteStep[] = [];
+   const executeSteps: IExecuteStep[] = [new ExecuteCreateCertificate(az)];
    const wizard = new AzureWizard(wizardContext, {
       title,
       promptSteps,
@@ -395,6 +395,70 @@ class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
       return !wizardContext.newSSLCert;
+   }
+}
+
+class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 1;
+
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const kv = wizardContext.kv;
+      if (typeof kv === 'undefined') {
+         throw Error('Key vault is undefined');
+      }
+      const dns = wizardContext.dns;
+      if (typeof dns === 'undefined') {
+         throw Error('DNS is undefined');
+      }
+
+      const pkiServerAuth = '1.3.6.1.5.5.7.3.1'; // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-ppsec/651a90f3-e1f5-4087-8503-40d804429a88
+      progress.report({message: 'Creating certificate'});
+      const resp = await this.az.createCertificate(
+         kv,
+         'aks-devx-tools-cert-2',
+         {
+            issuerName: 'Self',
+            exportable: true,
+            keySize: 2048,
+            reuseKey: true,
+            enhancedKeyUsage: [pkiServerAuth],
+            lifetimeActions: [{action: 'AutoRenew', daysBeforeExpiry: 90}],
+            contentType: 'application/x-pkcs12',
+            keyUsage: [
+               'cRLSign',
+               'dataEncipherment',
+               'digitalSignature',
+               'keyEncipherment',
+               'keyAgreement',
+               'keyCertSign'
+            ],
+            subject: `CN=${dns.dnsZone.name}`,
+            subjectAlternativeNames: {
+               dnsNames: [`*.${dns.dnsZone.name}`]
+            },
+            validityInMonths: 24
+         }
+      );
+
+      if (failed(resp)) {
+         throw Error(resp.error);
+      }
+
+      wizardContext.certificate = {certificate: resp.result};
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newSSLCert;
    }
 }
 
