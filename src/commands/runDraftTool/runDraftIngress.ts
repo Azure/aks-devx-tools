@@ -24,6 +24,7 @@ import {failed, getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {ignoreFocusOut} from './helper/commonPrompts';
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
+import {ValidateRfc1123} from '../../utils/validation';
 
 interface PromptContext {
    outputFolder: vscode.Uri;
@@ -38,6 +39,7 @@ interface PromptContext {
    dns: DnsZoneItem;
    newSSLCert: boolean;
    certificate: CertificateItem;
+   certificateName: string;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
 type IPromptStep = AzureWizardPromptStep<WizardContext>;
@@ -77,6 +79,7 @@ export async function runDraftIngress(
       new PromptKvResourceGroup(az),
       new PromptKv(az),
       new PromptNewSslCert(),
+      new PromptCertName(),
       new PromptCertificate(az),
       new PromptDnsSubscription(az),
       new PromptDnsResourceGroup(az),
@@ -255,6 +258,22 @@ class PromptNewSslCert extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptCertName extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      wizardContext.certificateName = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'New SSL Certificate Name',
+         stepName: 'Certificate Name',
+         value: wizardContext.certificateName,
+         validateInput: ValidateRfc1123
+      });
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newSSLCert;
+   }
+}
+
 class PromptDnsSubscription extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
       super();
@@ -420,35 +439,35 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
       if (typeof dns === 'undefined') {
          throw Error('DNS is undefined');
       }
+      const name = wizardContext.certificateName;
+      if (typeof name === 'undefined') {
+         throw Error('Certificate name is undefined');
+      }
 
       const pkiServerAuth = '1.3.6.1.5.5.7.3.1'; // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-ppsec/651a90f3-e1f5-4087-8503-40d804429a88
       progress.report({message: 'Creating certificate'});
-      const resp = await this.az.createCertificate(
-         kv,
-         'aks-devx-tools-cert-2',
-         {
-            issuerName: 'Self',
-            exportable: true,
-            keySize: 2048,
-            reuseKey: true,
-            enhancedKeyUsage: [pkiServerAuth],
-            lifetimeActions: [{action: 'AutoRenew', daysBeforeExpiry: 90}],
-            contentType: 'application/x-pkcs12',
-            keyUsage: [
-               'cRLSign',
-               'dataEncipherment',
-               'digitalSignature',
-               'keyEncipherment',
-               'keyAgreement',
-               'keyCertSign'
-            ],
-            subject: `CN=${dns.dnsZone.name}`,
-            subjectAlternativeNames: {
-               dnsNames: [`*.${dns.dnsZone.name}`]
-            },
-            validityInMonths: 24
-         }
-      );
+      const resp = await this.az.createCertificate(kv, name, {
+         issuerName: 'Self',
+         exportable: true,
+         keySize: 2048,
+         reuseKey: true,
+         enhancedKeyUsage: [pkiServerAuth],
+         lifetimeActions: [{action: 'AutoRenew', daysBeforeExpiry: 90}],
+         contentType: 'application/x-pkcs12',
+         keyUsage: [
+            'cRLSign',
+            'dataEncipherment',
+            'digitalSignature',
+            'keyEncipherment',
+            'keyAgreement',
+            'keyCertSign'
+         ],
+         subject: `CN=${dns.dnsZone.name}`,
+         subjectAlternativeNames: {
+            dnsNames: [`*.${dns.dnsZone.name}`]
+         },
+         validityInMonths: 24
+      });
 
       if (failed(resp)) {
          throw Error(resp.error);
