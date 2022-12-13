@@ -22,7 +22,7 @@ import {
 } from '../../utils/az';
 import {failed, getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
-import {ignoreFocusOut} from './helper/commonPrompts';
+import {ignoreFocusOut, PromptSubscription} from './helper/commonPrompts';
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
 
@@ -40,6 +40,7 @@ interface PromptContext {
    newSSLCert: boolean;
    certificate: CertificateItem;
    certificateName: string;
+   aksSubscription: SubscriptionItem;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
 type IPromptStep = AzureWizardPromptStep<WizardContext>;
@@ -83,7 +84,11 @@ export async function runDraftIngress(
       new PromptCertificate(az),
       new PromptDnsSubscription(az),
       new PromptDnsResourceGroup(az),
-      new PromptDnsZone(az)
+      new PromptDnsZone(az),
+      new PromptSubscription(az, 'dnsSubscription', {
+         placeholder: 'AKS Cluster Subscription',
+         stepName: 'AKS Cluster Subscription'
+      })
    ];
    const executeSteps: IExecuteStep[] = [new ExecuteCreateCertificate(az)];
    const wizard = new AzureWizard(wizardContext, {
