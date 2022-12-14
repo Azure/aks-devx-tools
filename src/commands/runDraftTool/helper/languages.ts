@@ -1,7 +1,55 @@
+import { buildInfoCommand } from "./draftCommandBuilder";
+import { runDraftCommand } from "./runDraftHelper";
+
+/**
+ * The respresentation of a Draft language for use in this extension.
+ */
 export interface DraftLanguage {
    name: string;
    id: string;
    versions: string[];
+}
+
+/**
+ * The full return of the draft info command.
+ */
+interface DraftInfo {
+   supportedLanguages: DraftInfoLanguage[];
+   supportedDeployTypes: string[];
+}
+/**
+ * The respresentation of a Draft language as returned by the draft info command.
+ */
+interface DraftInfoLanguage {
+   name: string;
+   displayName: string;
+   variableExampleValues: DraftInfoExampleValues;
+}
+interface DraftInfoExampleValues {
+   // eslint-disable-next-line @typescript-eslint/naming-convention
+   VERSION: string[]; // All caps since it comes from draft builder variable conventions
+}
+export async function getDraftLanguages(): Promise<DraftLanguage[]> {
+   let languages: DraftLanguage[] = [];
+   let [result,err] = await runDraftCommand(buildInfoCommand());
+   if (err) {
+      throw new Error(err);
+   } 
+   let resultJSON = JSON.parse(result);
+   let draftInfo = resultJSON as DraftInfo;
+   
+   const infoLanguages: DraftLanguage[] = draftInfo.supportedLanguages.map((infoLanguage:DraftInfoLanguage): DraftLanguage => {
+      let language: DraftLanguage = {
+         name: infoLanguage.displayName,
+         id: infoLanguage.name,
+         versions: infoLanguage.variableExampleValues.VERSION
+      };
+      return language;
+   });
+
+   languages = languages.concat(infoLanguages);
+
+   return languages;
 }
 export const draftLanguages: DraftLanguage[] = [
    {id: 'clojure', name: 'Clojure', versions: ['8-jdk-alpine']},

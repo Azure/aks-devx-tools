@@ -2,7 +2,7 @@ import {longRunning} from '../../utils/host';
 import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
-import {DraftLanguage, draftLanguages} from './helper/languages';
+import {DraftLanguage, draftLanguages, getDraftLanguages} from './helper/languages';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -109,8 +109,14 @@ class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
 class PromptLanguage extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       const languageToItem = (lang: DraftLanguage) => ({label: lang.name});
+      let infoLanguages: DraftLanguage[];
+      try {
+         infoLanguages = await getDraftLanguages();
+      }catch (error) {
+         throw Error('Failed to get Draft languages');
+      }
       const languageOptions: vscode.QuickPickItem[] =
-         draftLanguages.map(languageToItem);
+         infoLanguages.map(languageToItem);
       const languagePick = await wizardContext.ui.showQuickPick(
          languageOptions,
          {
