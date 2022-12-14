@@ -250,7 +250,7 @@ class PromptACRResourceGroupSelection extends AzureWizardPromptStep<WizardContex
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
       if (wizardContext.clusterSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
+         throw Error('AKS Subscription is undefined');
       }
 
       const rgs = getAysncResult(
