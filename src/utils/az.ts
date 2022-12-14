@@ -22,6 +22,11 @@ import {
 import {DefaultAzureCredential} from '@azure/identity';
 import {DnsManagementClient, Zone} from '@azure/arm-dns';
 import {timeout} from './timeout';
+import {
+   ContainerServiceClient,
+   ManagedCluster
+} from '@azure/arm-containerservice';
+import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
 
 const CREATE_CERT_TIMEOUT = 300_000;
 
@@ -57,6 +62,13 @@ export interface AzApi {
       name: string,
       policy: CertificatePolicy
    ): Promise<Errorable<KeyVaultCertificateWithPolicy>>;
+   listAksClusters(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<ManagedClusterItem[]>>;
+   createOrUpdateAksCluster(
+      managedClusterItem: ManagedClusterItem
+   ): Promise<Errorable<ManagedClusterItem>>;
 }
 
 export interface SubscriptionItem {
@@ -89,6 +101,10 @@ export interface CertificateItem {
 
 export interface DnsZoneItem {
    dnsZone: Zone;
+}
+
+export interface ManagedClusterItem {
+   managedCluster: ManagedCluster;
 }
 
 type CredGetter = () => TokenCredential;
@@ -358,6 +374,65 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to create or update certificate for key vault "${keyVaultItem.vault.name}": ${error}`
+         };
+      }
+   }
+
+   async listAksClusters(
+      subscriptionItem: SubscriptionItem,
+      resourceGroupItem: ResourceGroupItem
+   ): Promise<Errorable<ManagedClusterItem[]>> {
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (typeof subscriptionId === 'undefined') {
+         return {succeeded: false, error: 'subscriptionId undefined'};
+      }
+      const resourceGroupName = resourceGroupItem.resourceGroup.name;
+      if (typeof resourceGroupName === 'undefined') {
+         return {succeeded: false, error: 'resource group name undefined'};
+      }
+
+      try {
+         const creds = this.getCreds();
+         const client = new ContainerServiceClient(creds, subscriptionId);
+         const clusters = await listAll(
+            client.managedClusters.listByResourceGroup(resourceGroupName)
+         );
+         const clusterItems: ManagedClusterItem[] = clusters.map((cluster) => ({
+            managedCluster: cluster
+         }));
+         return {succeeded: true, result: clusterItems};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list AKS clusters for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
+         };
+      }
+   }
+
+   async createOrUpdateAksCluster(
+      managedClusterItem: ManagedClusterItem
+   ): Promise<Errorable<ManagedClusterItem>> {
+      const id = managedClusterItem.managedCluster.id;
+      if (id === undefined) {
+         throw Error('managed cluster id is undefined');
+      }
+
+      const {subscriptionId, resourceGroup, resourceName} =
+         parseAzureResourceId(id);
+      try {
+         const creds = this.getCreds();
+         const client = new ContainerServiceClient(creds, subscriptionId);
+         const managedCluster =
+            await client.managedClusters.beginCreateOrUpdateAndWait(
+               resourceGroup,
+               resourceName,
+               managedClusterItem.managedCluster
+            );
+         return {succeeded: true, result: {managedCluster}};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Faield to update AKS cluster "${managedClusterItem.managedCluster.name}": ${error}`
          };
       }
    }

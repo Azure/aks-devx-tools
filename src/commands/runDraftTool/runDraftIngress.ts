@@ -17,6 +17,7 @@ import {
    DnsZoneItem,
    getAzCreds,
    KeyVaultItem,
+   ManagedClusterItem,
    ResourceGroupItem,
    SubscriptionItem
 } from '../../utils/az';
@@ -29,6 +30,7 @@ import {
 } from './helper/commonPrompts';
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
+import {ManagedCluster} from '@azure/arm-containerservice';
 
 interface PromptContext {
    outputFolder: vscode.Uri;
@@ -46,6 +48,7 @@ interface PromptContext {
    certificateName: string;
    aksSubscription: SubscriptionItem;
    aksResourceGroup: ResourceGroupItem;
+   aks: ManagedClusterItem;
 }
 type WizardContext = IActionContext & Partial<PromptContext>;
 type IPromptStep = AzureWizardPromptStep<WizardContext>;
@@ -111,9 +114,13 @@ export async function runDraftIngress(
       new PromptResourceGroup(az, 'aksSubscription', 'aksResourceGroup', {
          placeholder: 'AKS Cluster Resource Group',
          stepName: 'AKS Cluster Resource Group'
-      })
+      }),
+      new PromptAksCluster(az)
    ];
-   const executeSteps: IExecuteStep[] = [new ExecuteCreateCertificate(az)];
+   const executeSteps: IExecuteStep[] = [
+      new ExecuteCreateCertificate(az),
+      new ExecuteEnableAddOn(az)
+   ];
    const wizard = new AzureWizard(wizardContext, {
       title,
       promptSteps,
@@ -307,6 +314,48 @@ class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptAksCluster extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      if (wizardContext.aksSubscription === undefined) {
+         throw Error('AKS Subscription is undefined');
+      }
+      if (wizardContext.aksResourceGroup === undefined) {
+         throw Error('AKS Resource Group is undefined');
+      }
+
+      const clusters = getAysncResult(
+         this.az.listAksClusters(
+            wizardContext.aksSubscription,
+            wizardContext.aksResourceGroup
+         )
+      );
+      const clusterToItem = (cluster: ManagedClusterItem) => ({
+         label: cluster.managedCluster.name || ''
+      });
+      const clusterPick = await wizardContext.ui.showQuickPick(
+         sort(getAsyncOptions(clusters, clusterToItem)),
+         {
+            ignoreFocusOut,
+            stepName: 'AKS Cluster',
+            placeHolder: 'AKS Cluster',
+            noPicksMessage: 'No AKS Clusters found'
+         }
+      );
+
+      wizardContext.aks = (await clusters).find(
+         (cluster) => clusterToItem(cluster).label === clusterPick.label
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
 class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 1;
 
@@ -368,5 +417,49 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
 
    public shouldExecute(wizardContext: WizardContext): boolean {
       return !!wizardContext.newSSLCert;
+   }
+}
+
+class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 1;
+
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const cluster = wizardContext.aks;
+      if (cluster === undefined) {
+         throw Error('Cluster is undefined');
+      }
+
+      if (cluster.managedCluster.addonProfiles === undefined) {
+         cluster.managedCluster.addonProfiles = {};
+      }
+      cluster.managedCluster.addonProfiles.httpApplicationRouting = {
+         enabled: true
+      };
+      cluster.managedCluster.addonProfiles.azureKeyvaultSecretsProvider = {
+         config: {enableSecretRotation: 'true'},
+         enabled: true
+      };
+
+      progress.report({
+         message: 'Enabling AKS cluster add-ons'
+      });
+      const resp = await this.az.createOrUpdateAksCluster(cluster);
+      if (failed(resp)) {
+         throw Error(resp.error);
+      }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
    }
 }
