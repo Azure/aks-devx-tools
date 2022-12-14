@@ -58,8 +58,14 @@ export async function runDraftWorkflow({
       return undefined;
    }
 
+   if (
+      !vscode.workspace.workspaceFolders ||
+      vscode.workspace.workspaceFolders.length === 0
+   ) {
+      throw Error('No directories within current vscode wokspace.');
+   }
+
    const promptSteps: IPromptStep[] = [
-      new PromptRepoRootSelection(),
       new PromptAKSSubscriptionSelection(az),
       new PromptAKSResourceGroupSelection(az),
       new PromptAKSClusterSelection(az),
@@ -73,7 +79,8 @@ export async function runDraftWorkflow({
    const executeSteps: IExecuteStep[] = [new ExecuteDraftWorkflow()];
 
    const wizardContext: WizardContext = {
-      ...actionContext
+      ...actionContext,
+      destination: vscode.workspace.workspaceFolders[0].uri
    };
 
    const wizard = new AzureWizard(wizardContext, {
@@ -352,41 +359,6 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
       wizardContext.acrRepository = (await repositories).find(
          (r) => repositoryToItem(r).label === repositoryPick.label
       );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
-}
-
-class PromptRepoRootSelection extends AzureWizardPromptStep<WizardContext> {
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (
-         !vscode.workspace.workspaceFolders ||
-         vscode.workspace.workspaceFolders.length === 0
-      ) {
-         throw Error('No directories within current vscode wokspace.');
-      }
-
-      const sourceCodeFolder = (
-         await wizardContext.ui.showOpenDialog({
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false,
-            stepName: 'Choose Repository Root Directory',
-            openLabel: 'Choose Repository Root Directory',
-            title: 'Choose Repository Root Directory',
-            defaultUri: vscode.workspace.workspaceFolders[0].uri
-         })
-      )[0];
-
-      if (!vscode.workspace.getWorkspaceFolder(sourceCodeFolder)) {
-         throw Error(
-            'Chosen Repository Directory is not in current workspace. Please choose a folder in the workspace'
-         );
-      }
-
-      wizardContext.destination = sourceCodeFolder;
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
