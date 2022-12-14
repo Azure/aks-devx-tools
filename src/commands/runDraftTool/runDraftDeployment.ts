@@ -23,7 +23,7 @@ import {
    getHelm,
    getKubectl
 } from '../../utils/kubernetes';
-import {failed, getAysncResult} from '../../utils/errorable';
+import {failed, getAsyncResult} from '../../utils/errorable';
 import {
    RegistryItem,
    RepositoryItem,
@@ -43,6 +43,7 @@ import {
 import {image} from '../../utils/acr';
 import {CompletedSteps} from './model/guidedExperience';
 import {sort} from '../../utils/sort';
+import {getAsyncOptions} from '../../utils/quickPick';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -224,7 +225,7 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const namespaces = getAysncResult(this.k8s.listNamespaces());
+      const namespaces = getAsyncResult(this.k8s.listNamespaces());
       const newOption = 'New Namespace';
       const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
          const namespaceOptions: vscode.QuickPickItem[] = (
@@ -325,7 +326,7 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
+      const subs = getAsyncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
@@ -365,7 +366,7 @@ class PromptAcrResourceGroup extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Subscription is undefined');
       }
 
-      const rgs = getAysncResult(
+      const rgs = getAsyncResult(
          this.az.listResourceGroups(wizardContext.acrSubscription)
       );
       const rgToItem = (rg: ResourceGroupItem) => ({
@@ -402,7 +403,7 @@ class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Resource Group is undefined');
       }
 
-      const registries = getAysncResult(
+      const registries = getAsyncResult(
          this.az.listContainerRegistries(
             wizardContext.acrSubscription,
             wizardContext.acrResourceGroup
@@ -444,7 +445,7 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Registry is undefined');
       }
 
-      const repositories = getAysncResult(
+      const repositories = getAsyncResult(
          this.az.listRegistryRepositories(
             wizardContext.acrSubscription,
             wizardContext.acrRegistry
@@ -489,7 +490,7 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Repository is undefined');
       }
 
-      const tags = getAysncResult(
+      const tags = getAsyncResult(
          this.az.listRepositoryTags(
             wizardContext.acrSubscription,
             wizardContext.acrRegistry,
@@ -792,11 +793,4 @@ function getOutputPath(wizardContext: WizardContext): string {
       default:
          return path.join(base, 'manifests');
    }
-}
-
-async function getAsyncOptions<T>(
-   arr: Promise<T[]>,
-   callbackfn: (a: T) => vscode.QuickPickItem
-): Promise<vscode.QuickPickItem[]> {
-   return (await arr).map(callbackfn);
 }

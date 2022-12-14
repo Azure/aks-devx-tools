@@ -1,5 +1,6 @@
-import { buildInfoCommand } from "./draftCommandBuilder";
-import { runDraftCommand } from "./runDraftHelper";
+import {Errorable, Succeeded} from '../../../utils/errorable';
+import {buildInfoCommand} from './draftCommandBuilder';
+import {downloadDraftBinary, runDraftCommand} from './runDraftHelper';
 
 /**
  * The respresentation of a Draft language for use in this extension.
@@ -29,27 +30,30 @@ interface DraftInfoExampleValues {
    // eslint-disable-next-line @typescript-eslint/naming-convention
    VERSION: string[]; // All caps since it comes from draft builder variable conventions
 }
-export async function getDraftLanguages(): Promise<DraftLanguage[]> {
-   let languages: DraftLanguage[] = [];
-   let [result,err] = await runDraftCommand(buildInfoCommand());
+export async function getDraftLanguages(): Promise<Errorable<DraftLanguage[]>> {
+   await downloadDraftBinary();
+   let [result, err] = await runDraftCommand(buildInfoCommand());
    if (err) {
       throw new Error(err);
-   } 
+   }
    let resultJSON = JSON.parse(result);
    let draftInfo = resultJSON as DraftInfo;
-   
-   const infoLanguages: DraftLanguage[] = draftInfo.supportedLanguages.map((infoLanguage:DraftInfoLanguage): DraftLanguage => {
-      let language: DraftLanguage = {
-         name: infoLanguage.displayName,
-         id: infoLanguage.name,
-         versions: infoLanguage.variableExampleValues.VERSION
-      };
-      return language;
-   });
 
-   languages = languages.concat(infoLanguages);
+   const infoLanguages: DraftLanguage[] = draftInfo.supportedLanguages.map(
+      (infoLanguage: DraftInfoLanguage): DraftLanguage => {
+         let language: DraftLanguage = {
+            name: infoLanguage.displayName,
+            id: infoLanguage.name,
+            versions: infoLanguage.variableExampleValues.VERSION
+         };
+         return language;
+      }
+   );
 
-   return languages;
+   return {
+      succeeded: true,
+      result: infoLanguages
+   };
 }
 export const draftLanguages: DraftLanguage[] = [
    {id: 'clojure', name: 'Clojure', versions: ['8-jdk-alpine']},

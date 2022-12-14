@@ -2,7 +2,11 @@ import {longRunning} from '../../utils/host';
 import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
-import {DraftLanguage, draftLanguages, getDraftLanguages} from './helper/languages';
+import {
+   DraftLanguage,
+   draftLanguages,
+   getDraftLanguages
+} from './helper/languages';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -19,6 +23,8 @@ import {State, StateApi} from '../../utils/state';
 import {ignoreFocusOut} from './helper/commonPrompts';
 import {CompletedSteps} from './model/guidedExperience';
 import {ValidatePort} from '../../utils/validation';
+import {getAsyncResult} from '../../utils/errorable';
+import {getAsyncOptions} from '../../utils/quickPick';
 
 const title = 'Draft a Dockerfile from source code';
 
@@ -109,23 +115,16 @@ class PromptSourceCodeFolder extends AzureWizardPromptStep<WizardContext> {
 class PromptLanguage extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       const languageToItem = (lang: DraftLanguage) => ({label: lang.name});
-      let infoLanguages: DraftLanguage[];
-      try {
-         infoLanguages = await getDraftLanguages();
-      }catch (error) {
-         throw Error('Failed to get Draft languages');
-      }
-      const languageOptions: vscode.QuickPickItem[] =
-         infoLanguages.map(languageToItem);
+      const draftLanguages = getAsyncResult(getDraftLanguages());
       const languagePick = await wizardContext.ui.showQuickPick(
-         languageOptions,
+         getAsyncOptions(draftLanguages, languageToItem),
          {
             ignoreFocusOut,
             stepName: 'Programming Language',
             placeHolder: 'Select the programming language'
          }
       );
-      const language = draftLanguages.find(
+      const language = (await draftLanguages).find(
          (lang) => languageToItem(lang).label === languagePick.label
       );
       if (language === undefined) {
