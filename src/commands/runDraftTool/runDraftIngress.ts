@@ -98,13 +98,11 @@ export async function runDraftIngress(
       new PromptCertificate(az),
       new PromptSubscription(az, 'dnsSubscription', {
          placeholder: 'DNS Zone Subscription',
-         stepName: 'DNS Zone Subscription',
-         prompt: (ctx: WizardContext) => !!ctx.newSSLCert
+         stepName: 'DNS Zone Subscription'
       }),
       new PromptResourceGroup(az, 'dnsSubscription', 'dnsResourceGroup', {
          placeholder: 'DNS Zone Resource Group',
-         stepName: 'DNS Zone Resource Group',
-         prompt: (ctx: WizardContext) => !!ctx.newSSLCert
+         stepName: 'DNS Zone Resource Group'
       }),
       new PromptDnsZone(az),
       new PromptSubscription(az, 'aksSubscription', {
@@ -276,7 +274,7 @@ class PromptDnsZone extends AzureWizardPromptStep<WizardContext> {
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      return !!wizardContext.newSSLCert;
+      return true;
    }
 }
 
@@ -421,7 +419,7 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
 }
 
 class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
-   public priority: number = 1;
+   public priority: number = 3;
 
    constructor(private az: AzApi) {
       super();
@@ -438,11 +436,17 @@ class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
       if (cluster === undefined) {
          throw Error('Cluster is undefined');
       }
+      const dnsZone = wizardContext.dns?.dnsZone.name;
+      if (dnsZone === undefined) {
+         throw Error('DNS Zone is undefined');
+      }
 
       if (cluster.managedCluster.addonProfiles === undefined) {
          cluster.managedCluster.addonProfiles = {};
       }
       cluster.managedCluster.addonProfiles.httpApplicationRouting = {
+         // eslint-disable-next-line @typescript-eslint/naming-convention
+         config: {HTTPApplicationRoutingZoneName: dnsZone},
          enabled: true
       };
       cluster.managedCluster.addonProfiles.azureKeyvaultSecretsProvider = {
