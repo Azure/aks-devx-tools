@@ -20,5 +20,7 @@ export async function getBranches(repository: vscode.Uri): Promise<Ref[]> {
       throw Error('Repo is null');
    }
 
-   return await repo.getBranches({});
+   return await repo.getBranches({
+      remote: true
+   });
 }

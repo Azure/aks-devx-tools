@@ -371,9 +371,13 @@ class PromptGitHubBranchSelection extends AzureWizardPromptStep<WizardContext> {
       if (wizardContext.destination === undefined) {
          throw Error('Git Directory is Undefined');
       }
-      const branches = await getBranches(wizardContext.destination);
+      let branches = await getBranches(wizardContext.destination);
+      branches = branches.filter(
+         (b) => b.remote !== undefined && b.remote !== ''
+      );
+
       const branchToItem = (b: Branch): vscode.QuickPickItem => ({
-         label: b.name || ''
+         label: b.name?.replace(b.remote + '/', '') || ''
       });
       const branchOptions = branches.map(branchToItem);
 

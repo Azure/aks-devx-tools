@@ -83,7 +83,7 @@
             },
             {
                "command": "aks-draft-extension.runDraftWorkflow",
-               "group": "draftnavigation@5"
+               "group": "draftnavigation@4"
             }
          ]
       },

@@ -133,15 +133,8 @@ function registerCommands(
 
    registerCommand(
       'aks-draft-extension.runDraftWorkflow',
-      (
-         actionContext: IActionContext,
-         completedSteps: CompletedSteps | undefined
-      ) => {
+      (actionContext: IActionContext) => {
          const context: Context = {actionContext, extensionContext};
-
-         if (completedSteps === undefined) {
-            completedSteps = noCompletedSteps();
-         }
          return runDraftWorkflow(context);
       }
    );
