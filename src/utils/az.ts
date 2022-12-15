@@ -1,5 +1,9 @@
 import {SubscriptionClient, Subscription} from '@azure/arm-subscriptions';
-import {ResourceManagementClient, ResourceGroup} from '@azure/arm-resources';
+import {
+   ResourceManagementClient,
+   ResourceGroup,
+   GenericResource
+} from '@azure/arm-resources';
 import {PagedAsyncIterableIterator} from '@azure/core-paging';
 import {
    ContainerRegistryManagementClient,
@@ -12,7 +16,12 @@ import {
 } from '@azure/container-registry';
 import {Errorable} from './errorable';
 import {TokenCredential} from '@azure/core-auth';
-import {KeyVaultManagementClient, Vault} from '@azure/arm-keyvault';
+import {
+   AccessPolicyEntry,
+   KeyVaultManagementClient,
+   Vault,
+   VaultAccessPolicyParameters
+} from '@azure/arm-keyvault';
 import {
    CertificateClient,
    CertificatePolicy,
@@ -31,6 +40,7 @@ import {AuthorizationManagementClient} from '@azure/arm-authorization';
 import {RoleAssignment} from '@azure/arm-authorization/esm/models';
 
 const CREATE_CERT_TIMEOUT = 300_000;
+const LATEST_ARM_RESOURCE_VERSION = '2022-09-01';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -77,6 +87,14 @@ export interface AzApi {
       assignee: string,
       scope: string
    ): Promise<Errorable<RoleAssignmentItem>>;
+   getResource(
+      subscriptionItem: SubscriptionItem,
+      resourceId: string
+   ): Promise<Errorable<ResourceItem>>;
+   addKeyVaultPolicy(
+      keyVaultItem: KeyVaultItem,
+      ...accessPolicies: AccessPolicyEntry[]
+   ): Promise<Errorable<VaultAccessPolicyItem>>;
 }
 
 export interface SubscriptionItem {
@@ -117,6 +135,14 @@ export interface ManagedClusterItem {
 
 export interface RoleAssignmentItem {
    roleAssignment: RoleAssignment;
+}
+
+export interface ResourceItem {
+   resource: GenericResource;
+}
+
+export interface VaultAccessPolicyItem {
+   policy: VaultAccessPolicyParameters;
 }
 
 type CredGetter = () => TokenCredential;
@@ -307,6 +333,37 @@ export class Az implements AzApi {
       }
    }
 
+   async addKeyVaultPolicy(
+      keyVaultItem: KeyVaultItem,
+      ...accessPolicies: AccessPolicyEntry[]
+   ): Promise<Errorable<VaultAccessPolicyItem>> {
+      const id = keyVaultItem.vault.id;
+      if (id === undefined) {
+         return {succeeded: false, error: 'Subscription id undefined'};
+      }
+
+      try {
+         const {subscriptionId, resourceGroup, resourceName} =
+            parseAzureResourceId(id);
+         const creds = this.getCreds();
+         const client = new KeyVaultManagementClient(creds, subscriptionId);
+         const resp = await client.vaults.updateAccessPolicy(
+            resourceGroup,
+            resourceName,
+            'add',
+            {
+               properties: {accessPolicies}
+            }
+         );
+         return {succeeded: true, result: {policy: resp}};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to add key vault policies to "${id}": ${error}`
+         };
+      }
+   }
+
    async listDnsZones(
       subscriptionItem: SubscriptionItem,
       resourceGroupItem: ResourceGroupItem
@@ -475,6 +532,31 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to create role assignment: ${error}`
+         };
+      }
+   }
+
+   async getResource(
+      subscriptionItem: SubscriptionItem,
+      resourceId: string
+   ): Promise<Errorable<ResourceItem>> {
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (subscriptionId === undefined) {
+         return {succeeded: false, error: 'SubscriptionId undefined'};
+      }
+
+      try {
+         const creds = this.getCreds();
+         const client = new ResourceManagementClient(creds, subscriptionId);
+         const resource = await client.resources.getById(
+            resourceId,
+            LATEST_ARM_RESOURCE_VERSION
+         );
+         return {succeeded: true, result: {resource}};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to get resource "${resourceId}": ${error}`
          };
       }
    }

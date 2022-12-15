@@ -190,7 +190,7 @@
       "@azure/arm-containerservice": "^17.2.0",
       "@azure/arm-dns": "^5.1.0",
       "@azure/arm-keyvault": "^2.0.0",
-      "@azure/arm-resources": "^5.0.1",
+      "@azure/arm-resources": "^5.1.0",
       "@azure/arm-subscriptions": "^5.0.1",
       "@azure/container-registry": "^1.0.0",
       "@azure/core-auth": "^1.4.0",

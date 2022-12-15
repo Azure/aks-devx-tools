@@ -32,6 +32,10 @@ import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
 import {ManagedCluster} from '@azure/arm-containerservice';
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
+import {
+   KnownCertificatePermissions,
+   KnownSecretPermissions
+} from '@azure/arm-keyvault';
 
 interface PromptContext {
    outputFolder: vscode.Uri;
@@ -426,14 +430,65 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
       super();
    }
 
-   public execute(
+   public async execute(
       wizardContext: WizardContext,
       progress: vscode.Progress<{
          message?: string | undefined;
          increment?: number | undefined;
       }>
    ): Promise<void> {
-      throw new Error('Method not implemented.');
+      const mc = wizardContext.aks;
+      if (mc === undefined) {
+         throw Error('AKS managed cluster is undefined');
+      }
+      const subscription = wizardContext.aksSubscription;
+      if (subscription === undefined) {
+         throw Error('AKS subscription is undefined');
+      }
+      const zoneId = wizardContext.dns?.dnsZone.id;
+      if (zoneId === undefined) {
+         throw Error('Zone id is undefined');
+      }
+      const kv = wizardContext.kv;
+      if (kv === undefined) {
+         throw Error('Key vault is undefined');
+      }
+
+      const id = webAppRoutingAddOnResourceId(mc);
+      const resourceResp = await this.az.getResource(subscription, id);
+      if (failed(resourceResp)) {
+         throw Error(resourceResp.error);
+      }
+      const {resource} = resourceResp.result;
+
+      const principalId = resource.identity?.principalId;
+      if (principalId === undefined) {
+         throw Error('Principal id is undefined');
+      }
+      const roleResp = await this.az.createRoleAssignment(
+         subscription,
+         {
+            name: 'DNS Zone Contributor',
+            id: 'befefa01-2a29-4197-83a8-272ff33ce314'
+         },
+         principalId,
+         zoneId
+      );
+      if (failed(roleResp)) {
+         throw Error(roleResp.error);
+      }
+
+      const policyResp = await this.az.addKeyVaultPolicy(kv, {
+         objectId: principalId,
+         tenantId: kv.vault.properties.tenantId,
+         permissions: {
+            secrets: [KnownSecretPermissions.Get],
+            certificates: [KnownCertificatePermissions.Get]
+         }
+      });
+      if (failed(policyResp)) {
+         throw Error(policyResp.error);
+      }
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
