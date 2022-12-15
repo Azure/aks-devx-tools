@@ -185,6 +185,7 @@
       "webpack-cli": "^4.9.2"
    },
    "dependencies": {
+      "@azure/arm-authorization": "^8.4.1",
       "@azure/arm-containerregistry": "^10.0.0",
       "@azure/arm-containerservice": "^17.2.0",
       "@azure/arm-dns": "^5.1.0",

@@ -27,6 +27,8 @@ import {
    ManagedCluster
 } from '@azure/arm-containerservice';
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
+import {AuthorizationManagementClient} from '@azure/arm-authorization';
+import {RoleAssignment} from '@azure/arm-authorization/esm/models';
 
 const CREATE_CERT_TIMEOUT = 300_000;
 
@@ -69,6 +71,12 @@ export interface AzApi {
    createOrUpdateAksCluster(
       managedClusterItem: ManagedClusterItem
    ): Promise<Errorable<ManagedClusterItem>>;
+   createRoleAssignment(
+      subscriptionItem: SubscriptionItem,
+      role: {name: string; id: string},
+      assignee: string,
+      scope: string
+   ): Promise<Errorable<RoleAssignmentItem>>;
 }
 
 export interface SubscriptionItem {
@@ -105,6 +113,10 @@ export interface DnsZoneItem {
 
 export interface ManagedClusterItem {
    managedCluster: ManagedCluster;
+}
+
+export interface RoleAssignmentItem {
+   roleAssignment: RoleAssignment;
 }
 
 type CredGetter = () => TokenCredential;
@@ -433,6 +445,36 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Faield to update AKS cluster "${managedClusterItem.managedCluster.name}": ${error}`
+         };
+      }
+   }
+
+   async createRoleAssignment(
+      subscriptionItem: SubscriptionItem,
+      role: {name: string; id: string},
+      assignee: string,
+      scope: string
+   ): Promise<Errorable<RoleAssignmentItem>> {
+      const subscriptionId = subscriptionItem.subscription.subscriptionId;
+      if (subscriptionId === undefined) {
+         return {succeeded: false, error: 'SubscriptionId undefined'};
+      }
+
+      try {
+         const creds = this.getCreds();
+         const client = new AuthorizationManagementClient(
+            creds,
+            subscriptionId
+         );
+         const resp = await client.roleAssignments.create(scope, role.name, {
+            principalId: assignee,
+            roleDefinitionId: role.id
+         });
+         return {succeeded: true, result: {roleAssignment: resp}};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to create role assignment: ${error}`
          };
       }
    }

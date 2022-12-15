@@ -31,6 +31,7 @@ import {
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
 import {ManagedCluster} from '@azure/arm-containerservice';
+import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
 
 interface PromptContext {
    outputFolder: vscode.Uri;
@@ -418,6 +419,28 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
    }
 }
 
+class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 2;
+
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   public execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      throw new Error('Method not implemented.');
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      throw new Error('Method not implemented.');
+   }
+}
+
 class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 3;
 
@@ -466,4 +489,18 @@ class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
    public shouldExecute(wizardContext: WizardContext): boolean {
       return true;
    }
+}
+
+function webAppRoutingAddOnResourceId(mc: ManagedClusterItem): string {
+   const mcId = mc.managedCluster.id;
+   if (mcId === undefined) {
+      throw Error('Managed cluster id is undefined');
+   }
+   const mcName = mc.managedCluster.name;
+   if (mcName === undefined) {
+      throw Error('Managed cluster name is undefined');
+   }
+
+   const {subscriptionId, resourceGroup} = parseAzureResourceId(mcId);
+   return `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/webapprouting-${mcName}`;
 }
