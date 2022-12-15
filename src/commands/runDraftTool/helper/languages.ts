@@ -34,7 +34,10 @@ export async function getDraftLanguages(): Promise<Errorable<DraftLanguage[]>> {
    await downloadDraftBinary();
    const [result, err] = await runDraftCommand(buildInfoCommand());
    if (err) {
-      throw new Error(err);
+      return {
+         succeeded: false,
+         error: err
+      };
    }
    const resultJSON = JSON.parse(result);
    const draftInfo = resultJSON as DraftInfo;
