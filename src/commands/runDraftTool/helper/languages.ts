@@ -32,16 +32,16 @@ interface DraftInfoExampleValues {
 }
 export async function getDraftLanguages(): Promise<Errorable<DraftLanguage[]>> {
    await downloadDraftBinary();
-   let [result, err] = await runDraftCommand(buildInfoCommand());
+   const [result, err] = await runDraftCommand(buildInfoCommand());
    if (err) {
       throw new Error(err);
    }
-   let resultJSON = JSON.parse(result);
-   let draftInfo = resultJSON as DraftInfo;
+   const resultJSON = JSON.parse(result);
+   const draftInfo = resultJSON as DraftInfo;
 
    const infoLanguages: DraftLanguage[] = draftInfo.supportedLanguages.map(
       (infoLanguage: DraftInfoLanguage): DraftLanguage => {
-         let language: DraftLanguage = {
+         const language: DraftLanguage = {
             name: infoLanguage.displayName,
             id: infoLanguage.name,
             versions: infoLanguage.variableExampleValues.VERSION
