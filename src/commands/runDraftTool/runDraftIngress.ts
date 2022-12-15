@@ -21,7 +21,7 @@ import {
    ResourceGroupItem,
    SubscriptionItem
 } from '../../utils/az';
-import {failed, getAysncResult} from '../../utils/errorable';
+import {Errorable, failed, getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {
    ignoreFocusOut,
@@ -122,6 +122,7 @@ export async function runDraftIngress(
    ];
    const executeSteps: IExecuteStep[] = [
       new ExecuteCreateCertificate(az),
+      new ExecuteCreateRoles(az),
       new ExecuteEnableAddOn(az)
    ];
    const wizard = new AzureWizard(wizardContext, {
@@ -437,6 +438,10 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
+      progress.report({
+         message: 'Creating role assignment and updating key vault policy'
+      });
+
       const mc = wizardContext.aks;
       if (mc === undefined) {
          throw Error('AKS managed cluster is undefined');
@@ -465,7 +470,7 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
       if (principalId === undefined) {
          throw Error('Principal id is undefined');
       }
-      const roleResp = await this.az.createRoleAssignment(
+      const rolePromise = this.az.createRoleAssignment(
          subscription,
          {
             name: 'DNS Zone Contributor',
@@ -474,11 +479,7 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
          principalId,
          zoneId
       );
-      if (failed(roleResp)) {
-         throw Error(roleResp.error);
-      }
-
-      const policyResp = await this.az.addKeyVaultPolicy(kv, {
+      const policyPromise = this.az.addKeyVaultPolicy(kv, {
          objectId: principalId,
          tenantId: kv.vault.properties.tenantId,
          permissions: {
@@ -486,13 +487,17 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
             certificates: [KnownCertificatePermissions.Get]
          }
       });
-      if (failed(policyResp)) {
-         throw Error(policyResp.error);
-      }
+
+      const resps = await Promise.all([rolePromise, policyPromise]);
+      resps.forEach((resp: Errorable<any>) => {
+         if (failed(resp)) {
+            throw Error(resp.error);
+         }
+      });
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
-      throw new Error('Method not implemented.');
+      return true;
    }
 }
 
