@@ -22,7 +22,7 @@ function checkIfDraftBinaryExist(destinationFile: string): boolean {
    return fs.existsSync(destinationFile);
 }
 
-export async function downloadDraftBinary() {
+export async function ensureDraftBinary() {
    // 0. Get latest release tag.
    // 1: check if file already exist.
    // 2: if not Download latest.

@@ -5,9 +5,11 @@ import {
 } from '../../../commands/runDraftTool/helper/languages';
 import * as assert from 'assert';
 import {Errorable, getAsyncResult, Succeeded} from '../../../utils/errorable';
+import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftHelper';
 
 suite('Languages Test Suite', () => {
    test('languages are retrieve from draft info without error', async () => {
+      await ensureDraftBinary();
       const languages = await getAsyncResult(getDraftLanguages());
 
       assert.doesNotThrow(getDraftLanguages);
@@ -15,6 +17,7 @@ suite('Languages Test Suite', () => {
    });
 
    test('each retrieved language contains a version', async () => {
+      await ensureDraftBinary();
       const languages = await getAsyncResult(getDraftLanguages());
 
       languages.forEach((lang: DraftLanguage) => {

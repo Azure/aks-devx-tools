@@ -1,7 +1,7 @@
 import {longRunning} from '../../utils/host';
 import {Context} from './model/context';
 import * as vscode from 'vscode';
-import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
+import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    DraftLanguage,
    draftLanguages,
@@ -47,7 +47,7 @@ export async function runDraftDockerfile(
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
-      downloadDraftBinary()
+      ensureDraftBinary()
    );
    if (!downloadResult) {
       vscode.window.showErrorMessage('Failed to download Draft');

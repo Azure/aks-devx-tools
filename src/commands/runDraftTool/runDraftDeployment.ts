@@ -2,7 +2,7 @@ import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {State, StateApi} from '../../utils/state';
 import {longRunning} from '../../utils/host';
-import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
+import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -94,7 +94,7 @@ export async function runDraftDeployment(
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
-      downloadDraftBinary()
+      ensureDraftBinary()
    );
    if (!downloadResult) {
       vscode.window.showErrorMessage('Failed to download Draft');
