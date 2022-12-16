@@ -62,7 +62,7 @@ export async function ensureDraftBinary(): Promise<Errorable<null>> {
    if (failed(downloadResult)) {
       return {
          succeeded: false,
-         error: `Failed to download draft binary: ${downloadResult.error[0]}`
+         error: `Failed to download draft binary: ${downloadResult.error}`
       };
    }
    //If linux check -- make chmod 0755
