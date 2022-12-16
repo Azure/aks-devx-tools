@@ -14,11 +14,13 @@ import {before} from 'mocha';
 import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftHelper';
 
 suite('Languages Test Suite', () => {
-   before(async () => {
+   before(async function (done) {
+      this.timeout(5000);
       const draftBinaryResult = await ensureDraftBinary();
       if (failed(draftBinaryResult)) {
          throw draftBinaryResult.error;
       }
+      done();
    });
 
    test('languages are retrieve from draft info without error', async () => {
