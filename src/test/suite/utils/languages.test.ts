@@ -13,12 +13,14 @@ import {
 import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftHelper';
 
 suite('Languages Test Suite', () => {
-   test('languages are retrieve from draft info without error', async () => {
+   before(async () => {
       const draftBinaryResult = await ensureDraftBinary();
       if (failed(draftBinaryResult)) {
          throw draftBinaryResult.error;
       }
+   });
 
+   test('languages are retrieve from draft info without error', async () => {
       const languages = await getAsyncResult(getDraftLanguages());
 
       assert.doesNotThrow(getDraftLanguages);
@@ -26,11 +28,6 @@ suite('Languages Test Suite', () => {
    });
 
    test('each retrieved language contains a version', async () => {
-      const draftBinaryResult = await ensureDraftBinary();
-      if (failed(draftBinaryResult)) {
-         throw draftBinaryResult.error;
-      }
-
       const languages = await getAsyncResult(getDraftLanguages());
 
       languages.forEach((lang: DraftLanguage) => {
