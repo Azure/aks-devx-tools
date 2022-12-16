@@ -10,6 +10,7 @@ import {
    getAsyncResult,
    Succeeded
 } from '../../../utils/errorable';
+import {before} from 'mocha';
 import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftHelper';
 
 suite('Languages Test Suite', () => {
