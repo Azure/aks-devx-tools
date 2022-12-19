@@ -27,7 +27,7 @@
          "properties": {
             "aks.draft.releaseTag": {
                "type": "string",
-               "default": "v0.0.25",
+               "default": "v0.0.27",
                "title": "Draft repository release tag",
                "description": "Release tag for the stable Draft tool release."
             }
@@ -152,6 +152,7 @@
       "watch-tests": "tsc -p . -w --outDir out",
       "pretest": "npm run compile-tests && npm run compile && npm run lint",
       "lint": "eslint src --ext ts",
+      "format": "prettier --write .",
       "test": "node ./out/test/runTest.js"
    },
    "devDependencies": {

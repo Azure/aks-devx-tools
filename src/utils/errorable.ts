@@ -18,7 +18,7 @@ export function failed<T>(e: Errorable<T>): e is Failed {
    return !e.succeeded;
 }
 
-export async function getAysncResult<T>(e: Promise<Errorable<T>>): Promise<T> {
+export async function getAsyncResult<T>(e: Promise<Errorable<T>>): Promise<T> {
    const awaited = await e;
    if (failed(awaited)) {
       throw Error(awaited.error);

@@ -116,3 +116,7 @@ export function buildUpdateCommand(
 ): string {
    return `update -a ${host} -s ${certificate} -d ${destination}`;
 }
+
+export function buildInfoCommand(): string {
+   return `info`;
+}
