@@ -18,6 +18,7 @@
       "onCommand:aks-draft-extension.prerequisites",
       "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftDeployment",
+      "onCommand:aks-draft-extension.runDraftIngress",
       "onCommand:aks-draft-extension.runBuildAcrImage"
    ],
    "main": "./dist/extension.js",
@@ -47,6 +48,10 @@
             "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
          },
          {
+            "command": "aks-draft-extension.runDraftIngress",
+            "title": "AKS Developer: Draft a Kubernetes Ingress with Web App Routing"
+         },
+         {
             "command": "aks-draft-extension.runBuildAcrImage",
             "title": "AKS Developer: Build an Image on Azure Container Registry"
          }
@@ -73,8 +78,12 @@
                "group": "draftnavigation@2"
             },
             {
-               "command": "aks-draft-extension.runDraftDeployment",
+               "command": "aks-draft-extension.runDraftIngress",
                "group": "draftnavigation@3"
+            },
+            {
+               "command": "aks-draft-extension.runDraftDeployment",
+               "group": "draftnavigation@4"
             }
          ]
       },
@@ -140,7 +149,6 @@
    },
    "extensionDependencies": [
       "ms-kubernetes-tools.vscode-kubernetes-tools",
-      "ms-vscode.azure-account",
       "ms-azuretools.vscode-docker"
    ],
    "scripts": {
@@ -177,11 +185,17 @@
       "webpack-cli": "^4.9.2"
    },
    "dependencies": {
+      "@azure/arm-authorization": "^8.4.1",
       "@azure/arm-containerregistry": "^10.0.0",
-      "@azure/arm-resources": "^5.0.1",
+      "@azure/arm-containerservice": "^17.2.0-beta.1",
+      "@azure/arm-dns": "^5.1.0",
+      "@azure/arm-keyvault": "^2.0.0",
+      "@azure/arm-resources": "^5.1.0",
       "@azure/arm-subscriptions": "^5.0.1",
       "@azure/container-registry": "^1.0.0",
       "@azure/core-auth": "^1.4.0",
+      "@azure/identity": "^3.1.1",
+      "@azure/keyvault-certificates": "^4.6.0",
       "@azure/ms-rest-azure-env": "^2.0.0",
       "@azure/ms-rest-nodeauth": "^3.1.1",
       "@kubernetes/client-node": "^0.17.1",
