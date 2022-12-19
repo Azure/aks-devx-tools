@@ -33,6 +33,7 @@ import {DnsManagementClient, Zone} from '@azure/arm-dns';
 import {timeout} from './timeout';
 import {
    ContainerServiceClient,
+   ContainerServiceClientOptionalParams,
    ManagedCluster
 } from '@azure/arm-containerservice';
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
@@ -40,7 +41,7 @@ import {AuthorizationManagementClient} from '@azure/arm-authorization';
 import {RoleAssignment} from '@azure/arm-authorization/esm/models';
 
 const CREATE_CERT_TIMEOUT = 300_000;
-const LATEST_ARM_RESOURCE_VERSION = '2022-09-01';
+const LATEST_ARM_RESOURCE_VERSION = '2022-01-31-PREVIEW';
 
 export interface AzApi {
    listSubscriptions(): Promise<Errorable<SubscriptionItem[]>>;
@@ -79,7 +80,8 @@ export interface AzApi {
       resourceGroupItem: ResourceGroupItem
    ): Promise<Errorable<ManagedClusterItem[]>>;
    createOrUpdateAksCluster(
-      managedClusterItem: ManagedClusterItem
+      managedClusterItem: ManagedClusterItem,
+      opts?: ContainerServiceClientOptionalParams
    ): Promise<Errorable<ManagedClusterItem>>;
    createRoleAssignment(
       subscriptionItem: SubscriptionItem,
@@ -479,7 +481,8 @@ export class Az implements AzApi {
    }
 
    async createOrUpdateAksCluster(
-      managedClusterItem: ManagedClusterItem
+      managedClusterItem: ManagedClusterItem,
+      opts?: ContainerServiceClientOptionalParams
    ): Promise<Errorable<ManagedClusterItem>> {
       const id = managedClusterItem.managedCluster.id;
       if (id === undefined) {
@@ -490,7 +493,7 @@ export class Az implements AzApi {
          parseAzureResourceId(id);
       try {
          const creds = this.getCreds();
-         const client = new ContainerServiceClient(creds, subscriptionId);
+         const client = new ContainerServiceClient(creds, subscriptionId, opts);
          const managedCluster =
             await client.managedClusters.beginCreateOrUpdateAndWait(
                resourceGroup,
@@ -501,7 +504,7 @@ export class Az implements AzApi {
       } catch (error) {
          return {
             succeeded: false,
-            error: `Faield to update AKS cluster "${managedClusterItem.managedCluster.name}": ${error}`
+            error: `Failed to update AKS cluster "${managedClusterItem.managedCluster.name}": ${error}`
          };
       }
    }

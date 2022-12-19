@@ -30,7 +30,6 @@ import {
 } from './helper/commonPrompts';
 import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
-import {ManagedCluster} from '@azure/arm-containerservice';
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
 import {
    KnownCertificatePermissions,
@@ -122,8 +121,9 @@ export async function runDraftIngress(
    ];
    const executeSteps: IExecuteStep[] = [
       new ExecuteCreateCertificate(az),
+      new ExecuteEnableAddOn(az),
       new ExecuteCreateRoles(az),
-      new ExecuteEnableAddOn(az)
+      new ExecuteUpdateAddOn(az)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -424,8 +424,59 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
    }
 }
 
-class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
+class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 2;
+
+   constructor(private az: AzApi) {
+      super();
+   }
+
+   async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const cluster = wizardContext.aks;
+      if (cluster === undefined) {
+         throw Error('Cluster is undefined');
+      }
+
+      if (cluster.managedCluster.addonProfiles === undefined) {
+         cluster.managedCluster.addonProfiles = {};
+      }
+      cluster.managedCluster.addonProfiles.httpApplicationRouting = {
+         enabled: true
+      };
+      cluster.managedCluster.addonProfiles.azureKeyvaultSecretsProvider = {
+         config: {enableSecretRotation: 'true'},
+         enabled: true
+      };
+
+      if (cluster.managedCluster.ingressProfile === undefined) {
+         cluster.managedCluster.ingressProfile = {};
+      }
+      cluster.managedCluster.ingressProfile.webAppRouting = {
+         enabled: true
+      };
+
+      progress.report({
+         message: 'Enabling AKS cluster add-ons'
+      });
+      const resp = await this.az.createOrUpdateAksCluster(cluster);
+      if (failed(resp)) {
+         throw Error(resp.error);
+      }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 3;
 
    constructor(private az: AzApi) {
       super();
@@ -450,6 +501,10 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
       if (subscription === undefined) {
          throw Error('AKS subscription is undefined');
       }
+      const subscriptionId = subscription.subscription.subscriptionId;
+      if (subscriptionId === undefined) {
+         throw Error('Subscription id is undefined');
+      }
       const zoneId = wizardContext.dns?.dnsZone.id;
       if (zoneId === undefined) {
          throw Error('Zone id is undefined');
@@ -465,16 +520,18 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
          throw Error(resourceResp.error);
       }
       const {resource} = resourceResp.result;
-
-      const principalId = resource.identity?.principalId;
+      const principalId = resource.properties?.principalId as
+         | string
+         | undefined;
       if (principalId === undefined) {
          throw Error('Principal id is undefined');
       }
+
       const rolePromise = this.az.createRoleAssignment(
          subscription,
          {
-            name: 'DNS Zone Contributor',
-            id: 'befefa01-2a29-4197-83a8-272ff33ce314'
+            name: 'befefa01-2a29-4197-83a8-272ff33ce314',
+            id: `/subscriptions/${subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/befefa01-2a29-4197-83a8-272ff33ce314`
          },
          principalId,
          zoneId
@@ -501,8 +558,8 @@ class ExecuteCreateRoles extends AzureWizardExecuteStep<WizardContext> {
    }
 }
 
-class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
-   public priority: number = 3;
+class ExecuteUpdateAddOn extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 4;
 
    constructor(private az: AzApi) {
       super();
@@ -523,6 +580,10 @@ class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
       if (dnsZone === undefined) {
          throw Error('DNS Zone is undefined');
       }
+      const dnsZoneId = wizardContext.dns?.dnsZone.id;
+      if (dnsZoneId === undefined) {
+         throw Error('DNS Zone id is undefined');
+      }
 
       if (cluster.managedCluster.addonProfiles === undefined) {
          cluster.managedCluster.addonProfiles = {};
@@ -532,13 +593,16 @@ class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
          config: {HTTPApplicationRoutingZoneName: dnsZone},
          enabled: true
       };
-      cluster.managedCluster.addonProfiles.azureKeyvaultSecretsProvider = {
-         config: {enableSecretRotation: 'true'},
-         enabled: true
+      if (cluster.managedCluster.ingressProfile === undefined) {
+         cluster.managedCluster.ingressProfile = {};
+      }
+      cluster.managedCluster.ingressProfile.webAppRouting = {
+         enabled: true,
+         dnsZoneResourceId: dnsZoneId
       };
 
       progress.report({
-         message: 'Enabling AKS cluster add-ons'
+         message: 'Updating AKS cluster Web App Routing add-on'
       });
       const resp = await this.az.createOrUpdateAksCluster(cluster);
       if (failed(resp)) {
@@ -560,7 +624,11 @@ function webAppRoutingAddOnResourceId(mc: ManagedClusterItem): string {
    if (mcName === undefined) {
       throw Error('Managed cluster name is undefined');
    }
+   const resourceGroup = mc.managedCluster.nodeResourceGroup;
+   if (resourceGroup === undefined) {
+      throw Error('Node resource group is undefined');
+   }
 
-   const {subscriptionId, resourceGroup} = parseAzureResourceId(mcId);
+   const {subscriptionId} = parseAzureResourceId(mcId);
    return `/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/webapprouting-${mcName}`;
 }
