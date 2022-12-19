@@ -77,7 +77,7 @@ function getBinaryFileName() {
    let architecture = os.arch();
    let operatingSystem = os.platform().toLocaleLowerCase();
 
-   if (architecture === 'x64') {
+   if (architecture === 'x64' || architecture === 'ia32') {
       architecture = 'amd64';
    }
    let draftBinaryFile = `draft-${operatingSystem}-${architecture}`;
