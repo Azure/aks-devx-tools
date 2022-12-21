@@ -1,5 +1,6 @@
 import {CompletedSteps} from './model/guidedExperience';
 import * as vscode from 'vscode';
+import * as path from 'path';
 import {Context} from './model/context';
 import {StateApi, State} from '../../utils/state';
 import {longRunning} from '../../utils/host';
@@ -36,6 +37,8 @@ import {
    KnownSecretPermissions
 } from '@azure/arm-keyvault';
 import {buildUpdateIngressCommand} from './helper/draftCommandBuilder';
+
+const INGRESS_FILENAME = 'ingress.yaml';
 
 interface PromptContext {
    outputFolder: vscode.Uri;
@@ -125,7 +128,8 @@ export async function runDraftIngress(
       // new ExecuteEnableAddOn(az),
       // new ExecuteCreateRoles(az),
       // new ExecuteUpdateAddOn(az),
-      new ExecuteDraftIngress()
+      new ExecuteDraftIngress(),
+      new ExecuteOpenFiles()
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -649,6 +653,32 @@ class ExecuteDraftIngress extends AzureWizardExecuteStep<WizardContext> {
       if (!isSuccess) {
          throw Error(`Draft command failed: ${err}`);
       }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 6;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const outputFolder = wizardContext.outputFolder;
+      if (outputFolder === undefined) {
+         throw Error('Output folder is undefined');
+      }
+
+      const created = path.join(outputFolder.fsPath, INGRESS_FILENAME);
+      await vscode.workspace
+         .openTextDocument(created)
+         .then((doc) => vscode.window.showTextDocument(doc, {preview: false}));
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
