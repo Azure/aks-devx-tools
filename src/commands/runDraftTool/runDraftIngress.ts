@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import {Context} from './model/context';
 import {StateApi, State} from '../../utils/state';
 import {longRunning} from '../../utils/host';
-import {downloadDraftBinary} from './helper/runDraftHelper';
+import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -35,6 +35,7 @@ import {
    KnownCertificatePermissions,
    KnownSecretPermissions
 } from '@azure/arm-keyvault';
+import {buildUpdateIngressCommand} from './helper/draftCommandBuilder';
 
 interface PromptContext {
    outputFolder: vscode.Uri;
@@ -120,10 +121,11 @@ export async function runDraftIngress(
       new PromptAksCluster(az)
    ];
    const executeSteps: IExecuteStep[] = [
-      new ExecuteCreateCertificate(az),
-      new ExecuteEnableAddOn(az),
-      new ExecuteCreateRoles(az),
-      new ExecuteUpdateAddOn(az)
+      // new ExecuteCreateCertificate(az),
+      // new ExecuteEnableAddOn(az),
+      // new ExecuteCreateRoles(az),
+      // new ExecuteUpdateAddOn(az),
+      new ExecuteDraftIngress()
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -607,6 +609,45 @@ class ExecuteUpdateAddOn extends AzureWizardExecuteStep<WizardContext> {
       const resp = await this.az.createOrUpdateAksCluster(cluster);
       if (failed(resp)) {
          throw Error(resp.error);
+      }
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecuteDraftIngress extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 5;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const destination = wizardContext.outputFolder?.fsPath;
+      if (destination === undefined) {
+         throw Error('Destination is undefined');
+      }
+      const host = wizardContext.dns?.dnsZone.name;
+      if (host === undefined) {
+         throw Error('Host is undefined');
+      }
+      const cert = wizardContext.certificate?.certificate.name;
+      if (cert === undefined) {
+         throw Error('Certificate is undefined');
+      }
+
+      const osm = true;
+
+      progress.report({message: 'Running Draft command'});
+      const cmd = buildUpdateIngressCommand(destination, host, cert, osm);
+      const [success, err] = await runDraftCommand(cmd);
+      const isSuccess = err?.length === 0 && success?.length !== 0;
+      if (!isSuccess) {
+         throw Error(`Draft command failed: ${err}`);
       }
    }
 
