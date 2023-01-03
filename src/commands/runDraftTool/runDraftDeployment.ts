@@ -138,7 +138,7 @@ export async function runDraftDeployment(
       new ExecuteDraft(),
       new ExecuteOpenFiles(),
       new ExecuteSaveState(state),
-      new ExecutePromptDeploy(completedSteps)
+      new ExecutePromptNextStep(completedSteps)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -730,7 +730,7 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
    }
 }
 
-class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
+class ExecutePromptNextStep extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 5;
 
    constructor(private completedSteps: CompletedSteps) {
@@ -744,15 +744,24 @@ class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
+      this.completedSteps.draftDeployment = true;
+
+      const ingressButton = 'Draft Ingress';
       const deployButton = 'Deploy';
       await vscode.window
          .showInformationMessage(
-            'The Kubernetes Deployment and Service was created. Next, deploy to the cluster.',
+            'The Kubernetes Deployment and Service was created. Next, either Draft an Ingress to create publicly accessible DNS names for the application or deploy to the cluster.',
+            ingressButton,
             deployButton
          )
          .then((input) => {
+            if (input === ingressButton) {
+               vscode.commands.executeCommand(
+                  'aks-draft-extension.runDraftIngress'
+               );
+            }
+
             if (input === deployButton) {
-               this.completedSteps.draftDeployment = true;
                vscode.commands.executeCommand(
                   'aks-draft-extension.runDeploy',
                   this.completedSteps

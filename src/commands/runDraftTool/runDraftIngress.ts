@@ -29,7 +29,7 @@ import {
    PromptResourceGroup,
    PromptSubscription
 } from './helper/commonPrompts';
-import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
+import {getAsyncOptions} from '../../utils/quickPick';
 import {ValidateRfc1123} from '../../utils/validation';
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
 import {
@@ -644,7 +644,8 @@ class ExecuteDraftIngress extends AzureWizardExecuteStep<WizardContext> {
          throw Error('Certificate is undefined');
       }
 
-      const osm = false; // default to not using osm for now. Need to add ability to add application ns to the OSM control plane for OSM
+      const osm = false; // default to not using osm for now. Need to add ability to add application ns to the OSM control plane for OSM.
+      // holding off on this until web app routing service mesh is changed
 
       progress.report({message: 'Running Draft command'});
       const cmd = buildUpdateIngressCommand(destination, host, cert, osm);
@@ -679,6 +680,43 @@ class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
       await vscode.workspace
          .openTextDocument(created)
          .then((doc) => vscode.window.showTextDocument(doc, {preview: false}));
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+class ExecutePromptNext extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 7;
+
+   constructor(private completedSteps: CompletedSteps) {
+      super();
+   }
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      this.completedSteps.draftIngress = true;
+
+      const deployButton = 'Deploy';
+      await vscode.window
+         .showInformationMessage(
+            'The Ingress was created. Next, deploy to your cluster.',
+            deployButton
+         )
+         .then((input) => {
+            if (input === deployButton) {
+               vscode.commands.executeCommand(
+                  'aks-draft-extension.runDeploy',
+                  this.completedSteps
+               );
+            }
+         });
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
