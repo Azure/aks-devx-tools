@@ -124,12 +124,13 @@ export async function runDraftIngress(
       new PromptAksCluster(az)
    ];
    const executeSteps: IExecuteStep[] = [
-      // new ExecuteCreateCertificate(az),
-      // new ExecuteEnableAddOn(az),
-      // new ExecuteCreateRoles(az),
-      // new ExecuteUpdateAddOn(az),
+      new ExecuteCreateCertificate(az),
+      new ExecuteEnableAddOn(az),
+      new ExecuteCreateRoles(az),
+      new ExecuteUpdateAddOn(az),
       new ExecuteDraftIngress(),
-      new ExecuteOpenFiles()
+      new ExecuteOpenFiles(),
+      new ExecutePromptNext(completedSteps)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
