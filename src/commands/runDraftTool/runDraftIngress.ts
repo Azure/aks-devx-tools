@@ -644,7 +644,7 @@ class ExecuteDraftIngress extends AzureWizardExecuteStep<WizardContext> {
          throw Error('Certificate is undefined');
       }
 
-      const osm = true;
+      const osm = false; // default to not using osm for now. Need to add ability to add application ns to the OSM control plane for OSM
 
       progress.report({message: 'Running Draft command'});
       const cmd = buildUpdateIngressCommand(destination, host, cert, osm);

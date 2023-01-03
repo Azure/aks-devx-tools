@@ -122,10 +122,10 @@
                },
                {
                   "id": "login-to-azure",
-                  "title": "Sign into the Azure Account Extension",
-                  "description": "Use one of the options below\n[Browser Login](command:azure-account.login)\n[Device Code Login](command:azure-account.loginWithDeviceCode)",
+                  "title": "Sign into Azure",
+                  "description": "",
                   "media": {
-                     "markdown": "./resources/blank.md"
+                     "markdown": "./resources/login.md"
                   }
                },
                {
