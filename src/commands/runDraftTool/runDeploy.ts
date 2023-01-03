@@ -92,7 +92,7 @@ export async function runDeploy(
    outputChannel.appendLine(resp.result);
    outputChannel.appendLine('Deployed successfully');
 
-   outputChannel.appendLine('Waiting for external IP');
+   outputChannel.appendLine('Waiting for external address');
    const getExternalIp = async (): Promise<string> => {
       const fetchExternalIp = async (): Promise<string | undefined> => {
          const serviceResp = await k8s.getService(applicationName, namespace);

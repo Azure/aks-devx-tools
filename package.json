@@ -96,8 +96,8 @@
       "walkthroughs": [
          {
             "id": "prerequisites",
-            "description": "Required tasks to fully use this extension",
-            "title": "Get Started with Development on AKS",
+            "description": "Get started running an application on Azure Kubernetes Service from source code",
+            "title": "Deploy your application to AKS",
             "steps": [
                {
                   "id": "create-acr",
@@ -136,9 +136,33 @@
                   }
                },
                {
-                  "id": "done",
-                  "title": "Done",
-                  "description": "You're ready to get started\n[Draft a Dockerfile](command:aks-draft-extension.runDraftDockerfile)",
+                  "id": "dockerfile",
+                  "title": "Draft a Dockerfile",
+                  "description": "Create a Dockerfile so your application is able to run as a container. \n[Draft Dockerfile](command:aks-draft-extension.runDraftDockerfile)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               },
+               {
+                  "id": "acr",
+                  "title": "Build Image",
+                  "description": "Create an Image by building your Dockerfile on Azure Container Registry. \n[Build Image](command:aks-draft-extension.runBuildAcrImage)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               },
+               {
+                  "id": "deployment",
+                  "title": "Draft a Kubernetes Deployment and Service",
+                  "description": "Create Deployment and Service manifests so Kubernetes knows how to create resources that manage your application. After this step, you will have the option to Draft an Ingress or just deploy to the cluster. Drafting an Ingress is reccommended so your application can be accessed from a DNS name instead of just an IP address. If you choose to Draft an Ingress you will have the option to deploy after. \n[Draft Deployment and Service](command:aks-draft-extension.runDraftDeployment)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               },
+               {
+                  "id": "Ingress",
+                  "title": "Draft a Kubernetes Ingress with Web Application Routing (optional)",
+                  "description": "Before running this step you must have an [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/). Drafting an Ingress will create a Kubernetes resource that creates publicly accessible DNS names for endpoints. \n[Draft Ingress](command:aks-draft-extension.runDraftIngress)",
                   "media": {
                      "markdown": "./resources/blank.md"
                   }
