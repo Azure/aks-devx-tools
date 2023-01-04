@@ -1,6 +1,5 @@
 import {CompletedSteps} from './model/guidedExperience';
 import * as vscode from 'vscode';
-import * as path from 'path';
 import {Context} from './model/context';
 import {StateApi, State} from '../../utils/state';
 import {longRunning} from '../../utils/host';
@@ -648,7 +647,9 @@ class ExecuteDraftIngress extends AzureWizardExecuteStep<WizardContext> {
       const osm = false; // default to not using osm for now. Need to add ability to add application ns to the OSM control plane for OSM.
       // holding off on this until web app routing service mesh is changed
 
-      progress.report({message: 'Running Draft command'});
+      progress.report({
+         message: 'Running Draft to generate Kubernetes manifests'
+      });
       const cmd = buildUpdateIngressCommand(destination, host, cert, osm);
       const [success, err] = await runDraftCommand(cmd);
       const isSuccess = err?.length === 0 && success?.length !== 0;
@@ -677,7 +678,12 @@ class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
          throw Error('Output folder is undefined');
       }
 
-      const created = path.join(outputFolder.fsPath, INGRESS_FILENAME);
+      const glob = new vscode.RelativePattern(
+         outputFolder,
+         `**/${INGRESS_FILENAME}`
+      );
+      progress.report({message: 'Opening files'});
+      const [created] = await vscode.workspace.findFiles(glob, undefined, 1);
       await vscode.workspace
          .openTextDocument(created)
          .then((doc) => vscode.window.showTextDocument(doc, {preview: false}));
