@@ -80,7 +80,7 @@ export class PromptResourceGroup<
    }
 
    public async prompt(wizardContext: T): Promise<void> {
-      // @ts-ignore TS has trouble with understanding subscription key
+      // @ts-ignore TS has trouble with understanding key
       const sub: SubscriptionItem | undefined =
          wizardContext[this.subscriptionKey];
       if (sub === undefined) {
@@ -101,7 +101,7 @@ export class PromptResourceGroup<
          }
       );
 
-      // @ts-ignore TS has trouble with understanding subscription key
+      // @ts-ignore TS has trouble with understanding key
       wizardContext[this.resourceGroupKey] = (await rgs).find(
          (rg) => rgToItem(rg).label === rgPick.label
       );
