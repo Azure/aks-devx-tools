@@ -575,6 +575,8 @@ export class Az implements AzApi {
    }
 }
 
+// Ideally we'd use the Azure Account Extension to authenticate but there's major bugs with it right now
+// https://github.com/Azure/azure-sdk-for-js/issues/22904
 export const getAzCreds: CredGetter = () => new DefaultAzureCredential();
 
 export async function listAll<T>(
