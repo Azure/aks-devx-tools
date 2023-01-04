@@ -1,4 +1,4 @@
-import {Errorable, Succeeded} from '../../../utils/errorable';
+import {Errorable, failed, Succeeded} from '../../../utils/errorable';
 import {buildInfoCommand} from './draftCommandBuilder';
 import {ensureDraftBinary, runDraftCommand} from './runDraftHelper';
 
@@ -31,7 +31,14 @@ interface DraftInfoExampleValues {
    VERSION: string[]; // All caps since it comes from draft builder variable conventions
 }
 export async function getDraftLanguages(): Promise<Errorable<DraftLanguage[]>> {
-   await ensureDraftBinary();
+   const ensureDraftResult = await ensureDraftBinary();
+   if (failed<null>(ensureDraftResult)) {
+      return {
+         succeeded: false,
+         error: ensureDraftResult.error
+      };
+   }
+
    const [result, err] = await runDraftCommand(buildInfoCommand());
    if (err) {
       return {
