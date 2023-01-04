@@ -639,7 +639,7 @@ class ExecuteDraftIngress extends AzureWizardExecuteStep<WizardContext> {
       if (host === undefined) {
          throw Error('Host is undefined');
       }
-      const cert = wizardContext.certificate?.certificate.name;
+      const cert = wizardContext.certificate?.certificate.id;
       if (cert === undefined) {
          throw Error('Certificate is undefined');
       }
@@ -682,7 +682,6 @@ class ExecuteOpenFiles extends AzureWizardExecuteStep<WizardContext> {
          outputFolder,
          `**/${INGRESS_FILENAME}`
       );
-      progress.report({message: 'Opening files'});
       const [created] = await vscode.workspace.findFiles(glob, undefined, 1);
       await vscode.workspace
          .openTextDocument(created)
