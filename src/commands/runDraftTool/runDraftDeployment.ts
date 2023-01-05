@@ -31,7 +31,7 @@ import {
    SubscriptionItem,
    TagItem,
    AzApi,
-   getAzureAccount,
+   getAzCreds,
    Az
 } from '../../utils/az';
 import * as path from 'path';
@@ -43,6 +43,7 @@ import {
 import {image} from '../../utils/acr';
 import {CompletedSteps} from './model/guidedExperience';
 import {sort} from '../../utils/sort';
+import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -89,7 +90,7 @@ export async function runDraftDeployment(
       kubectlReturn.result,
       helmReturn.result
    );
-   const az: AzApi = new Az(getAzureAccount());
+   const az: AzApi = new Az(getAzCreds);
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
@@ -137,7 +138,7 @@ export async function runDraftDeployment(
       new ExecuteDraft(),
       new ExecuteOpenFiles(),
       new ExecuteSaveState(state),
-      new ExecutePromptDeploy(completedSteps)
+      new ExecutePromptNextStep(completedSteps)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -340,9 +341,6 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
-      // if something was recently used this text is appened to the description
-      const removeRecentlyUsed = (description: string) =>
-         description.replace(' (recently used)', '');
       wizardContext.acrSubscription = (await subs).find(
          (sub) =>
             subToItem(sub).description ===
@@ -437,18 +435,12 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
-      }
       if (wizardContext.acrRegistry === undefined) {
          throw Error('ACR Registry is undefined');
       }
 
       const repositories = getAysncResult(
-         this.az.listRegistryRepositories(
-            wizardContext.acrSubscription,
-            wizardContext.acrRegistry
-         )
+         this.az.listRegistryRepositories(wizardContext.acrRegistry)
       );
       const repositoryToItem = (r: RepositoryItem) => ({
          label: r.repositoryName
@@ -479,9 +471,6 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
-      }
       if (wizardContext.acrRegistry === undefined) {
          throw Error('ACR Registry is undefined');
       }
@@ -491,7 +480,6 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
 
       const tags = getAysncResult(
          this.az.listRepositoryTags(
-            wizardContext.acrSubscription,
             wizardContext.acrRegistry,
             wizardContext.acrRepository
          )
@@ -742,7 +730,7 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
    }
 }
 
-class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
+class ExecutePromptNextStep extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 5;
 
    constructor(private completedSteps: CompletedSteps) {
@@ -756,15 +744,24 @@ class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
+      this.completedSteps.draftDeployment = true;
+
+      const ingressButton = 'Draft Ingress';
       const deployButton = 'Deploy';
       await vscode.window
          .showInformationMessage(
-            'The Kubernetes Deployment and Service was created. Next, deploy to the cluster.',
+            'The Kubernetes Deployment and Service was created. Next, either Draft an Ingress to create publicly accessible DNS names for the application or deploy to the cluster.',
+            ingressButton,
             deployButton
          )
          .then((input) => {
+            if (input === ingressButton) {
+               vscode.commands.executeCommand(
+                  'aks-draft-extension.runDraftIngress'
+               );
+            }
+
             if (input === deployButton) {
-               this.completedSteps.draftDeployment = true;
                vscode.commands.executeCommand(
                   'aks-draft-extension.runDeploy',
                   this.completedSteps
@@ -792,11 +789,4 @@ function getOutputPath(wizardContext: WizardContext): string {
       default:
          return path.join(base, 'manifests');
    }
-}
-
-async function getAsyncOptions<T>(
-   arr: Promise<T[]>,
-   callbackfn: (a: T) => vscode.QuickPickItem
-): Promise<vscode.QuickPickItem[]> {
-   return (await arr).map(callbackfn);
 }

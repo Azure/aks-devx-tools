@@ -3,10 +3,12 @@ export interface CompletedSteps {
    draftDockerfile: boolean;
    buildOnAcr: boolean;
    draftDeployment: boolean;
+   draftIngress: boolean;
 }
 
 export const noCompletedSteps = (): CompletedSteps => ({
    draftDockerfile: false,
    buildOnAcr: false,
-   draftDeployment: false
+   draftDeployment: false,
+   draftIngress: false
 });

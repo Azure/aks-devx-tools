@@ -18,6 +18,7 @@
       "onCommand:aks-draft-extension.prerequisites",
       "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftDeployment",
+      "onCommand:aks-draft-extension.runDraftIngress",
       "onCommand:aks-draft-extension.runBuildAcrImage"
    ],
    "main": "./dist/extension.js",
@@ -27,7 +28,7 @@
          "properties": {
             "aks.draft.releaseTag": {
                "type": "string",
-               "default": "v0.0.25",
+               "default": "v0.0.27",
                "title": "Draft repository release tag",
                "description": "Release tag for the stable Draft tool release."
             }
@@ -45,6 +46,10 @@
          {
             "command": "aks-draft-extension.runDraftDeployment",
             "title": "AKS Developer: Draft a Kubernetes Deployment and Service"
+         },
+         {
+            "command": "aks-draft-extension.runDraftIngress",
+            "title": "AKS Developer: Draft a Kubernetes Ingress with Web App Routing"
          },
          {
             "command": "aks-draft-extension.runBuildAcrImage",
@@ -73,8 +78,12 @@
                "group": "draftnavigation@2"
             },
             {
-               "command": "aks-draft-extension.runDraftDeployment",
+               "command": "aks-draft-extension.runDraftIngress",
                "group": "draftnavigation@3"
+            },
+            {
+               "command": "aks-draft-extension.runDraftDeployment",
+               "group": "draftnavigation@4"
             }
          ]
       },
@@ -87,8 +96,8 @@
       "walkthroughs": [
          {
             "id": "prerequisites",
-            "description": "Required tasks to fully use this extension",
-            "title": "Get Started with Development on AKS",
+            "description": "Get started running an application on Azure Kubernetes Service from source code",
+            "title": "Deploy your application to AKS",
             "steps": [
                {
                   "id": "create-acr",
@@ -113,10 +122,10 @@
                },
                {
                   "id": "login-to-azure",
-                  "title": "Sign into the Azure Account Extension",
-                  "description": "Use one of the options below\n[Browser Login](command:azure-account.login)\n[Device Code Login](command:azure-account.loginWithDeviceCode)",
+                  "title": "Sign into Azure",
+                  "description": "",
                   "media": {
-                     "markdown": "./resources/blank.md"
+                     "markdown": "./resources/login.md"
                   }
                },
                {
@@ -127,9 +136,33 @@
                   }
                },
                {
-                  "id": "done",
-                  "title": "Done",
-                  "description": "You're ready to get started\n[Draft a Dockerfile](command:aks-draft-extension.runDraftDockerfile)",
+                  "id": "dockerfile",
+                  "title": "Draft a Dockerfile",
+                  "description": "Create a Dockerfile so your application is able to run as a container. \n[Draft Dockerfile](command:aks-draft-extension.runDraftDockerfile)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               },
+               {
+                  "id": "acr",
+                  "title": "Build Image",
+                  "description": "Create an Image by building your Dockerfile on Azure Container Registry. \n[Build Image](command:aks-draft-extension.runBuildAcrImage)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               },
+               {
+                  "id": "deployment",
+                  "title": "Draft a Kubernetes Deployment and Service",
+                  "description": "Create Deployment and Service manifests so Kubernetes knows how to create resources that manage your application. After this step, you will have the option to Draft an Ingress or just deploy to the cluster. Drafting an Ingress is recommended so your application can be accessed from a DNS name instead of just an IP address. If you choose to Draft an Ingress you will have the option to deploy after. \n[Draft Deployment and Service](command:aks-draft-extension.runDraftDeployment)",
+                  "media": {
+                     "markdown": "./resources/blank.md"
+                  }
+               },
+               {
+                  "id": "Ingress",
+                  "title": "Draft a Kubernetes Ingress with Web Application Routing (optional)",
+                  "description": "Before running this step, you must have an [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/). If creating a production application, you also need to [create a signed SSL certificate](https://learn.microsoft.com/en-us/azure/key-vault/certificates/create-certificate-signing-request?tabs=azure-portal) stored in your Key Vault. Drafting an Ingress will create a Kubernetes resource that creates publicly accessible DNS names for endpoints. \n[Draft Ingress](command:aks-draft-extension.runDraftIngress)",
                   "media": {
                      "markdown": "./resources/blank.md"
                   }
@@ -140,7 +173,6 @@
    },
    "extensionDependencies": [
       "ms-kubernetes-tools.vscode-kubernetes-tools",
-      "ms-vscode.azure-account",
       "ms-azuretools.vscode-docker"
    ],
    "scripts": {
@@ -177,11 +209,17 @@
       "webpack-cli": "^4.9.2"
    },
    "dependencies": {
+      "@azure/arm-authorization": "^8.4.1",
       "@azure/arm-containerregistry": "^10.0.0",
-      "@azure/arm-resources": "^5.0.1",
+      "@azure/arm-containerservice": "^17.2.0-beta.1",
+      "@azure/arm-dns": "^5.1.0",
+      "@azure/arm-keyvault": "^2.0.0",
+      "@azure/arm-resources": "^5.1.0",
       "@azure/arm-subscriptions": "^5.0.1",
       "@azure/container-registry": "^1.0.0",
       "@azure/core-auth": "^1.4.0",
+      "@azure/identity": "^3.1.1",
+      "@azure/keyvault-certificates": "^4.6.0",
       "@azure/ms-rest-azure-env": "^2.0.0",
       "@azure/ms-rest-nodeauth": "^3.1.1",
       "@kubernetes/client-node": "^0.17.1",
