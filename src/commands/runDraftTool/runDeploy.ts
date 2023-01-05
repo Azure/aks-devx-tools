@@ -24,10 +24,8 @@ export async function runDeploy(
    completedSteps: CompletedSteps,
    outputChannel: IAzExtOutputChannel
 ) {
-   if (!completedSteps.draftDeployment) {
-      throw Error(
-         'Deploy can only be run after Drafting Kubernetes Deployments and Services'
-      );
+   if (!(completedSteps.draftDeployment || completedSteps.draftIngress)) {
+      throw Error('Deploy can only be run after generating files with Draft');
    }
 
    const state: StateApi = State.construct(extensionContext);
@@ -94,7 +92,7 @@ export async function runDeploy(
    outputChannel.appendLine(resp.result);
    outputChannel.appendLine('Deployed successfully');
 
-   outputChannel.appendLine('Waiting for external IP');
+   outputChannel.appendLine('Waiting for external address');
    const getExternalIp = async (): Promise<string> => {
       const fetchExternalIp = async (): Promise<string | undefined> => {
          const serviceResp = await k8s.getService(applicationName, namespace);
