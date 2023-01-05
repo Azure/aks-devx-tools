@@ -216,7 +216,7 @@ class PromptKv extends AzureWizardPromptStep<WizardContext> {
 
 class PromptNewSslCert extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const createNewSsl = 'Create New SSL Certificate';
+      const createNewSsl = 'Create New Self-Signed SSL Certificate';
       const opts: vscode.QuickPickItem[] = [
          createNewSsl,
          'Use Existing SSL Certificate'

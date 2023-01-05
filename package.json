@@ -154,7 +154,7 @@
                {
                   "id": "deployment",
                   "title": "Draft a Kubernetes Deployment and Service",
-                  "description": "Create Deployment and Service manifests so Kubernetes knows how to create resources that manage your application. After this step, you will have the option to Draft an Ingress or just deploy to the cluster. Drafting an Ingress is reccommended so your application can be accessed from a DNS name instead of just an IP address. If you choose to Draft an Ingress you will have the option to deploy after. \n[Draft Deployment and Service](command:aks-draft-extension.runDraftDeployment)",
+                  "description": "Create Deployment and Service manifests so Kubernetes knows how to create resources that manage your application. After this step, you will have the option to Draft an Ingress or just deploy to the cluster. Drafting an Ingress is recommended so your application can be accessed from a DNS name instead of just an IP address. If you choose to Draft an Ingress you will have the option to deploy after. \n[Draft Deployment and Service](command:aks-draft-extension.runDraftDeployment)",
                   "media": {
                      "markdown": "./resources/blank.md"
                   }
