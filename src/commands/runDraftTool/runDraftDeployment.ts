@@ -439,7 +439,7 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Registry is undefined');
       }
 
-      const repositories = getAysncResult(
+      const repositories = getAsyncResult(
          this.az.listRegistryRepositories(wizardContext.acrRegistry)
       );
       const repositoryToItem = (r: RepositoryItem) => ({
