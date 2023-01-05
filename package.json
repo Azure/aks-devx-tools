@@ -162,7 +162,7 @@
                {
                   "id": "Ingress",
                   "title": "Draft a Kubernetes Ingress with Web Application Routing (optional)",
-                  "description": "Before running this step you must have an [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/). Drafting an Ingress will create a Kubernetes resource that creates publicly accessible DNS names for endpoints. \n[Draft Ingress](command:aks-draft-extension.runDraftIngress)",
+                  "description": "Before running this step, you must have an [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/). If creating a production application, you also need to [create a signed SSL certificate](https://learn.microsoft.com/en-us/azure/key-vault/certificates/create-certificate-signing-request?tabs=azure-portal) stored in your Key Vault. Drafting an Ingress will create a Kubernetes resource that creates publicly accessible DNS names for endpoints. \n[Draft Ingress](command:aks-draft-extension.runDraftIngress)",
                   "media": {
                      "markdown": "./resources/blank.md"
                   }

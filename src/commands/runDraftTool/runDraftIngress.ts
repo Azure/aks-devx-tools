@@ -50,7 +50,7 @@ interface PromptContext {
    dnsSubscription: SubscriptionItem;
    dnsResourceGroup: ResourceGroupItem;
    dns: DnsZoneItem;
-   newSSLCert: boolean;
+   newSelfSignedSSLCert: boolean;
    certificate: CertificateItem;
    certificateName: string;
    aksSubscription: SubscriptionItem;
@@ -101,6 +101,7 @@ export async function runDraftIngress(
       }),
       new PromptKv(az),
       new PromptNewSslCert(),
+      new PromptWarnSelfSigned(),
       new PromptCertName(),
       new PromptCertificate(az),
       new PromptSubscription(az, 'dnsSubscription', {
@@ -226,7 +227,7 @@ class PromptNewSslCert extends AzureWizardPromptStep<WizardContext> {
          placeHolder: 'Choose SSL Option',
          title
       });
-      wizardContext.newSSLCert = label === createNewSsl;
+      wizardContext.newSelfSignedSSLCert = label === createNewSsl;
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -234,11 +235,25 @@ class PromptNewSslCert extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptWarnSelfSigned extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      await wizardContext.ui.showWarningMessage(
+         'Self-Signed certificates are not secure and should not be used for production',
+         {modal: true},
+         {title: 'OK'}
+      );
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return !!wizardContext.newSelfSignedSSLCert;
+   }
+}
+
 class PromptCertName extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       wizardContext.certificateName = await wizardContext.ui.showInputBox({
          ignoreFocusOut,
-         prompt: 'New SSL Certificate Name',
+         prompt: 'New Self-Signed SSL Certificate Name',
          stepName: 'Certificate Name',
          value: wizardContext.certificateName,
          validateInput: ValidateRfc1123
@@ -246,7 +261,7 @@ class PromptCertName extends AzureWizardPromptStep<WizardContext> {
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      return !!wizardContext.newSSLCert;
+      return !!wizardContext.newSelfSignedSSLCert;
    }
 }
 
@@ -320,7 +335,7 @@ class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
-      return !wizardContext.newSSLCert;
+      return !wizardContext.newSelfSignedSSLCert;
    }
 }
 
@@ -426,7 +441,7 @@ class ExecuteCreateCertificate extends AzureWizardExecuteStep<WizardContext> {
    }
 
    public shouldExecute(wizardContext: WizardContext): boolean {
-      return !!wizardContext.newSSLCert;
+      return !!wizardContext.newSelfSignedSSLCert;
    }
 }
 
