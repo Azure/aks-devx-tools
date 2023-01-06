@@ -16,10 +16,7 @@ import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftH
 suite('Languages Test Suite', () => {
    before(async function () {
       this.timeout(5000);
-      const draftBinaryResult = await ensureDraftBinary();
-      if (failed(draftBinaryResult)) {
-         throw draftBinaryResult.error;
-      }
+      await getAsyncResult(ensureDraftBinary());
    });
 
    test('languages are retrieve from draft info without error', async () => {
