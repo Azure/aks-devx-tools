@@ -70,7 +70,7 @@ export async function runDraftIngress(
 ) {
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft`, () =>
-      ensureDraftBinary()
+      getAsyncResult(ensureDraftBinary())
    );
    if (!downloadResult) {
       vscode.window.showErrorMessage('Failed to download Draft');
