@@ -122,3 +122,7 @@ export function buildUpdateIngressCommand(
       osm ? 'true' : 'false'
    } --variable ingress-host="${host}"`;
 }
+
+export function buildInfoCommand(): string {
+   return `info`;
+}

@@ -22,14 +22,17 @@ function checkIfDraftBinaryExist(destinationFile: string): boolean {
    return fs.existsSync(destinationFile);
 }
 
-export async function downloadDraftBinary() {
+export async function ensureDraftBinary(): Promise<Errorable<null>> {
    // 0. Get latest release tag.
    // 1: check if file already exist.
    // 2: if not Download latest.
    const latestReleaseTag = await getLatestDraftReleaseTag();
 
    if (!latestReleaseTag) {
-      return;
+      return {
+         succeeded: false,
+         error: `failed to get latest release tag`
+      };
    }
 
    const draftBinaryFile = getBinaryFileName();
@@ -47,7 +50,7 @@ export async function downloadDraftBinary() {
    }
 
    if (checkIfDraftBinaryExist(destinationFile)) {
-      return {succeeded: true};
+      return {succeeded: true, result: null};
    }
 
    const draftDownloadUrl = `https://github.com/Azure/draft/releases/download/${latestReleaseTag}/${draftBinaryFile}`;
@@ -59,12 +62,15 @@ export async function downloadDraftBinary() {
    if (failed(downloadResult)) {
       return {
          succeeded: false,
-         error: [`Failed to download draft binary: ${downloadResult.error[0]}`]
+         error: `Failed to download draft binary: ${downloadResult.error} from ${draftDownloadUrl}`
       };
    }
    //If linux check -- make chmod 0755
    fs.chmodSync(destinationFile, '0755');
-   return succeeded(downloadResult);
+   return {
+      succeeded: true,
+      result: null
+   };
 }
 
 function getBinaryFileName() {

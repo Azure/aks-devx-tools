@@ -3,7 +3,7 @@ import {
    IActionContext
 } from '@microsoft/vscode-azext-utils';
 import {AzApi, ResourceGroupItem, SubscriptionItem} from '../../../utils/az';
-import {getAysncResult} from '../../../utils/errorable';
+import {getAsyncResult} from '../../../utils/errorable';
 import {getAsyncOptions, removeRecentlyUsed} from '../../../utils/quickPick';
 import {sort} from '../../../utils/sort';
 
@@ -31,7 +31,7 @@ export class PromptSubscription<
    }
 
    public async prompt(wizardContext: T): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
+      const subs = getAsyncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
@@ -87,7 +87,7 @@ export class PromptResourceGroup<
          throw Error('Subscription is undefined');
       }
 
-      const rgs = getAysncResult(this.az.listResourceGroups(sub));
+      const rgs = getAsyncResult(this.az.listResourceGroups(sub));
       const rgToItem = (rg: ResourceGroupItem) => ({
          label: rg.resourceGroup.name || ''
       });

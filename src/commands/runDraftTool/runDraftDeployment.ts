@@ -2,7 +2,7 @@ import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {State, StateApi} from '../../utils/state';
 import {longRunning} from '../../utils/host';
-import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
+import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -23,7 +23,7 @@ import {
    getHelm,
    getKubectl
 } from '../../utils/kubernetes';
-import {failed, getAysncResult} from '../../utils/errorable';
+import {failed, getAsyncResult} from '../../utils/errorable';
 import {
    RegistryItem,
    RepositoryItem,
@@ -94,7 +94,7 @@ export async function runDraftDeployment(
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
-      downloadDraftBinary()
+      getAsyncResult(ensureDraftBinary())
    );
    if (!downloadResult) {
       vscode.window.showErrorMessage('Failed to download Draft');
@@ -225,7 +225,7 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const namespaces = getAysncResult(this.k8s.listNamespaces());
+      const namespaces = getAsyncResult(this.k8s.listNamespaces());
       const newOption = 'New Namespace';
       const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
          const namespaceOptions: vscode.QuickPickItem[] = (
@@ -326,7 +326,7 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
+      const subs = getAsyncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
@@ -363,7 +363,7 @@ class PromptAcrResourceGroup extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Subscription is undefined');
       }
 
-      const rgs = getAysncResult(
+      const rgs = getAsyncResult(
          this.az.listResourceGroups(wizardContext.acrSubscription)
       );
       const rgToItem = (rg: ResourceGroupItem) => ({
@@ -400,7 +400,7 @@ class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Resource Group is undefined');
       }
 
-      const registries = getAysncResult(
+      const registries = getAsyncResult(
          this.az.listContainerRegistries(
             wizardContext.acrSubscription,
             wizardContext.acrResourceGroup
@@ -439,7 +439,7 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Registry is undefined');
       }
 
-      const repositories = getAysncResult(
+      const repositories = getAsyncResult(
          this.az.listRegistryRepositories(wizardContext.acrRegistry)
       );
       const repositoryToItem = (r: RepositoryItem) => ({
@@ -478,7 +478,7 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Repository is undefined');
       }
 
-      const tags = getAysncResult(
+      const tags = getAsyncResult(
          this.az.listRepositoryTags(
             wizardContext.acrRegistry,
             wizardContext.acrRepository

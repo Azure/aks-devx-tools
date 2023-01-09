@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import {Context} from './model/context';
 import {StateApi, State} from '../../utils/state';
 import {longRunning} from '../../utils/host';
-import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
+import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -21,7 +21,7 @@ import {
    ResourceGroupItem,
    SubscriptionItem
 } from '../../utils/az';
-import {Errorable, failed, getAysncResult} from '../../utils/errorable';
+import {Errorable, failed, getAsyncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {
    ignoreFocusOut,
@@ -70,7 +70,7 @@ export async function runDraftIngress(
 ) {
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft`, () =>
-      downloadDraftBinary()
+      getAsyncResult(ensureDraftBinary())
    );
    if (!downloadResult) {
       vscode.window.showErrorMessage('Failed to download Draft');
@@ -189,7 +189,7 @@ class PromptKv extends AzureWizardPromptStep<WizardContext> {
          throw Error('Key Vault Resource Group undefined');
       }
 
-      const kvs = getAysncResult(
+      const kvs = getAsyncResult(
          this.az.listKeyVaults(
             wizardContext.kvSubscription,
             wizardContext.kvResourceGroup
@@ -278,7 +278,7 @@ class PromptDnsZone extends AzureWizardPromptStep<WizardContext> {
          throw Error('DNS Zone resource group is undefined');
       }
 
-      const dnsZones = getAysncResult(
+      const dnsZones = getAsyncResult(
          this.az.listDnsZones(
             wizardContext.dnsSubscription,
             wizardContext.dnsResourceGroup
@@ -315,7 +315,7 @@ class PromptCertificate extends AzureWizardPromptStep<WizardContext> {
          throw Error('Key Vault undefined');
       }
 
-      const certs = getAysncResult(this.az.listCertificates(wizardContext.kv));
+      const certs = getAsyncResult(this.az.listCertificates(wizardContext.kv));
       const certToItem = (cert: CertificateItem) => ({
          label: cert.certificate.name || ''
       });
@@ -352,7 +352,7 @@ class PromptAksCluster extends AzureWizardPromptStep<WizardContext> {
          throw Error('AKS Resource Group is undefined');
       }
 
-      const clusters = getAysncResult(
+      const clusters = getAsyncResult(
          this.az.listAksClusters(
             wizardContext.aksSubscription,
             wizardContext.aksResourceGroup
