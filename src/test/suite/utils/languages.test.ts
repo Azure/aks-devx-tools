@@ -15,11 +15,13 @@ import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftH
 
 suite('Languages Test Suite', () => {
    before(async function () {
-      this.timeout(5000);
-      await getAsyncResult(ensureDraftBinary());
+      this.timeout(10000);
+      if (failed(await ensureDraftBinary())) {
+         throw new Error('Failed to ensure draft binary');
+      }
    });
 
-   test('languages are retrieve from draft info without error', async () => {
+   test('languages are retrieved from draft info without error', async () => {
       const languages = await getAsyncResult(getDraftLanguages());
 
       assert.doesNotThrow(getDraftLanguages);
