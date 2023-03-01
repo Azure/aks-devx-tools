@@ -67,13 +67,13 @@ suite('Validation Test Suite', () => {
       // some test cases from https://regex101.com/r/a98UqN/1
       const validImages = [
          'alpine',
-         'alpine:latest',
+         'alpine',
          '_/alpine',
-         '_/alpine:latest',
-         'alpine:3.7',
-         'docker.example.com/gmr/alpine:3.7',
-         'docker.example.com:5000/gmr/alpine:latest',
-         'acr/testing:latest'
+         '_/alpine',
+         'alpine',
+         'docker.example.com/gmr/alpine',
+         'docker.example.com:5000/gmr/alpine',
+         'acr/testing'
       ];
       const validatedValid = validImages.map(ValidateImage);
       const invalidImages = [
@@ -82,6 +82,41 @@ suite('Validation Test Suite', () => {
          '/this/has/too/many/slashes'
       ];
       const validatedInvalid = invalidImages.map(ValidateImage);
+
+      (await Promise.all(validatedValid)).forEach((res) => {
+         assert.strictEqual(res, passingTestRet);
+      });
+      (await Promise.all(validatedInvalid)).forEach((res) => {
+         assert.notStrictEqual(res, passingTestRet);
+      });
+   });
+   test('ImageTag', async () => {
+      // some test cases from https://regex101.com/r/a98UqN/1
+      const validTag = [
+         'latest',
+         'my-tag',
+         'my-tag-1.0',
+         'allow_underscores',
+         'allow--double--hyphens',
+         'allow__double__underscores',
+         'allow.periods'
+      ];
+      const validatedValid = validTag.map(ValidateImage);
+      const invalidTags = [
+         '_no-leading-underscore',
+         'no-trailing-underscore_',
+         '-no-leading-hyphen',
+         '--no-leading-double-hyphen',
+         'no-trailing-hyphen-',
+         'no-trailing-double-hyphen--',
+         '.no-leading-period',
+         'no-trailing-period.',
+         '$@%#$%#thisisinvalid',
+         'no/slashes',
+         'no spaces',
+         'no:colons:here'
+      ];
+      const validatedInvalid = invalidTags.map(ValidateImage);
 
       (await Promise.all(validatedValid)).forEach((res) => {
          assert.strictEqual(res, passingTestRet);

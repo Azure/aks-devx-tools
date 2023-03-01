@@ -230,6 +230,7 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          '',
          version,
          '',
+         '',
          ''
       );
       const command = buildCreateCommand(

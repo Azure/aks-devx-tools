@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 const keys = [
    'port',
    'image',
+   'imageTag',
    'dockerfile',
    'deploymentFormat',
    'deploymentPath',
