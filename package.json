@@ -28,7 +28,7 @@
          "properties": {
             "aks.draft.releaseTag": {
                "type": "string",
-               "default": "v0.0.27",
+               "default": "v0.0.30",
                "title": "Draft repository release tag",
                "description": "Release tag for the stable Draft tool release."
             }
