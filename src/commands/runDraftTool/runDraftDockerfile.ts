@@ -2,11 +2,7 @@ import {longRunning} from '../../utils/host';
 import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
-import {
-   DraftLanguage,
-   draftLanguages,
-   getDraftLanguages
-} from './helper/languages';
+import {DraftLanguage, getDraftLanguages} from './helper/languages';
 import {
    AzureWizard,
    AzureWizardExecuteStep,

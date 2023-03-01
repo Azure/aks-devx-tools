@@ -58,6 +58,7 @@ interface PromptContext {
    namespace: string;
    newNamespace: boolean;
    image: string;
+   imagetag: string;
    imageOption: imageOption;
    acrSubscription: SubscriptionItem;
    acrResourceGroup: ResourceGroupItem;
@@ -511,7 +512,8 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
       if (tag === undefined) {
          throw Error('Tag is undefined');
       }
-      wizardContext.image = image(server, repository, tag);
+      wizardContext.tag = tag;
+      wizardContext.image = image(server, repository);
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
