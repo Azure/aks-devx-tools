@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import {
    ValidateImage,
+   ValidateImageTag,
    ValidatePort,
    ValidateRfc1123
 } from '../../../utils/validation';
@@ -75,24 +76,36 @@ suite('Validation Test Suite', () => {
          'docker.example.com:5000/gmr/alpine',
          'acr/testing'
       ];
-      const validatedValid = validImages.map(ValidateImage);
+      const validatedValid = validImages.map(async (word: string) => {
+         return [word, await ValidateImage(word)];
+      });
       const invalidImages = [
          'invalid image',
          '$@%#$%#thisisinvalid',
          '/this/has/too/many/slashes'
       ];
-      const validatedInvalid = invalidImages.map(ValidateImage);
-
-      (await Promise.all(validatedValid)).forEach((res) => {
-         assert.strictEqual(res, passingTestRet);
+      const validatedInvalid = invalidImages.map(async (word: string) => {
+         return [word, await ValidateImage(word)];
       });
-      (await Promise.all(validatedInvalid)).forEach((res) => {
-         assert.notStrictEqual(res, passingTestRet);
+
+      (await Promise.all(validatedValid)).forEach(([word, res]) => {
+         assert.strictEqual(
+            res,
+            passingTestRet,
+            `Expected ${word} to be valid image`
+         );
+      });
+      (await Promise.all(validatedInvalid)).forEach(([word, res]) => {
+         assert.notStrictEqual(
+            res,
+            passingTestRet,
+            `Expected ${word} to be invalid image`
+         );
       });
    });
    test('ImageTag', async () => {
       // some test cases from https://regex101.com/r/a98UqN/1
-      const validTag = [
+      const validTags = [
          'latest',
          'my-tag',
          'my-tag-1.0',
@@ -101,7 +114,10 @@ suite('Validation Test Suite', () => {
          'allow__double__underscores',
          'allow.periods'
       ];
-      const validatedValid = validTag.map(ValidateImage);
+      const validatedValid = validTags.map(async (word) => [
+         word,
+         await ValidateImageTag(word)
+      ]);
       const invalidTags = [
          '_no-leading-underscore',
          'no-trailing-underscore_',
@@ -116,13 +132,23 @@ suite('Validation Test Suite', () => {
          'no spaces',
          'no:colons:here'
       ];
-      const validatedInvalid = invalidTags.map(ValidateImage);
-
-      (await Promise.all(validatedValid)).forEach((res) => {
-         assert.strictEqual(res, passingTestRet);
+      const validatedInvalid = invalidTags.map(async (word) => {
+         return [word, await ValidateImageTag(word)];
       });
-      (await Promise.all(validatedInvalid)).forEach((res) => {
-         assert.notStrictEqual(res, passingTestRet);
+
+      (await Promise.all(validatedValid)).forEach(([word, res]) => {
+         assert.strictEqual(
+            res,
+            passingTestRet,
+            `Expected ${word} to be valid tag`
+         );
+      });
+      (await Promise.all(validatedInvalid)).forEach(([word, res]) => {
+         assert.notStrictEqual(
+            res,
+            passingTestRet,
+            `Expected ${word} to be invalid tag`
+         );
       });
    });
 });

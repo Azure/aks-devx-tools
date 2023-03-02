@@ -61,26 +61,28 @@ export const ValidateImage: Validator = async (image: string) => {
 
    return passingTestRet;
 };
-export const ValidateImageTag: Validator = async (image: string) => {
+export const ValidateImageTag: Validator = async (imageTag: string) => {
    await validationSleep();
 
    // TODO: add validation
-   const re = /^(([\w.\-_]{1,127})|)$/;
-   if (!image.match(re)) {
+   const re = /^(([a-z0-9.\-_]{1,127})|)$/;
+   if (!imageTag.match(re)) {
       return 'ImageTag must be a valid image tag';
    }
 
    // Separator rules from https://docs.docker.com/engine/reference/commandline/tag/
    const separators = ['.', '-', '--', '_', '__'];
-   const startsWithSeparator = separators.some((sep) => image.startsWith(sep));
-   const endsWithSeparator = separators.some((sep) => image.endsWith(sep));
+   const startsWithSeparator = separators.some((sep) =>
+      imageTag.startsWith(sep)
+   );
+   const endsWithSeparator = separators.some((sep) => imageTag.endsWith(sep));
    if (startsWithSeparator || endsWithSeparator) {
       return 'ImageTag must not start or end with a separator';
    }
 
    const invalidSeparators = ['..', '___'];
    const containsInvalidSeparator = invalidSeparators.some((sep) =>
-      image.includes(sep)
+      imageTag.includes(sep)
    );
    if (containsInvalidSeparator) {
       return 'ImageTag must not contain invalid separators';
