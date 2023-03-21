@@ -1,5 +1,6 @@
 import {Context} from './model/context';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
@@ -24,6 +25,7 @@ import {getAysncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {getBranches} from '../../utils/gitExtension';
 import {Branch, Ref} from '../../utils/git';
+import path = require('path');
 
 const title = 'Draft a GitHub Actions Workflow';
 
@@ -76,7 +78,10 @@ export async function runDraftWorkflow({
       new PromptACRRegistrySelection(az),
       new PromptGitHubBranchSelection()
    ];
-   const executeSteps: IExecuteStep[] = [new ExecuteDraftWorkflow()];
+   const executeSteps: IExecuteStep[] = [
+      new ExecuteDraftWorkflow(),
+      new ExecuteOpenWorkflowFile()
+   ];
 
    const wizardContext: WizardContext = {
       ...actionContext,
@@ -461,6 +466,50 @@ class ExecuteDraftWorkflow extends AzureWizardExecuteStep<WizardContext> {
    public shouldExecute(wizardContext: WizardContext): boolean {
       return true;
    }
+}
+
+class ExecuteOpenWorkflowFile extends AzureWizardExecuteStep<WizardContext> {
+   public priority: number = 3;
+
+   public async execute(
+      wizardContext: WizardContext,
+      progress: vscode.Progress<{
+         message?: string | undefined;
+         increment?: number | undefined;
+      }>
+   ): Promise<void> {
+      const outputPath = getWorkflowPath(wizardContext);
+
+      await vscode.workspace
+         .openTextDocument(outputPath)
+         .then((doc) => vscode.window.showTextDocument(doc, {preview: false}));
+   }
+
+   public shouldExecute(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
+
+function getWorkflowPath(wizardContext: WizardContext): string {
+   if (wizardContext.destination === undefined) {
+      throw Error('destination directory undefined');
+   }
+
+   let fileName = 'azure-kubernetes-service.yml';
+   if (fs.existsSync(path.join(wizardContext.destination.fsPath, 'charts'))) {
+      fileName = 'azure-kubernetes-service-helm.yml';
+   } else if (
+      fs.existsSync(path.join(wizardContext.destination.fsPath, 'overlays'))
+   ) {
+      fileName = 'azure-kubernetes-service-kustomize.yml';
+   }
+
+   return path.join(
+      wizardContext.destination.fsPath,
+      '.github',
+      'workflows',
+      fileName
+   );
 }
 
 async function getAsyncOptions<T>(

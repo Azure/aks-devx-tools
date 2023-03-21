@@ -8,11 +8,6 @@ function getGitExtensionAPI(): API {
    )).getAPI(1);
 }
 
-export function getRepositories(): Repository[] {
-   const gitAPI = getGitExtensionAPI();
-   return gitAPI.repositories;
-}
-
 export async function getBranches(repository: vscode.Uri): Promise<Ref[]> {
    const gitAPI = getGitExtensionAPI();
    const repo = gitAPI.getRepository(repository);
