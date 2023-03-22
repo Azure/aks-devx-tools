@@ -467,9 +467,6 @@ class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
       if (cluster.managedCluster.addonProfiles === undefined) {
          cluster.managedCluster.addonProfiles = {};
       }
-      cluster.managedCluster.addonProfiles.httpApplicationRouting = {
-         enabled: true
-      };
       cluster.managedCluster.addonProfiles.azureKeyvaultSecretsProvider = {
          config: {enableSecretRotation: 'true'},
          enabled: true
