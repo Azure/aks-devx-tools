@@ -606,14 +606,6 @@ class ExecuteUpdateAddOn extends AzureWizardExecuteStep<WizardContext> {
          throw Error('DNS Zone id is undefined');
       }
 
-      if (cluster.managedCluster.addonProfiles === undefined) {
-         cluster.managedCluster.addonProfiles = {};
-      }
-      cluster.managedCluster.addonProfiles.httpApplicationRouting = {
-         // eslint-disable-next-line @typescript-eslint/naming-convention
-         config: {HTTPApplicationRoutingZoneName: dnsZone},
-         enabled: true
-      };
       if (cluster.managedCluster.ingressProfile === undefined) {
          cluster.managedCluster.ingressProfile = {};
       }
