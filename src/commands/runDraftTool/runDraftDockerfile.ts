@@ -46,13 +46,9 @@ export async function runDraftDockerfile(
    const state: StateApi = State.construct(extensionContext);
 
    // Ensure Draft Binary
-   const downloadResult = await longRunning(`Downloading Draft.`, () =>
+   await longRunning(`Downloading Draft.`, () =>
       getAsyncResult(ensureDraftBinary())
    );
-   if (!downloadResult) {
-      vscode.window.showErrorMessage('Failed to download Draft');
-      return undefined;
-   }
 
    const workspaceFolders = vscode.workspace.workspaceFolders;
    if (!sourceCodeFolder && workspaceFolders && workspaceFolders.length !== 0) {
