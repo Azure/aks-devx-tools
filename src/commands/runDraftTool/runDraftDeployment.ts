@@ -323,6 +323,7 @@ class PromptImage extends AzureWizardPromptStep<WizardContext> {
       return wizardContext.imageOption === imageOption.Other;
    }
 }
+
 class PromptImageTag extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       wizardContext.imageTag = await wizardContext.ui.showInputBox({

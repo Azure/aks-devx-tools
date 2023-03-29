@@ -114,10 +114,19 @@ suite('Validation Test Suite', () => {
          'allow__double__underscores',
          'allow.periods'
       ];
-      const validatedValid = validTags.map(async (word) => [
+
+      const validTagPromises = validTags.map(async (word) => [
          word,
          await ValidateImageTag(word)
       ]);
+      (await Promise.all(validTagPromises)).forEach(([word, res]) => {
+         assert.strictEqual(
+            res,
+            passingTestRet,
+            `Expected ${word} to be valid tag`
+         );
+      });
+
       const invalidTags = [
          '_no-leading-underscore',
          'no-trailing-underscore_',
@@ -132,18 +141,11 @@ suite('Validation Test Suite', () => {
          'no spaces',
          'no:colons:here'
       ];
-      const validatedInvalid = invalidTags.map(async (word) => {
+
+      const invalidTagPromises = invalidTags.map(async (word) => {
          return [word, await ValidateImageTag(word)];
       });
-
-      (await Promise.all(validatedValid)).forEach(([word, res]) => {
-         assert.strictEqual(
-            res,
-            passingTestRet,
-            `Expected ${word} to be valid tag`
-         );
-      });
-      (await Promise.all(validatedInvalid)).forEach(([word, res]) => {
+      (await Promise.all(invalidTagPromises)).forEach(([word, res]) => {
          assert.notStrictEqual(
             res,
             passingTestRet,

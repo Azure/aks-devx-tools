@@ -52,7 +52,6 @@ export const ValidateRfc1123: Validator = async (input: string) => {
 export const ValidateImage: Validator = async (image: string) => {
    await validationSleep();
 
-   // TODO: add validation
    const re =
       /^([\w.\-_]+((?::\d+|)(?=\/[a-z0-9._-]+\/[a-z0-9._-]+))|)(?:\/|)([a-z0-9.\-_]+(?:\/[a-z0-9.\-_]+|))$/;
    if (!image.match(re)) {
@@ -65,7 +64,7 @@ export const ValidateImageTag: Validator = async (imageTag: string) => {
    await validationSleep();
 
    // TODO: add validation
-   const re = /^(([a-z0-9.\-_]{1,127})|)$/;
+   const re = /^(([a-z0-9.\-_]{1,128})|)$/;
    if (!imageTag.match(re)) {
       return 'ImageTag must be a valid image tag';
    }
