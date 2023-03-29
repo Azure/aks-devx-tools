@@ -52,6 +52,7 @@ export const ValidateRfc1123: Validator = async (input: string) => {
 export const ValidateImage: Validator = async (image: string) => {
    await validationSleep();
 
+   // Separator rules from https://docs.docker.com/engine/reference/commandline/tag/
    const re =
       /^([\w.\-_]+((?::\d+|)(?=\/[a-z0-9._-]+\/[a-z0-9._-]+))|)(?:\/|)([a-z0-9.\-_]+(?:\/[a-z0-9.\-_]+|))$/;
    if (!image.match(re)) {

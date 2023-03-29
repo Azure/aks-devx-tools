@@ -82,7 +82,8 @@ suite('Validation Test Suite', () => {
       const invalidImages = [
          'invalid image',
          '$@%#$%#thisisinvalid',
-         '/this/has/too/many/slashes'
+         '/this/has/too/many/slashes',
+         'no:tag'
       ];
       const validatedInvalid = invalidImages.map(async (word: string) => {
          return [word, await ValidateImage(word)];
