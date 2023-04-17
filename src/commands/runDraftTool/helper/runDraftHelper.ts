@@ -31,7 +31,7 @@ export async function ensureDraftBinary(): Promise<Errorable<null>> {
    if (!latestReleaseTag) {
       return {
          succeeded: false,
-         error: `failed to get latest release tag`
+         error: `Failed to get latest release tag for downloading draft`
       };
    }
 

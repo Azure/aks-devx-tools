@@ -69,13 +69,9 @@ export async function runDraftIngress(
    completedSteps: CompletedSteps
 ) {
    // Ensure Draft Binary
-   const downloadResult = await longRunning(`Downloading Draft`, () =>
+   await longRunning(`Downloading Draft`, () =>
       getAsyncResult(ensureDraftBinary())
    );
-   if (!downloadResult) {
-      vscode.window.showErrorMessage('Failed to download Draft');
-      return undefined;
-   }
 
    const az: AzApi = new Az(getAzCreds);
 
@@ -467,9 +463,6 @@ class ExecuteEnableAddOn extends AzureWizardExecuteStep<WizardContext> {
       if (cluster.managedCluster.addonProfiles === undefined) {
          cluster.managedCluster.addonProfiles = {};
       }
-      cluster.managedCluster.addonProfiles.httpApplicationRouting = {
-         enabled: true
-      };
       cluster.managedCluster.addonProfiles.azureKeyvaultSecretsProvider = {
          config: {enableSecretRotation: 'true'},
          enabled: true
@@ -606,14 +599,6 @@ class ExecuteUpdateAddOn extends AzureWizardExecuteStep<WizardContext> {
          throw Error('DNS Zone id is undefined');
       }
 
-      if (cluster.managedCluster.addonProfiles === undefined) {
-         cluster.managedCluster.addonProfiles = {};
-      }
-      cluster.managedCluster.addonProfiles.httpApplicationRouting = {
-         // eslint-disable-next-line @typescript-eslint/naming-convention
-         config: {HTTPApplicationRoutingZoneName: dnsZone},
-         enabled: true
-      };
       if (cluster.managedCluster.ingressProfile === undefined) {
          cluster.managedCluster.ingressProfile = {};
       }

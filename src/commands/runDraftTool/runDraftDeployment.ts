@@ -138,7 +138,6 @@ export async function runDraftDeployment(
       new PromptAcrTag(az)
    ];
    const executeSteps: IExecuteStep[] = [
-      new ExecuteCreateNamespace(k8s),
       new ExecuteDraft(),
       new ExecuteOpenFiles(),
       new ExecuteSaveState(state),
@@ -229,38 +228,49 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const namespaces = getAsyncResult(this.k8s.listNamespaces());
-      const newOption = 'New Namespace';
-      const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
-         const namespaceOptions: vscode.QuickPickItem[] = (
-            await namespaces
-         ).map((version) => ({
-            label: version.metadata?.name || ''
-         }));
+      try {
+         const namespaces = getAsyncResult(this.k8s.listNamespaces());
+         const newOption = 'New Namespace';
+         const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
+            const namespaceOptions: vscode.QuickPickItem[] = (
+               await namespaces
+            ).map((version) => ({
+               label: version.metadata?.name || ''
+            }));
 
-         return [
-            {label: newOption},
-            {label: '', kind: vscode.QuickPickItemKind.Separator},
-            ...namespaceOptions,
+            return [
+               {label: newOption},
+               {label: '', kind: vscode.QuickPickItemKind.Separator},
+               ...namespaceOptions,
+               {
+                  label: 'Existing namespaces',
+                  kind: vscode.QuickPickItemKind.Separator
+               }
+            ];
+         };
+         const namespacePick = await wizardContext.ui.showQuickPick(
+            getOptions(),
             {
-               label: 'Existing namespaces',
-               kind: vscode.QuickPickItemKind.Separator
+               ignoreFocusOut,
+               stepName: 'Namespace',
+               placeHolder: 'Namespace'
             }
-         ];
-      };
-      const namespacePick = await wizardContext.ui.showQuickPick(getOptions(), {
-         ignoreFocusOut,
-         stepName: 'Namespace',
-         placeHolder: 'Namespace'
-      });
+         );
 
-      if (namespacePick.label === newOption) {
+         if (namespacePick.label === newOption) {
+            wizardContext.newNamespace = true;
+            return;
+         }
+
+         wizardContext.newNamespace = false;
+         wizardContext.namespace = namespacePick.label;
+      } catch (err) {
+         console.error(`Error prompting namespaces: ${err}`);
+
+         // make the user manually enter a namespace
          wizardContext.newNamespace = true;
          return;
       }
-
-      wizardContext.newNamespace = false;
-      wizardContext.namespace = namespacePick.label;
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -272,8 +282,8 @@ class PromptNewNamespace extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       wizardContext.namespace = await wizardContext.ui.showInputBox({
          ignoreFocusOut,
-         prompt: 'New Namespace',
-         stepName: 'New Namespace',
+         prompt: 'Namespace',
+         stepName: 'Namespace',
          validateInput: ValidateRfc1123,
          value: wizardContext.namespace || wizardContext.applicationName // application name is a reasonable autofill guess
       });
@@ -584,39 +594,6 @@ export class PromptPort extends AzureWizardPromptStep<
       wizardContext: IActionContext & Partial<{port: string}>
    ): boolean {
       return !(this.completedSteps.draftDockerfile && !!wizardContext.port);
-   }
-}
-
-class ExecuteCreateNamespace extends AzureWizardExecuteStep<WizardContext> {
-   public priority: number = 1;
-
-   constructor(private k8s: KubernetesApi) {
-      super();
-   }
-
-   public async execute(
-      wizardContext: WizardContext,
-      progress: vscode.Progress<{
-         message?: string | undefined;
-         increment?: number | undefined;
-      }>
-   ): Promise<void> {
-      const {namespace} = wizardContext;
-      if (namespace === undefined) {
-         throw Error('Namespace is undefined');
-      }
-
-      const result = await this.k8s.createNamespace(namespace);
-      if (failed(result)) {
-         throw Error(result.error);
-      }
-   }
-
-   public shouldExecute(wizardContext: WizardContext): boolean {
-      return (
-         !!wizardContext.newNamespace &&
-         wizardContext.format !== DraftFormat.Helm // Draft creates namespace manifest for Helm
-      );
    }
 }
 
