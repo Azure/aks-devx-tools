@@ -58,7 +58,6 @@ export async function ensureDraftBinary(): Promise<Errorable<null>> {
       draftDownloadUrl,
       destinationFile
    );
-   console.log(`downloading draft binary from ${draftDownloadUrl} to ${destinationFile}`);
 
    if (failed(downloadResult)) {
       return {
