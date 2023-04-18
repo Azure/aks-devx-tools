@@ -23,7 +23,7 @@ import {
    getHelm,
    getKubectl
 } from '../../utils/kubernetes';
-import {failed, getAsyncResult} from '../../utils/errorable';
+import {failed, getAsyncResult, succeeded} from '../../utils/errorable';
 import {
    RegistryItem,
    RepositoryItem,
@@ -58,6 +58,7 @@ interface PromptContext {
    namespace: string;
    newNamespace: boolean;
    image: string;
+   imageTag: string;
    imageOption: imageOption;
    acrSubscription: SubscriptionItem;
    acrResourceGroup: ResourceGroupItem;
@@ -93,9 +94,14 @@ export async function runDraftDeployment(
    const az: AzApi = new Az(getAzCreds);
 
    // Ensure Draft Binary
-   await longRunning(`Downloading Draft.`, () =>
-      getAsyncResult(ensureDraftBinary())
+   const ensureDraftResult = await longRunning(
+      `Downloading Draft.`,
+      ensureDraftBinary
    );
+   if (failed(ensureDraftResult)) {
+      vscode.window.showErrorMessage('Failed to download Draft');
+      return undefined;
+   }
 
    const workspaceFolders = vscode.workspace.workspaceFolders;
    if (!outputFolder && workspaceFolders && workspaceFolders.length !== 0) {
@@ -111,7 +117,8 @@ export async function runDraftDeployment(
       port: state.getPort(),
       outputFolder: outputFolder,
       applicationName: applicationNameGuess,
-      image: state.getImage()
+      image: state.getImage(),
+      imageTag: state.getImageTag() || 'latest'
    };
    const promptSteps: IPromptStep[] = [
       new PromptOutputFolder(),
@@ -123,6 +130,7 @@ export async function runDraftDeployment(
       new PromptNewNamespace(),
       new PromptImageOption(completedSteps),
       new PromptImage(),
+      new PromptImageTag(),
       new PromptAcrSubscription(az),
       new PromptAcrResourceGroup(az),
       new PromptAcrRegistry(az),
@@ -326,6 +334,21 @@ class PromptImage extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptImageTag extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      wizardContext.imageTag = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'Image Tag',
+         stepName: 'Image Tag',
+         validateInput: ValidateImage,
+         value: wizardContext.imageTag
+      });
+   }
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.Other;
+   }
+}
+
 class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
       super();
@@ -517,7 +540,8 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
       if (tag === undefined) {
          throw Error('Tag is undefined');
       }
-      wizardContext.image = image(server, repository, tag);
+      wizardContext.imageTag = tag;
+      wizardContext.image = image(server, repository);
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -583,13 +607,23 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
-      const {outputFolder, image, applicationName, namespace, port, format} =
-         wizardContext;
+      const {
+         outputFolder,
+         image,
+         imageTag,
+         applicationName,
+         namespace,
+         port,
+         format
+      } = wizardContext;
       if (outputFolder === undefined) {
          throw Error('Output folder is undefined');
       }
       if (image === undefined) {
          throw Error('Image is undefined');
+      }
+      if (imageTag === undefined) {
+         throw Error('Image tag is undefined');
       }
       if (applicationName === undefined) {
          throw Error('Application name is undefined');
@@ -611,7 +645,8 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          format,
          '',
          namespace,
-         image
+         image,
+         imageTag
       );
       const command = buildCreateCommand(
          outputFolder.fsPath,

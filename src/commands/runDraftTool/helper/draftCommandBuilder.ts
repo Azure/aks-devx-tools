@@ -34,7 +34,8 @@ export function buildCreateConfig(
    workflow: string,
    languageVersion: string,
    namespace: string,
-   imageName: string
+   imageName: string,
+   imageTag: string
 ): string {
    let data = {
       deployType: workflow,
@@ -83,6 +84,12 @@ export function buildCreateConfig(
       });
    }
 
+   if (imageTag.length > 0) {
+      data.deployVariables.push({
+         name: 'IMAGETAG',
+         value: imageTag
+      });
+   }
    const tempFile = fileSync({postfix: '.yaml'});
    fs.writeFileSync(tempFile.name, stringify(data));
 

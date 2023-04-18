@@ -52,11 +52,40 @@ export const ValidateRfc1123: Validator = async (input: string) => {
 export const ValidateImage: Validator = async (image: string) => {
    await validationSleep();
 
-   // TODO: add validation
+   // Separator rules from https://docs.docker.com/engine/reference/commandline/tag/
    const re =
-      /^([\w.\-_]+((?::\d+|)(?=\/[a-z0-9._-]+\/[a-z0-9._-]+))|)(?:\/|)([a-z0-9.\-_]+(?:\/[a-z0-9.\-_]+|))(:([\w.\-_]{1,127})|)$/;
+      /^([\w.\-_]+((?::\d+|)(?=\/[a-z0-9._-]+\/[a-z0-9._-]+))|)(?:\/|)([a-z0-9.\-_]+(?:\/[a-z0-9.\-_]+|))$/;
    if (!image.match(re)) {
       return 'Image must be a valid image name';
+   }
+
+   return passingTestRet;
+};
+export const ValidateImageTag: Validator = async (imageTag: string) => {
+   await validationSleep();
+
+   // TODO: add validation
+   const re = /^(([a-z0-9.\-_]{1,128})|)$/;
+   if (!imageTag.match(re)) {
+      return 'ImageTag must be a valid image tag';
+   }
+
+   // Separator rules from https://docs.docker.com/engine/reference/commandline/tag/
+   const separators = ['.', '-', '--', '_', '__'];
+   const startsWithSeparator = separators.some((sep) =>
+      imageTag.startsWith(sep)
+   );
+   const endsWithSeparator = separators.some((sep) => imageTag.endsWith(sep));
+   if (startsWithSeparator || endsWithSeparator) {
+      return 'ImageTag must not start or end with a separator';
+   }
+
+   const invalidSeparators = ['..', '___'];
+   const containsInvalidSeparator = invalidSeparators.some((sep) =>
+      imageTag.includes(sep)
+   );
+   if (containsInvalidSeparator) {
+      return 'ImageTag must not contain invalid separators';
    }
 
    return passingTestRet;
