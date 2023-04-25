@@ -17,7 +17,7 @@ const applicationName = 'applicationName';
 
 suite('Kubernetes Utility Test Suite', () => {
    test('it can get default kube config', () => {
-      var defaultKubeConfig = getDefaultKubeconfig();
+      const defaultKubeConfig = getDefaultKubeconfig();
       assert.doesNotThrow(getDefaultKubeconfig);
    });
 

@@ -5,7 +5,7 @@ import * as fs from 'fs';
 
 suite('Run Download Test Suite', () => {
    test('it creates temp file from given source url', async () => {
-      var result = await toTempFile(
+      const result = await toTempFile(
          'https://github.com/Azure/aks-devx-tools/blob/main/README.md'
       );
       assert.strictEqual(succeeded(result), true);
@@ -14,7 +14,7 @@ suite('Run Download Test Suite', () => {
       const sourceUrl =
          'https://github.com/Azure/aks-devx-tools/blob/main/README.md';
       const destinationFile = 'test_download.md';
-      var result = await once(sourceUrl, destinationFile);
+      const result = await once(sourceUrl, destinationFile);
       assert.strictEqual(succeeded(result), true);
 
       if (fs.existsSync(destinationFile)) {

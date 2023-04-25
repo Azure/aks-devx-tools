@@ -38,7 +38,7 @@ suite('Draft Command Builder Test Suite', () => {
       const namespace = 'testNamespace';
       const imageName = 'testImage';
       const imageTag = '0.0.1';
-      var result = buildCreateConfig(
+      const result = buildCreateConfig(
          lang,
          port,
          appName,
