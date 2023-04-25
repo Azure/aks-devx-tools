@@ -185,7 +185,8 @@
       "pretest": "npm run compile-tests && npm run compile && npm run lint",
       "lint": "eslint src --ext ts",
       "format": "prettier --write .",
-      "test": "node ./out/test/runTest.js"
+      "test": "node ./out/test/runTest.js",
+      "coverage": "c8 --check-coverage --timeout 10000 npm run test"
    },
    "devDependencies": {
       "@types/download": "^8.0.1",
