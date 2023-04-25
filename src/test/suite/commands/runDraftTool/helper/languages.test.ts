@@ -1,17 +1,15 @@
-import {ESLint} from 'eslint';
+import { ESLint } from 'eslint';
 import {
    DraftLanguage,
    getDraftLanguages
-} from '../../../commands/runDraftTool/helper/languages';
+} from '../../../../../commands/runDraftTool/helper/languages';
 import * as assert from 'assert';
 import {
-   Errorable,
    failed,
    getAsyncResult,
-   Succeeded
-} from '../../../utils/errorable';
-import {before} from 'mocha';
-import {ensureDraftBinary} from '../../../commands/runDraftTool/helper/runDraftHelper';
+} from '../../../../../utils/errorable';
+import { before } from 'mocha';
+import { ensureDraftBinary } from '../../../../../commands/runDraftTool/helper/runDraftHelper';
 
 suite('Languages Test Suite', () => {
    before(async function () {

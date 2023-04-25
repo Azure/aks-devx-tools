@@ -4,18 +4,23 @@ import {
    V1Namespace,
    V1NamespaceList
 } from '@kubernetes/client-node';
-import {instance, mock, when, anything, anyString, verify} from 'ts-mockito';
-import {Matcher} from 'ts-mockito/lib/matcher/type/Matcher';
-import {HelmV1, KubectlV1} from 'vscode-kubernetes-tools-api';
-import {Kubernetes} from '../../../utils/kubernetes';
+import { instance, mock, when, anything, anyString, verify } from 'ts-mockito';
+import { Matcher } from 'ts-mockito/lib/matcher/type/Matcher';
+import { HelmV1, KubectlV1 } from 'vscode-kubernetes-tools-api';
+import { Kubernetes, getDefaultKubeconfig } from '../../../utils/kubernetes';
 import * as http from 'http';
 import * as assert from 'assert';
-import {failed, succeeded} from '../../../utils/errorable';
+import { failed, succeeded } from '../../../utils/errorable';
 
 const ns = 'namespace1';
 const applicationName = 'applicationName';
 
 suite('Kubernetes Utility Test Suite', () => {
+   test('it can get default kube config', () => {
+      var defaultKubeConfig = getDefaultKubeconfig();
+      assert.doesNotThrow(getDefaultKubeconfig);
+   });
+
    test('it can list namespaces', async () => {
       const kubectlMock = mock<KubectlV1>();
       const helmMock = mock<HelmV1>();
@@ -33,7 +38,7 @@ suite('Kubernetes Utility Test Suite', () => {
       } = {
          body: {
             items: ['name1', 'name2', 'name3'].map((name) => ({
-               metadata: {name}
+               metadata: { name }
             }))
          },
          response: incomingMessage
@@ -86,11 +91,11 @@ suite('Kubernetes Utility Test Suite', () => {
          response: http.IncomingMessage;
          body: V1Namespace;
       } = {
-         body: {metadata: {name: namespaceName}},
+         body: { metadata: { name: namespaceName } },
          response: incomingMessage
       };
       when(
-         successCoreV1ApiMock.createNamespace({metadata: {name: namespaceName}})
+         successCoreV1ApiMock.createNamespace({ metadata: { name: namespaceName } })
       ).thenResolve(namespace);
       const successCoreV1Api = instance(successCoreV1ApiMock);
       when(successKubeconfigMock.makeApiClient(CoreV1Api)).thenReturn(
