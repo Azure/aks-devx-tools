@@ -1,4 +1,6 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
+import * as yaml from 'yaml';
 import {
    buildCreateCommand,
    buildCreateConfig,
@@ -38,6 +40,22 @@ suite('Draft Command Builder Test Suite', () => {
       const namespace = 'testNamespace';
       const imageName = 'testImage';
       const imageTag = '0.0.1';
+
+      const expectedData = {
+         deployType: 'testWorkflow',
+         languageType: 'go',
+         deployVariables: [
+            {name: 'PORT', value: '8080'},
+            {name: 'APPNAME', value: 'testApp'},
+            {name: 'NAMESPACE', value: 'testNamespace'},
+            {name: 'IMAGENAME', value: 'testImage'},
+            {name: 'IMAGETAG', value: '0.0.1'}
+         ],
+         languageVariables: [
+            {name: 'PORT', value: '8080'},
+            {name: 'VERSION', value: '1.18'}
+         ]
+      };
       const result = buildCreateConfig(
          lang,
          port,
@@ -49,6 +67,9 @@ suite('Draft Command Builder Test Suite', () => {
          imageTag
       );
       assert.match(result, /^.*\.(yaml)$/);
+      const yamlString = fs.readFileSync(result, 'utf8');
+      const parsedContent = yaml.parse(yamlString);
+      assert.deepStrictEqual(parsedContent, expectedData);
    });
 
    test('it returns the correct GH command', () => {
