@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import {once} from '../../../component/download';
 import {succeeded, getAsyncResult} from '../../../utils/errorable';
 import * as fs from 'fs';
+import path = require('path');
 
 suite('Run Download Test Suite', () => {
    test('it downloads from given source url into the destination file', async () => {
@@ -12,7 +13,7 @@ suite('Run Download Test Suite', () => {
       assert.strictEqual(succeeded(result), true);
       const downloadedContent = fs.readFileSync(destinationFile);
       const expectedContent = fs.readFileSync(
-         'src/test/suite/component/test_download.md'
+         path.join('src', 'test', 'suite', 'component', 'test_download.md')
       );
       assert.strictEqual(
          downloadedContent.toString().trim(),
