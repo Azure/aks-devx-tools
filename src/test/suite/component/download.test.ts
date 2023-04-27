@@ -1,9 +1,9 @@
 import * as assert from 'assert';
 import {once} from '../../../component/download';
 import {succeeded, getAsyncResult} from '../../../utils/errorable';
-import {shell} from '../../../utils/shell';
 import * as fs from 'fs';
 import path = require('path');
+import * as vscode from 'vscode';
 
 suite('Run Download Test Suite', () => {
    test('it downloads from given source url into the destination file', async () => {
@@ -13,12 +13,20 @@ suite('Run Download Test Suite', () => {
       const result = await once(sourceUrl, destinationFile);
       assert.strictEqual(succeeded(result), true);
       const downloadedContent = fs.readFileSync(destinationFile);
-      const testFileDestination = path.join('src', 'test', 'test_download.md');
-      const testFileDestinationUri = shell.fileUri(testFileDestination);
-      let expectedContent = fs.readFileSync(testFileDestination);
-      if (shell.isWindows()) {
-         expectedContent = fs.readFileSync(testFileDestinationUri.fsPath);
-      }
+
+      const testFileDestination = path.resolve(
+         __dirname,
+         '..',
+         '..',
+         '..',
+         '..',
+         'src',
+         'test',
+         'test_download.md'
+      );
+      const testFileDestinationUri = vscode.Uri.file(testFileDestination);
+      const expectedContent = fs.readFileSync(testFileDestinationUri.fsPath);
+
       assert.strictEqual(
          downloadedContent.toString().trim(),
          expectedContent.toString().trim()
