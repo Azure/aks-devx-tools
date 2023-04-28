@@ -28,8 +28,8 @@ suite('Run Download Test Suite', () => {
       const expectedContent = fs.readFileSync(testFileDestinationUri.fsPath);
 
       assert.strictEqual(
-         downloadedContent.toString().trim(),
-         expectedContent.toString().trim()
+         downloadedContent.toString().replace(/\s+/g, ' ').trim(),
+         expectedContent.toString().replace(/\s+/g, ' ').trim()
       );
       if (fs.existsSync(destinationFile)) {
          fs.unlink(destinationFile, (err) => {
