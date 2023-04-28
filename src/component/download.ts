@@ -35,17 +35,6 @@ function ensureDownloadFunc() {
    }
 }
 
-export async function toTempFile(
-   sourceUrl: string
-): Promise<Errorable<string>> {
-   const tempFileObj = tmp.fileSync({prefix: 'vskd-autoinstall-'});
-   const downloadResult = await to(sourceUrl, tempFileObj.name);
-   if (succeeded(downloadResult)) {
-      return {succeeded: true, result: tempFileObj.name};
-   }
-   return {succeeded: false, error: downloadResult.error};
-}
-
 export async function to(
    sourceUrl: string,
    destinationFile: string

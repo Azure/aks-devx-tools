@@ -140,7 +140,9 @@ suite('Validation Test Suite', () => {
          '$@%#$%#thisisinvalid',
          'no/slashes',
          'no spaces',
-         'no:colons:here'
+         'no:colons:here',
+         'invalid..seperator',
+         'another___invalid___seperator'
       ];
 
       const invalidTagPromises = invalidTags.map(async (word) => {
