@@ -1,7 +1,6 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
 import path = require('path');
-
 import {
     TitleBar,
     VSBrowser,
@@ -14,8 +13,7 @@ import {
     By
 } from 'vscode-extension-tester';
 import { setWorkspace } from './common';
-describe('Draft Dockerfile Test', () => {
-
+describe('Draft Kubernetes Deployment Test', () => {
     const pathToWorkspace =
         path.resolve(__dirname, '../../src/ui-test/test-repo/flask-hello-world') +
         '/';
@@ -27,7 +25,7 @@ describe('Draft Dockerfile Test', () => {
         await setWorkspace(pathToWorkspace);
     });
 
-    it('drafts a dockerfile', async function () {
+    it('drafts manifest files', async function () {
         this.timeout(200000);
         //open command palette
         console.log('Opening command palette');
@@ -37,26 +35,38 @@ describe('Draft Dockerfile Test', () => {
         assert.notStrictEqual(picks.length, 0);
 
         //select quick pick to draft dockerfile
-        console.log("Selecting quick pick: 'AKS Developer: Draft a Dockerfile'");
-        await prompt.selectQuickPick('AKS Developer: Draft a Dockerfile');
+        console.log(
+            "Selecting quick pick: 'AKS Developer: Draft a Kubernetes Deployment and Service'"
+        );
+        await prompt.selectQuickPick(
+            'AKS Developer: Draft a Kubernetes Deployment and Service'
+        );
         await browser.driver.sleep(3000);
-        console.log('Confirming source code folder');
+        console.log('Confirming output folder');
         await prompt.confirm();
         await browser.driver.sleep(3000);
-        await prompt.selectQuickPick('Python');
+        await prompt.selectQuickPick('Manifests');
         await browser.driver.sleep(3000);
-        await prompt.selectQuickPick('3.9');
-        await browser.driver.sleep(3000);
-        await prompt.setText('8080');
+        await prompt.setText('flask-hello-world');
+        await prompt.confirm();
         await browser.driver.sleep(3000);
         await prompt.confirm();
         await browser.driver.sleep(3000);
-
+        await prompt.selectQuickPick('default');
+        await browser.driver.sleep(3000);
+        await prompt.selectQuickPick('Other');
+        await browser.driver.sleep(3000);
+        await prompt.setText('test-image');
+        await browser.driver.sleep(3000);
+        await prompt.confirm();
+        await browser.driver.sleep(3000);
+        await prompt.confirm();
+        await browser.driver.sleep(3000);
         assert.strictEqual(
             fs.existsSync(
                 path.resolve(
                     __dirname,
-                    '../../src/ui-test/test-repo/flask-hello-world/.dockerignore'
+                    '../../src/ui-test/test-repo/flask-hello-world/manifests/deployment.yaml'
                 )
             ),
             true
@@ -65,42 +75,25 @@ describe('Draft Dockerfile Test', () => {
             fs.existsSync(
                 path.resolve(
                     __dirname,
-                    '../../src/ui-test/test-repo/flask-hello-world/Dockerfile'
+                    '../../src/ui-test/test-repo/flask-hello-world/manifests/service.yaml'
                 )
             ),
             true
         );
+        fs.rmSync(path.resolve(
+            __dirname,
+            '../../src/ui-test/test-repo/flask-hello-world/manifests/deployment.yaml'
+        ));
+        fs.rmSync(path.resolve(
+            __dirname,
+            '../../src/ui-test/test-repo/flask-hello-world/manifests/service.yaml'
+        ));
 
-        if (
-            fs.existsSync(
-                path.resolve(
-                    __dirname,
-                    '../../src/ui-test/test-repo/flask-hello-world/.dockerignore'
-                )
+        fs.rmdirSync(
+            path.resolve(
+                __dirname,
+                '../../src/ui-test/test-repo/flask-hello-world/manifests/'
             )
-        ) {
-            fs.rmSync(
-                path.resolve(
-                    __dirname,
-                    '../../src/ui-test/test-repo/flask-hello-world/.dockerignore'
-                )
-            );
-        }
-
-        if (
-            fs.existsSync(
-                path.resolve(
-                    __dirname,
-                    '../../src/ui-test/test-repo/flask-hello-world/Dockerfile'
-                )
-            )
-        ) {
-            fs.rmSync(
-                path.resolve(
-                    __dirname,
-                    '../../src/ui-test/test-repo/flask-hello-world/Dockerfile'
-                )
-            );
-        }
+        );
     });
 });
