@@ -34,7 +34,7 @@ describe('Draft Kubernetes Deployment Test', () => {
         const picks = await prompt.getQuickPicks();
         assert.notStrictEqual(picks.length, 0);
 
-        //select quick pick to draft dockerfile
+        //select quick pick to draft manifest files
         console.log(
             "Selecting quick pick: 'AKS Developer: Draft a Kubernetes Deployment and Service'"
         );
