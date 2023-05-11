@@ -37,6 +37,7 @@ interface PromptContext {
    acrSubscription: SubscriptionItem;
    acrResourceGroup: ResourceGroupItem;
    registry: RegistryItem;
+   newRepository: boolean;
    acrRepository: RepositoryItem;
    branch: string;
    selectRepoDir: boolean;
@@ -76,6 +77,7 @@ export async function runDraftWorkflow({
       new PromptACRResourceGroupSelection(az),
       new PromptACRSelection(az),
       new PromptACRRegistrySelection(az),
+      new PromptNewRepository(),
       new PromptGitHubBranchSelection()
    ];
    const executeSteps: IExecuteStep[] = [
@@ -340,6 +342,7 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
       if (wizardContext.registry === undefined) {
          throw Error('ACR Registry is undefined');
       }
+      const newOption = 'Create new repository';
 
       const repositories = getAysncResult(
          this.az.listRegistryRepositories(
@@ -351,8 +354,21 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
          label: r.repositoryName
       });
 
+      const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
+         const repositoryOptions = (await repositories).map(repositoryToItem);
+         return [
+            {label: newOption},
+            {label: '', kind: vscode.QuickPickItemKind.Separator},
+            ...repositoryOptions,
+            {
+               label: 'Existing Repositories',
+               kind: vscode.QuickPickItemKind.Separator
+            }
+         ];
+      };
+
       const repositoryPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(repositories, repositoryToItem)),
+         getOptions(),
          {
             ignoreFocusOut,
             stepName: 'Repository',
@@ -361,6 +377,11 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
+      if (repositoryPick.label === newOption) {
+         wizardContext.newRepository = true;
+         return;
+      }
+
       wizardContext.acrRepository = (await repositories).find(
          (r) => repositoryToItem(r).label === repositoryPick.label
       );
@@ -368,6 +389,30 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
       return true;
+   }
+}
+
+class PromptNewRepository extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      const newRepository = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         stepName: 'New Repository',
+         prompt: 'New Repository',
+         validateInput: (value) => {
+            if (value === undefined || value === '') {
+               return 'Repository name cannot be empty';
+            }
+            return undefined;
+         }
+      });
+
+      wizardContext.acrRepository = {
+         repositoryName: newRepository
+      };
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.newRepository === true;
    }
 }
 
