@@ -1,7 +1,7 @@
 import * as fs from 'fs';
-
 import {fileSync} from 'tmp';
 import {stringify} from 'yaml';
+import * as path from 'path';
 
 export function buildCreateCommand(
    destination: string,
@@ -34,7 +34,8 @@ export function buildCreateConfig(
    workflow: string,
    languageVersion: string,
    namespace: string,
-   imageName: string
+   imageName: string,
+   imageTag: string
 ): string {
    let data = {
       deployType: workflow,
@@ -83,6 +84,12 @@ export function buildCreateConfig(
       });
    }
 
+   if (imageTag.length > 0) {
+      data.deployVariables.push({
+         name: 'IMAGETAG',
+         value: imageTag
+      });
+   }
    const tempFile = fileSync({postfix: '.yaml'});
    fs.writeFileSync(tempFile.name, stringify(data));
 
@@ -109,10 +116,20 @@ export function buildGenerateWorkflowCommand(
    return `generate-workflow -c ${clusterName} -r ${registryName} --container-name ${containerName} -g ${resourceGroup} -d ${destination} -b ${branch}`;
 }
 
-export function buildUpdateCommand(
+export function buildUpdateIngressCommand(
    destination: string,
    host: string,
-   certificate: string
+   certificate: string,
+   osm: boolean
 ): string {
-   return `update -a ${host} -s ${certificate} -d ${destination}`;
+   return `update -a webapp_routing -d "${path.join(
+      destination,
+      '..'
+   )}" --variable ingress-tls-cert-keyvault-uri="${certificate}" --variable ingress-use-osm-mtls=${
+      osm ? 'true' : 'false'
+   } --variable ingress-host="${host}"`;
+}
+
+export function buildInfoCommand(): string {
+   return `info`;
 }

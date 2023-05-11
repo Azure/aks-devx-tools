@@ -2,7 +2,7 @@ import {Context} from './model/context';
 import * as vscode from 'vscode';
 import {State, StateApi} from '../../utils/state';
 import {longRunning} from '../../utils/host';
-import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
+import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -23,7 +23,7 @@ import {
    getHelm,
    getKubectl
 } from '../../utils/kubernetes';
-import {failed, getAysncResult} from '../../utils/errorable';
+import {failed, getAsyncResult, succeeded} from '../../utils/errorable';
 import {
    RegistryItem,
    RepositoryItem,
@@ -31,7 +31,7 @@ import {
    SubscriptionItem,
    TagItem,
    AzApi,
-   getAzureAccount,
+   getAzCreds,
    Az
 } from '../../utils/az';
 import * as path from 'path';
@@ -43,6 +43,7 @@ import {
 import {image} from '../../utils/acr';
 import {CompletedSteps} from './model/guidedExperience';
 import {sort} from '../../utils/sort';
+import {getAsyncOptions, removeRecentlyUsed} from '../../utils/quickPick';
 
 const title = 'Draft a Kubernetes Deployment and Service';
 
@@ -57,6 +58,7 @@ interface PromptContext {
    namespace: string;
    newNamespace: boolean;
    image: string;
+   imageTag: string;
    imageOption: imageOption;
    acrSubscription: SubscriptionItem;
    acrResourceGroup: ResourceGroupItem;
@@ -89,13 +91,14 @@ export async function runDraftDeployment(
       kubectlReturn.result,
       helmReturn.result
    );
-   const az: AzApi = new Az(getAzureAccount());
+   const az: AzApi = new Az(getAzCreds);
 
    // Ensure Draft Binary
-   const downloadResult = await longRunning(`Downloading Draft.`, () =>
-      downloadDraftBinary()
+   const ensureDraftResult = await longRunning(
+      `Downloading Draft.`,
+      ensureDraftBinary
    );
-   if (!downloadResult) {
+   if (failed(ensureDraftResult)) {
       vscode.window.showErrorMessage('Failed to download Draft');
       return undefined;
    }
@@ -114,7 +117,8 @@ export async function runDraftDeployment(
       port: state.getPort(),
       outputFolder: outputFolder,
       applicationName: applicationNameGuess,
-      image: state.getImage()
+      image: state.getImage(),
+      imageTag: state.getImageTag() || 'latest'
    };
    const promptSteps: IPromptStep[] = [
       new PromptOutputFolder(),
@@ -126,6 +130,7 @@ export async function runDraftDeployment(
       new PromptNewNamespace(),
       new PromptImageOption(completedSteps),
       new PromptImage(),
+      new PromptImageTag(),
       new PromptAcrSubscription(az),
       new PromptAcrResourceGroup(az),
       new PromptAcrRegistry(az),
@@ -133,11 +138,10 @@ export async function runDraftDeployment(
       new PromptAcrTag(az)
    ];
    const executeSteps: IExecuteStep[] = [
-      new ExecuteCreateNamespace(k8s),
       new ExecuteDraft(),
       new ExecuteOpenFiles(),
       new ExecuteSaveState(state),
-      new ExecutePromptDeploy(completedSteps)
+      new ExecutePromptNextStep(completedSteps)
    ];
    const wizard = new AzureWizard(wizardContext, {
       title,
@@ -224,38 +228,49 @@ class PromptNamespace extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const namespaces = getAysncResult(this.k8s.listNamespaces());
-      const newOption = 'New Namespace';
-      const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
-         const namespaceOptions: vscode.QuickPickItem[] = (
-            await namespaces
-         ).map((version) => ({
-            label: version.metadata?.name || ''
-         }));
+      try {
+         const namespaces = getAsyncResult(this.k8s.listNamespaces());
+         const newOption = 'New Namespace';
+         const getOptions = async (): Promise<vscode.QuickPickItem[]> => {
+            const namespaceOptions: vscode.QuickPickItem[] = (
+               await namespaces
+            ).map((version) => ({
+               label: version.metadata?.name || ''
+            }));
 
-         return [
-            {label: newOption},
-            {label: '', kind: vscode.QuickPickItemKind.Separator},
-            ...namespaceOptions,
+            return [
+               {label: newOption},
+               {label: '', kind: vscode.QuickPickItemKind.Separator},
+               ...namespaceOptions,
+               {
+                  label: 'Existing namespaces',
+                  kind: vscode.QuickPickItemKind.Separator
+               }
+            ];
+         };
+         const namespacePick = await wizardContext.ui.showQuickPick(
+            getOptions(),
             {
-               label: 'Existing namespaces',
-               kind: vscode.QuickPickItemKind.Separator
+               ignoreFocusOut,
+               stepName: 'Namespace',
+               placeHolder: 'Namespace'
             }
-         ];
-      };
-      const namespacePick = await wizardContext.ui.showQuickPick(getOptions(), {
-         ignoreFocusOut,
-         stepName: 'Namespace',
-         placeHolder: 'Namespace'
-      });
+         );
 
-      if (namespacePick.label === newOption) {
+         if (namespacePick.label === newOption) {
+            wizardContext.newNamespace = true;
+            return;
+         }
+
+         wizardContext.newNamespace = false;
+         wizardContext.namespace = namespacePick.label;
+      } catch (err) {
+         console.error(`Error prompting namespaces: ${err}`);
+
+         // make the user manually enter a namespace
          wizardContext.newNamespace = true;
          return;
       }
-
-      wizardContext.newNamespace = false;
-      wizardContext.namespace = namespacePick.label;
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -267,8 +282,8 @@ class PromptNewNamespace extends AzureWizardPromptStep<WizardContext> {
    public async prompt(wizardContext: WizardContext): Promise<void> {
       wizardContext.namespace = await wizardContext.ui.showInputBox({
          ignoreFocusOut,
-         prompt: 'New Namespace',
-         stepName: 'New Namespace',
+         prompt: 'Namespace',
+         stepName: 'Namespace',
          validateInput: ValidateRfc1123,
          value: wizardContext.namespace || wizardContext.applicationName // application name is a reasonable autofill guess
       });
@@ -319,13 +334,28 @@ class PromptImage extends AzureWizardPromptStep<WizardContext> {
    }
 }
 
+class PromptImageTag extends AzureWizardPromptStep<WizardContext> {
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      wizardContext.imageTag = await wizardContext.ui.showInputBox({
+         ignoreFocusOut,
+         prompt: 'Image Tag',
+         stepName: 'Image Tag',
+         validateInput: ValidateImage,
+         value: wizardContext.imageTag
+      });
+   }
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return wizardContext.imageOption === imageOption.Other;
+   }
+}
+
 class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
       super();
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
+      const subs = getAsyncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
@@ -340,9 +370,6 @@ class PromptAcrSubscription extends AzureWizardPromptStep<WizardContext> {
          }
       );
 
-      // if something was recently used this text is appened to the description
-      const removeRecentlyUsed = (description: string) =>
-         description.replace(' (recently used)', '');
       wizardContext.acrSubscription = (await subs).find(
          (sub) =>
             subToItem(sub).description ===
@@ -365,7 +392,7 @@ class PromptAcrResourceGroup extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Subscription is undefined');
       }
 
-      const rgs = getAysncResult(
+      const rgs = getAsyncResult(
          this.az.listResourceGroups(wizardContext.acrSubscription)
       );
       const rgToItem = (rg: ResourceGroupItem) => ({
@@ -402,7 +429,7 @@ class PromptAcrRegistry extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Resource Group is undefined');
       }
 
-      const registries = getAysncResult(
+      const registries = getAsyncResult(
          this.az.listContainerRegistries(
             wizardContext.acrSubscription,
             wizardContext.acrResourceGroup
@@ -437,18 +464,12 @@ class PromptAcrRepository extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
-      }
       if (wizardContext.acrRegistry === undefined) {
          throw Error('ACR Registry is undefined');
       }
 
-      const repositories = getAysncResult(
-         this.az.listRegistryRepositories(
-            wizardContext.acrSubscription,
-            wizardContext.acrRegistry
-         )
+      const repositories = getAsyncResult(
+         this.az.listRegistryRepositories(wizardContext.acrRegistry)
       );
       const repositoryToItem = (r: RepositoryItem) => ({
          label: r.repositoryName
@@ -479,9 +500,6 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.acrSubscription === undefined) {
-         throw Error('ACR Subscription is undefined');
-      }
       if (wizardContext.acrRegistry === undefined) {
          throw Error('ACR Registry is undefined');
       }
@@ -489,9 +507,8 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Repository is undefined');
       }
 
-      const tags = getAysncResult(
+      const tags = getAsyncResult(
          this.az.listRepositoryTags(
-            wizardContext.acrSubscription,
             wizardContext.acrRegistry,
             wizardContext.acrRepository
          )
@@ -523,7 +540,8 @@ class PromptAcrTag extends AzureWizardPromptStep<WizardContext> {
       if (tag === undefined) {
          throw Error('Tag is undefined');
       }
-      wizardContext.image = image(server, repository, tag);
+      wizardContext.imageTag = tag;
+      wizardContext.image = image(server, repository);
    }
 
    public shouldPrompt(wizardContext: WizardContext): boolean {
@@ -579,39 +597,6 @@ export class PromptPort extends AzureWizardPromptStep<
    }
 }
 
-class ExecuteCreateNamespace extends AzureWizardExecuteStep<WizardContext> {
-   public priority: number = 1;
-
-   constructor(private k8s: KubernetesApi) {
-      super();
-   }
-
-   public async execute(
-      wizardContext: WizardContext,
-      progress: vscode.Progress<{
-         message?: string | undefined;
-         increment?: number | undefined;
-      }>
-   ): Promise<void> {
-      const {namespace} = wizardContext;
-      if (namespace === undefined) {
-         throw Error('Namespace is undefined');
-      }
-
-      const result = await this.k8s.createNamespace(namespace);
-      if (failed(result)) {
-         throw Error(result.error);
-      }
-   }
-
-   public shouldExecute(wizardContext: WizardContext): boolean {
-      return (
-         !!wizardContext.newNamespace &&
-         wizardContext.format !== DraftFormat.Helm // Draft creates namespace manifest for Helm
-      );
-   }
-}
-
 class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 2;
 
@@ -622,13 +607,23 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
-      const {outputFolder, image, applicationName, namespace, port, format} =
-         wizardContext;
+      const {
+         outputFolder,
+         image,
+         imageTag,
+         applicationName,
+         namespace,
+         port,
+         format
+      } = wizardContext;
       if (outputFolder === undefined) {
          throw Error('Output folder is undefined');
       }
       if (image === undefined) {
          throw Error('Image is undefined');
+      }
+      if (imageTag === undefined) {
+         throw Error('Image tag is undefined');
       }
       if (applicationName === undefined) {
          throw Error('Application name is undefined');
@@ -650,7 +645,8 @@ class ExecuteDraft extends AzureWizardExecuteStep<WizardContext> {
          format,
          '',
          namespace,
-         image
+         image,
+         imageTag
       );
       const command = buildCreateCommand(
          outputFolder.fsPath,
@@ -742,7 +738,7 @@ class ExecuteSaveState extends AzureWizardExecuteStep<WizardContext> {
    }
 }
 
-class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
+class ExecutePromptNextStep extends AzureWizardExecuteStep<WizardContext> {
    public priority: number = 5;
 
    constructor(private completedSteps: CompletedSteps) {
@@ -756,15 +752,24 @@ class ExecutePromptDeploy extends AzureWizardExecuteStep<WizardContext> {
          increment?: number | undefined;
       }>
    ): Promise<void> {
+      this.completedSteps.draftDeployment = true;
+
+      const ingressButton = 'Draft Ingress';
       const deployButton = 'Deploy';
       await vscode.window
          .showInformationMessage(
-            'The Kubernetes Deployment and Service was created. Next, deploy to the cluster.',
+            'The Kubernetes Deployment and Service was created. Next, either Draft an Ingress to create publicly accessible DNS names for the application or deploy to the cluster.',
+            ingressButton,
             deployButton
          )
          .then((input) => {
+            if (input === ingressButton) {
+               vscode.commands.executeCommand(
+                  'aks-draft-extension.runDraftIngress'
+               );
+            }
+
             if (input === deployButton) {
-               this.completedSteps.draftDeployment = true;
                vscode.commands.executeCommand(
                   'aks-draft-extension.runDeploy',
                   this.completedSteps
@@ -792,11 +797,4 @@ function getOutputPath(wizardContext: WizardContext): string {
       default:
          return path.join(base, 'manifests');
    }
-}
-
-async function getAsyncOptions<T>(
-   arr: Promise<T[]>,
-   callbackfn: (a: T) => vscode.QuickPickItem
-): Promise<vscode.QuickPickItem[]> {
-   return (await arr).map(callbackfn);
 }

@@ -7,7 +7,7 @@ import {
 import {instance, mock, when, anything, anyString, verify} from 'ts-mockito';
 import {Matcher} from 'ts-mockito/lib/matcher/type/Matcher';
 import {HelmV1, KubectlV1} from 'vscode-kubernetes-tools-api';
-import {Kubernetes} from '../../../utils/kubernetes';
+import {Kubernetes, getDefaultKubeconfig} from '../../../utils/kubernetes';
 import * as http from 'http';
 import * as assert from 'assert';
 import {failed, succeeded} from '../../../utils/errorable';
@@ -16,6 +16,11 @@ const ns = 'namespace1';
 const applicationName = 'applicationName';
 
 suite('Kubernetes Utility Test Suite', () => {
+   test('it can get default kube config', () => {
+      const defaultKubeConfig = getDefaultKubeconfig();
+      assert.doesNotThrow(getDefaultKubeconfig);
+   });
+
    test('it can list namespaces', async () => {
       const kubectlMock = mock<KubectlV1>();
       const helmMock = mock<HelmV1>();

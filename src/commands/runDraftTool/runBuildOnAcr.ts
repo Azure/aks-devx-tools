@@ -51,7 +51,8 @@ export async function runBuildAcrImage(
       throw Error('Tag is undefined');
    }
    const {subscriptionId, resourceGroup} = parseAzureResourceId(id);
-   state.setImage(image(registry, repository, tag));
+   state.setImage(image(registry, repository));
+   state.setImageTag(tag);
 
    const generateButton = 'Generate';
    await vscode.window

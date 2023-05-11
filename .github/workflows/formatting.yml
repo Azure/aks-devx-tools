@@ -12,8 +12,8 @@ jobs:
          - name: Checkout repository
            uses: actions/checkout@v3
 
-         - name: Install Prettier
-           run: npm install prettier
+         - name: NPM install
+           run: npm i
 
          - name: Ensure Prettier
            run: npx prettier --check .

@@ -19,6 +19,7 @@ import {
 } from './commands/runDraftTool/model/guidedExperience';
 import {runDeploy} from './commands/runDraftTool/runDeploy';
 import {runDraftWorkflow} from './commands/runDraftTool/runDraftWorkflow';
+import {runDraftIngress} from './commands/runDraftTool/runDraftIngress';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -113,6 +114,26 @@ function registerCommands(
             completedSteps = noCompletedSteps();
          }
          return runBuildAcrImage(context, completedSteps);
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDraftIngress',
+      (
+         actionContext: IActionContext,
+         folder,
+         completedSteps: CompletedSteps | undefined
+      ) => {
+         const context: Context = {actionContext, extensionContext};
+         let target = undefined;
+         try {
+            target = vscode.Uri.parse(folder, true);
+         } catch {}
+
+         if (completedSteps === undefined) {
+            completedSteps = noCompletedSteps();
+         }
+         return runDraftIngress(context, target, completedSteps);
       }
    );
 
