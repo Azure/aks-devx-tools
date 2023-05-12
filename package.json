@@ -187,7 +187,8 @@
       "format": "prettier --write .",
       "test": "node ./out/test/runTest.js",
       "coverage": "c8 --check-coverage --timeout 10000 npm run test",
-      "ui-test": "npm run compile-tests && extest setup-and-run ./out/ui-test/**.test.js -s ../../src/ui-test/test-repo/flask-hello-world"
+      "preui-test": "npm run compile-tests",
+      "ui-test": "extest setup-and-run ./out/ui-test/**.test.js -s ../../src/ui-test/test-repo/flask-hello-world"
    },
    "devDependencies": {
       "@types/download": "^8.0.1",

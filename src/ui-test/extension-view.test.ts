@@ -25,8 +25,8 @@ describe('Extension View Test', () => {
 
       assert.strictEqual(
          desc,
-         'Create deployment files and configure GitHub Actions workflows to deploy applications to Azure Kubernetes Service (AKS).'
+         packageJson.description
       );
-      assert.strictEqual(version, '0.1.1');
+      assert.strictEqual(version, packageJson.version);
    });
 });
