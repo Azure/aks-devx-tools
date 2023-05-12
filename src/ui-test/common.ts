@@ -1,4 +1,3 @@
-import {sleep} from '../utils/sleep';
 import {
    TitleBar,
    VSBrowser,
@@ -28,18 +27,4 @@ export async function setWorkspace(
    );
    console.log('Confirming path to workspace');
    await input.confirm();
-}
-
-export async function retry(
-   fn: () => Promise<void>,
-   times: number,
-   intervalms: number
-) {
-   for (let i = 0; i < times; i++) {
-      try {
-         fn();
-         break;
-      } catch {}
-      sleep(intervalms);
-   }
 }
