@@ -23,10 +23,7 @@ describe('Extension View Test', () => {
       const desc = await devXToolsExtension.getDescription();
       const version = await devXToolsExtension.getVersion();
 
-      assert.strictEqual(
-         desc,
-         packageJson.description
-      );
+      assert.strictEqual(desc, packageJson.description);
       assert.strictEqual(version, packageJson.version);
    });
 });
