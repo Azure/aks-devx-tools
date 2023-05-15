@@ -3,16 +3,10 @@ import * as fs from 'fs';
 import path = require('path');
 
 import {
-   TitleBar,
    VSBrowser,
-   InputBox,
-   ActivityBar,
    Workbench,
-   Key,
    until,
-   QuickPickItem,
    By,
-   Button
 } from 'vscode-extension-tester';
 import {setWorkspace} from './common';
 describe('Draft Dockerfile Test', () => {

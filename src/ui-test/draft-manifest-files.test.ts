@@ -2,19 +2,13 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import path = require('path');
 import {
-   TitleBar,
    VSBrowser,
-   InputBox,
-   ActivityBar,
    Workbench,
-   Key,
    until,
-   QuickPickItem,
    By,
-   WebElementCondition
 } from 'vscode-extension-tester';
-import {setWorkspace} from './common';
-import {prototype} from 'events';
+import { setWorkspace } from './common';
+import { prototype } from 'events';
 describe('Draft Kubernetes Deployment Test', () => {
    const pathToWorkspace =
       path.resolve(__dirname, '../../src/ui-test/test-repo/flask-hello-world') +
