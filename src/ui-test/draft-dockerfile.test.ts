@@ -8,7 +8,7 @@ import {
    until,
    By,
 } from 'vscode-extension-tester';
-import {setWorkspace} from './common';
+import { setWorkspace } from './common';
 describe('Draft Dockerfile Test', () => {
    const pathToWorkspace =
       path.resolve(__dirname, '../../src/ui-test/test-repo/flask-hello-world') +
@@ -23,27 +23,35 @@ describe('Draft Dockerfile Test', () => {
 
    it('drafts a dockerfile', async function () {
       this.timeout(200000);
-      //open command palette
+      // Open command palette
       let prompt = await new Workbench().openCommandPrompt();
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
-      //select quick pick to draft dockerfile
+      // Select quick pick to draft dockerfile
       await prompt.selectQuickPick('AKS Developer: Draft a Dockerfile');
+
+      // Confirm default source code folder
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(By.css('input.input'))
          )
       );
       await prompt.confirm();
+
+      // Select language
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Python');
+
+      // Select language version
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('3.9');
+
+      // Set port
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(By.css('input.input'))
