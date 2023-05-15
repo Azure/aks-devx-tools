@@ -28,32 +28,49 @@ describe('Draft Kubernetes Deployment Test', () => {
    it('drafts manifest files', async function () {
       this.timeout(200000);
       //open command palette
-      console.log('Opening command palette');
       let prompt = await new Workbench().openCommandPrompt();
-      console.log('Getting all quickpicks');
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
       //select quick pick to draft manifest files
-      console.log(
-         "Selecting quick pick: 'AKS Developer: Draft a Kubernetes Deployment and Service'"
-      );
       await prompt.selectQuickPick(
          'AKS Developer: Draft a Kubernetes Deployment and Service'
       );
-      await browser.driver.sleep(3000);
-      console.log('Confirming output folder');
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.confirm();
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Manifests');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//input[@aria-describedby='quickInput_message']")
+         )
+      );
       await prompt.setText('flask-hello-world');
       await prompt.confirm();
+      await browser.driver.wait(
+         until.elementTextContains(
+            await browser.driver.findElement(By.css('div.quick-input-message')),
+            'Port'
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//input[@aria-describedby='quickInput_message']")
+         )
+      );
       await prompt.setText('8080');
       await browser.driver.sleep(3000);
+
       await prompt.confirm();
+
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
@@ -62,43 +79,47 @@ describe('Draft Kubernetes Deployment Test', () => {
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Other');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.setText('test-image');
-      await browser.driver.sleep(3000);
-      await prompt.confirm();
-      await browser.driver.sleep(3000);
-      await prompt.confirm();
-      await browser.driver.sleep(3000);
-      assert.strictEqual(
-         fs.existsSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/manifests/deployment.yaml'
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
             )
-         ),
-         true
-      );
-      assert.strictEqual(
-         fs.existsSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/manifests/service.yaml'
-            )
-         ),
-         true
-      );
-      fs.rmSync(
-         path.resolve(
-            __dirname,
-            '../../src/ui-test/test-repo/flask-hello-world/manifests/deployment.yaml'
          )
       );
-      fs.rmSync(
-         path.resolve(
-            __dirname,
-            '../../src/ui-test/test-repo/flask-hello-world/manifests/service.yaml'
+      await prompt.confirm();
+      await browser.driver.wait(
+         until.elementTextContains(
+            await browser.driver.findElement(By.css('div.quick-input-message')),
+            'Image Tag'
          )
       );
+      await prompt.confirm();
+      await browser.driver.sleep(3000);
+
+      const generatedFiles = [
+         'manifests/deployment.yaml',
+         'manifests/service.yaml'
+      ];
+
+      for (let file of generatedFiles) {
+         let filepath = path.resolve(
+            __dirname,
+            '../../src/ui-test/test-repo/flask-hello-world',
+            file
+         );
+
+         assert.strictEqual(fs.existsSync(filepath), true);
+
+         fs.rmSync(filepath);
+      }
 
       fs.rmdirSync(
          path.resolve(
@@ -111,32 +132,49 @@ describe('Draft Kubernetes Deployment Test', () => {
    it('drafts helm charts', async function () {
       this.timeout(200000);
       //open command palette
-      console.log('Opening command palette');
       let prompt = await new Workbench().openCommandPrompt();
-      console.log('Getting all quickpicks');
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
       //select quick pick to draft manifest files
-      console.log(
-         "Selecting quick pick: 'AKS Developer: Draft a Kubernetes Deployment and Service'"
-      );
       await prompt.selectQuickPick(
          'AKS Developer: Draft a Kubernetes Deployment and Service'
       );
-      await browser.driver.sleep(3000);
-      console.log('Confirming output folder');
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.confirm();
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Helm');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//input[@aria-describedby='quickInput_message']")
+         )
+      );
       await prompt.setText('flask-hello-world');
       await prompt.confirm();
+      await browser.driver.wait(
+         until.elementTextContains(
+            await browser.driver.findElement(By.css('div.quick-input-message')),
+            'Port'
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//input[@aria-describedby='quickInput_message']")
+         )
+      );
+      await prompt.setText('8080');
       await browser.driver.sleep(3000);
+
       await prompt.confirm();
-      console.log('confirmed');
+
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
@@ -145,11 +183,28 @@ describe('Draft Kubernetes Deployment Test', () => {
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Other');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.setText('test-image');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.confirm();
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementTextContains(
+            await browser.driver.findElement(By.css('div.quick-input-message')),
+            'Image Tag'
+         )
+      );
       await prompt.confirm();
       await browser.driver.sleep(3000);
 
@@ -169,7 +224,6 @@ describe('Draft Kubernetes Deployment Test', () => {
             '../../src/ui-test/test-repo/flask-hello-world/charts',
             file
          );
-         console.log('filepath: ', filepath);
          assert.strictEqual(fs.existsSync(filepath), true);
 
          fs.rmSync(filepath);
@@ -193,32 +247,49 @@ describe('Draft Kubernetes Deployment Test', () => {
    it('drafts kustomize files', async function () {
       this.timeout(200000);
       //open command palette
-      console.log('Opening command palette');
       let prompt = await new Workbench().openCommandPrompt();
-      console.log('Getting all quickpicks');
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
       //select quick pick to draft manifest files
-      console.log(
-         "Selecting quick pick: 'AKS Developer: Draft a Kubernetes Deployment and Service'"
-      );
       await prompt.selectQuickPick(
          'AKS Developer: Draft a Kubernetes Deployment and Service'
       );
-      await browser.driver.sleep(3000);
-      console.log('Confirming output folder');
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.confirm();
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Kustomize');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//input[@aria-describedby='quickInput_message']")
+         )
+      );
       await prompt.setText('flask-hello-world');
       await prompt.confirm();
+      await browser.driver.wait(
+         until.elementTextContains(
+            await browser.driver.findElement(By.css('div.quick-input-message')),
+            'Port'
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//input[@aria-describedby='quickInput_message']")
+         )
+      );
+      await prompt.setText('8080');
       await browser.driver.sleep(3000);
+
       await prompt.confirm();
-      console.log('confirmed');
+
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
@@ -227,11 +298,28 @@ describe('Draft Kubernetes Deployment Test', () => {
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Other');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.setText('test-image');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(
+               By.xpath(".//input[@aria-describedby='quickInput_message']")
+            )
+         )
+      );
       await prompt.confirm();
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementTextContains(
+            await browser.driver.findElement(By.css('div.quick-input-message')),
+            'Image Tag'
+         )
+      );
       await prompt.confirm();
       await browser.driver.sleep(3000);
 
@@ -250,7 +338,6 @@ describe('Draft Kubernetes Deployment Test', () => {
             '../../src/ui-test/test-repo/flask-hello-world/',
             file
          );
-         console.log('filepath: ', filepath);
          assert.strictEqual(fs.existsSync(filepath), true);
 
          fs.rmSync(filepath);

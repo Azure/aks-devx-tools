@@ -30,21 +30,18 @@ describe('Draft Dockerfile Test', () => {
    it('drafts a dockerfile', async function () {
       this.timeout(200000);
       //open command palette
-      console.log('Opening command palette');
       let prompt = await new Workbench().openCommandPrompt();
-      console.log('Getting all quickpicks');
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
       //select quick pick to draft dockerfile
-      console.log("Selecting quick pick: 'AKS Developer: Draft a Dockerfile'");
       await prompt.selectQuickPick('AKS Developer: Draft a Dockerfile');
-      await browser.driver.sleep(3000);
-      console.log('Confirming source code folder');
-      //await browser.driver.findElement(By.xpath(`.//input[@class='input' and @aria-label='input']`));
-      //await browser.driver.wait(until.elementLocated(By.xpath(`.//input[@class='input' and @aria-label='input']`)));
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(By.css('input.input'))
+         )
+      );
       await prompt.confirm();
-      console.log('Selecting language');
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
@@ -53,9 +50,17 @@ describe('Draft Dockerfile Test', () => {
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('3.9');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(By.css('input.input'))
+         )
+      );
       await prompt.setText('8080');
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementIsVisible(
+            await browser.driver.findElement(By.css('input.input'))
+         )
+      );
       await prompt.confirm();
       await browser.driver.sleep(3000);
 
