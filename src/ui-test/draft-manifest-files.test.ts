@@ -10,9 +10,11 @@ import {
    Key,
    until,
    QuickPickItem,
-   By
+   By,
+   WebElementCondition
 } from 'vscode-extension-tester';
 import {setWorkspace} from './common';
+import {prototype} from 'events';
 describe('Draft Kubernetes Deployment Test', () => {
    const pathToWorkspace =
       path.resolve(__dirname, '../../src/ui-test/test-repo/flask-hello-world') +
@@ -27,15 +29,17 @@ describe('Draft Kubernetes Deployment Test', () => {
 
    it('drafts manifest files', async function () {
       this.timeout(200000);
-      //open command palette
+      // Open command palette
       let prompt = await new Workbench().openCommandPrompt();
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
-      //select quick pick to draft manifest files
+      // Select quick pick to draft manifest files
       await prompt.selectQuickPick(
          'AKS Developer: Draft a Kubernetes Deployment and Service'
       );
+
+      // Confirm default output folder
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(
@@ -44,10 +48,14 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.confirm();
+
+      // Select deployment
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Manifests');
+
+      // Set app name
       await browser.driver.wait(
          until.elementLocated(
             By.xpath(".//input[@aria-describedby='quickInput_message']")
@@ -55,30 +63,34 @@ describe('Draft Kubernetes Deployment Test', () => {
       );
       await prompt.setText('flask-hello-world');
       await prompt.confirm();
+
+      // Set port
       await browser.driver.wait(
          until.elementTextContains(
             await browser.driver.findElement(By.css('div.quick-input-message')),
             'Port'
          )
       );
-      await browser.driver.wait(
-         until.elementLocated(
-            By.xpath(".//input[@aria-describedby='quickInput_message']")
-         )
-      );
       await prompt.setText('8080');
-      await browser.driver.sleep(3000);
-
       await prompt.confirm();
 
+      // Select default namespace
       await browser.driver.wait(
-         until.elementLocated(By.className('quick-input-list'))
+         until.elementLocated(
+            By.xpath(
+               ".//input[@placeholder='Namespace' and @class='input empty']"
+            )
+         )
       );
       await prompt.selectQuickPick('default');
+
+      // Select image option
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Other');
+
+      // Set image name
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(
@@ -87,14 +99,9 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.setText('test-image');
-      await browser.driver.wait(
-         until.elementIsVisible(
-            await browser.driver.findElement(
-               By.xpath(".//input[@aria-describedby='quickInput_message']")
-            )
-         )
-      );
       await prompt.confirm();
+
+      // Confirm default image tag
       await browser.driver.wait(
          until.elementTextContains(
             await browser.driver.findElement(By.css('div.quick-input-message')),
@@ -131,15 +138,17 @@ describe('Draft Kubernetes Deployment Test', () => {
 
    it('drafts helm charts', async function () {
       this.timeout(200000);
-      //open command palette
+      // Open command palette
       let prompt = await new Workbench().openCommandPrompt();
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
-      //select quick pick to draft manifest files
+      // Select quick pick to draft manifest files
       await prompt.selectQuickPick(
          'AKS Developer: Draft a Kubernetes Deployment and Service'
       );
+
+      // Confirm default output folder
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(
@@ -148,10 +157,14 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.confirm();
+
+      // Select deployment
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Helm');
+
+      // Set app name
       await browser.driver.wait(
          until.elementLocated(
             By.xpath(".//input[@aria-describedby='quickInput_message']")
@@ -159,30 +172,34 @@ describe('Draft Kubernetes Deployment Test', () => {
       );
       await prompt.setText('flask-hello-world');
       await prompt.confirm();
+
+      // Set port
       await browser.driver.wait(
          until.elementTextContains(
             await browser.driver.findElement(By.css('div.quick-input-message')),
             'Port'
          )
       );
-      await browser.driver.wait(
-         until.elementLocated(
-            By.xpath(".//input[@aria-describedby='quickInput_message']")
-         )
-      );
       await prompt.setText('8080');
-      await browser.driver.sleep(3000);
-
       await prompt.confirm();
 
+      // Select default namespace
       await browser.driver.wait(
-         until.elementLocated(By.className('quick-input-list'))
+         until.elementLocated(
+            By.xpath(
+               ".//input[@placeholder='Namespace' and @class='input empty']"
+            )
+         )
       );
       await prompt.selectQuickPick('default');
+
+      // Select image option
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Other');
+
+      // Set image name
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(
@@ -191,14 +208,9 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.setText('test-image');
-      await browser.driver.wait(
-         until.elementIsVisible(
-            await browser.driver.findElement(
-               By.xpath(".//input[@aria-describedby='quickInput_message']")
-            )
-         )
-      );
       await prompt.confirm();
+
+      // Confirm default image tag
       await browser.driver.wait(
          until.elementTextContains(
             await browser.driver.findElement(By.css('div.quick-input-message')),
@@ -246,15 +258,17 @@ describe('Draft Kubernetes Deployment Test', () => {
 
    it('drafts kustomize files', async function () {
       this.timeout(200000);
-      //open command palette
+      // Open command palette
       let prompt = await new Workbench().openCommandPrompt();
       const picks = await prompt.getQuickPicks();
       assert.notStrictEqual(picks.length, 0);
 
-      //select quick pick to draft manifest files
+      // Select quick pick to draft manifest files
       await prompt.selectQuickPick(
          'AKS Developer: Draft a Kubernetes Deployment and Service'
       );
+
+      // Confirm default output folder
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(
@@ -263,10 +277,14 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.confirm();
+
+      // Select deployment
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Kustomize');
+
+      // Set app name
       await browser.driver.wait(
          until.elementLocated(
             By.xpath(".//input[@aria-describedby='quickInput_message']")
@@ -274,30 +292,34 @@ describe('Draft Kubernetes Deployment Test', () => {
       );
       await prompt.setText('flask-hello-world');
       await prompt.confirm();
+
+      // Set port
       await browser.driver.wait(
          until.elementTextContains(
             await browser.driver.findElement(By.css('div.quick-input-message')),
             'Port'
          )
       );
-      await browser.driver.wait(
-         until.elementLocated(
-            By.xpath(".//input[@aria-describedby='quickInput_message']")
-         )
-      );
       await prompt.setText('8080');
-      await browser.driver.sleep(3000);
-
       await prompt.confirm();
 
+      // Select default namespace
       await browser.driver.wait(
-         until.elementLocated(By.className('quick-input-list'))
+         until.elementLocated(
+            By.xpath(
+               ".//input[@placeholder='Namespace' and @class='input empty']"
+            )
+         )
       );
       await prompt.selectQuickPick('default');
+
+      // Select image option
       await browser.driver.wait(
          until.elementLocated(By.className('quick-input-list'))
       );
       await prompt.selectQuickPick('Other');
+
+      // Set image name
       await browser.driver.wait(
          until.elementIsVisible(
             await browser.driver.findElement(
@@ -306,14 +328,9 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.setText('test-image');
-      await browser.driver.wait(
-         until.elementIsVisible(
-            await browser.driver.findElement(
-               By.xpath(".//input[@aria-describedby='quickInput_message']")
-            )
-         )
-      );
       await prompt.confirm();
+
+      // Confirm default image tag
       await browser.driver.wait(
          until.elementTextContains(
             await browser.driver.findElement(By.css('div.quick-input-message')),
