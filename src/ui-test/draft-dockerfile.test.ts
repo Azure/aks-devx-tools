@@ -7,18 +7,31 @@ import {
    Workbench,
    until,
    By,
+   EditorView
 } from 'vscode-extension-tester';
-import { setWorkspace } from './common';
+import {clearAllNotifications, notificationFound, setWorkspace} from './common';
+import {after} from 'mocha';
 describe('Draft Dockerfile Test', () => {
    const pathToWorkspace =
       path.resolve(__dirname, '../../src/ui-test/test-repo/flask-hello-world') +
       '/';
+   const notificationMessage =
+      'The Dockerfile was created. Next, build the image on Azure Container Registry.';
    let browser: VSBrowser;
+   let editorView: EditorView;
 
    before(async function () {
-      this.timeout(100000);
+      this.timeout(10000);
       browser = VSBrowser.instance;
+      editorView = new EditorView();
+      await editorView.closeAllEditors();
       await setWorkspace(pathToWorkspace, browser);
+   });
+
+   after(async function () {
+      this.timeout(10000);
+      await new EditorView().closeAllEditors();
+      await clearAllNotifications();
    });
 
    it('drafts a dockerfile', async function () {
@@ -64,8 +77,19 @@ describe('Draft Dockerfile Test', () => {
          )
       );
       await prompt.confirm();
-      await browser.driver.sleep(3000);
 
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='.dockerignore']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='Dockerfile']")
+         )
+      );
+
+      assert(notificationFound(notificationMessage));
       assert.strictEqual(
          fs.existsSync(
             path.resolve(

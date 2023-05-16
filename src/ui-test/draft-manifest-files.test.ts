@@ -6,19 +6,27 @@ import {
    Workbench,
    until,
    By,
+   EditorView
 } from 'vscode-extension-tester';
-import { setWorkspace } from './common';
-import { prototype } from 'events';
+import {clearAllNotifications, notificationFound, setWorkspace} from './common';
 describe('Draft Kubernetes Deployment Test', () => {
    const pathToWorkspace =
       path.resolve(__dirname, '../../src/ui-test/test-repo/flask-hello-world') +
       '/';
+   const notificationMessage =
+      'The Kubernetes Deployment and Service was created. Next, either Draft an Ingress to create publicly accessible DNS names for the application or deploy to the cluster.';
    let browser: VSBrowser;
 
    before(async function () {
-      this.timeout(100000);
+      this.timeout(10000);
       browser = VSBrowser.instance;
       await setWorkspace(pathToWorkspace, browser);
+   });
+
+   afterEach(async function () {
+      this.timeout(10000);
+      await new EditorView().closeAllEditors();
+      await clearAllNotifications();
    });
 
    it('drafts manifest files', async function () {
@@ -103,7 +111,17 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.confirm();
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='deployment.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='service.yaml']")
+         )
+      );
+      assert(await notificationFound(notificationMessage));
 
       const generatedFiles = [
          'manifests/deployment.yaml',
@@ -212,7 +230,42 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.confirm();
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='.helmignore']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='Chart.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='production.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='_helpers.tpl']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='deployment.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='namespace.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='service.yaml']")
+         )
+      );
+      assert(notificationFound(notificationMessage));
 
       const generatedFiles = [
          '.helmignore',
@@ -225,6 +278,10 @@ describe('Draft Kubernetes Deployment Test', () => {
          'templates/service.yaml'
       ];
       for (let file of generatedFiles) {
+         // await browser.driver.wait(until.elementLocated(
+         //    By.xpath(`.//a[@class='label-name' and text()='${file}']`)
+         // ));
+
          let filepath = path.resolve(
             __dirname,
             '../../src/ui-test/test-repo/flask-hello-world/charts',
@@ -332,7 +389,35 @@ describe('Draft Kubernetes Deployment Test', () => {
          )
       );
       await prompt.confirm();
-      await browser.driver.sleep(3000);
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='deployment.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(
+               ".//a[@class='label-name' and text()='kustomization.yaml']"
+            )
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='service.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='deployment.yaml']")
+         )
+      );
+      await browser.driver.wait(
+         until.elementLocated(
+            By.xpath(".//a[@class='label-name' and text()='namespace.yaml']")
+         )
+      );
+
+      assert(notificationFound(notificationMessage));
 
       const generatedFiles = [
          'overlays/production/deployment.yaml',
