@@ -5,7 +5,8 @@ import {
    until,
    By,
    Notification,
-   Workbench
+   Workbench,
+   NotificationsCenter
 } from 'vscode-extension-tester';
 
 let titleBar: TitleBar;
@@ -33,4 +34,9 @@ export async function notificationFound(
    return notifications.find(async function (notification) {
       (await notification.getMessage()) === text;
    });
+}
+
+export async function clearAllNotifications() {
+   const notificationsCenter = await new Workbench().openNotificationsCenter();
+   await notificationsCenter.clearAllNotifications();
 }
