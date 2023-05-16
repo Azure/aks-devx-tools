@@ -3,7 +3,9 @@ import {
    VSBrowser,
    InputBox,
    until,
-   By
+   By,
+   Notification,
+   Workbench
 } from 'vscode-extension-tester';
 
 let titleBar: TitleBar;
@@ -22,4 +24,13 @@ export async function setWorkspace(
       until.elementLocated(By.className('quick-input-message'))
    );
    await input.confirm();
+}
+
+export async function notificationFound(
+   text: string
+): Promise<Notification | undefined> {
+   const notifications = await new Workbench().getNotifications();
+   return notifications.find(async function (notification) {
+      (await notification.getMessage()) === text;
+   });
 }
