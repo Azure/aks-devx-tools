@@ -90,55 +90,18 @@ describe('Draft Dockerfile Test', () => {
       );
 
       assert(notificationFound(notificationMessage));
-      assert.strictEqual(
-         fs.existsSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/.dockerignore'
-            )
-         ),
-         true
-      );
-      assert.strictEqual(
-         fs.existsSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/Dockerfile'
-            )
-         ),
-         true
-      );
 
-      if (
-         fs.existsSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/.dockerignore'
-            )
-         )
-      ) {
-         fs.rmSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/.dockerignore'
-            )
-         );
-      }
+      const generatedFiles = ['.dockerignore', 'Dockerfile'];
 
-      if (
-         fs.existsSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/Dockerfile'
-            )
-         )
-      ) {
-         fs.rmSync(
-            path.resolve(
-               __dirname,
-               '../../src/ui-test/test-repo/flask-hello-world/Dockerfile'
-            )
+      for (let file of generatedFiles) {
+         const filepath = path.resolve(
+            __dirname,
+            '../../src/ui-test/test-repo/flask-hello-world',
+            file
          );
+         assert.strictEqual(fs.existsSync(filepath), true);
+
+         fs.rmSync(filepath);
       }
    });
 });
