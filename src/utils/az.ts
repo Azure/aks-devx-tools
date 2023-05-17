@@ -39,6 +39,9 @@ import {
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
 import {AuthorizationManagementClient} from '@azure/arm-authorization';
 import {RoleAssignment} from '@azure/arm-authorization/esm/models';
+import 'cross-fetch/polyfill';
+import {Client as GraphClient} from '@microsoft/microsoft-graph-client';
+import {TokenCredentialAuthenticationProvider} from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 
 const CREATE_CERT_TIMEOUT = 300_000;
 const LATEST_ARM_RESOURCE_VERSION = '2022-01-31-PREVIEW';
@@ -97,6 +100,7 @@ export interface AzApi {
       keyVaultItem: KeyVaultItem,
       ...accessPolicies: AccessPolicyEntry[]
    ): Promise<Errorable<VaultAccessPolicyItem>>;
+   getADAppByName(name: string): Promise<Errorable<ADAppItem[]>>;
 }
 
 export interface SubscriptionItem {
@@ -145,6 +149,11 @@ export interface ResourceItem {
 
 export interface VaultAccessPolicyItem {
    policy: VaultAccessPolicyParameters;
+}
+
+export interface ADAppItem {
+   id: string;
+   displayName: string;
 }
 
 type CredGetter = () => TokenCredential;
@@ -331,6 +340,62 @@ export class Az implements AzApi {
          return {
             succeeded: false,
             error: `Failed to list key vaults for subscription "${subscriptionId}" and resource group "${resourceGroupName}": ${error}`
+         };
+      }
+   }
+
+   async getGraphClient(): Promise<Errorable<GraphClient>> {
+      const cred = this.getCreds();
+
+      // get app's access token scoped to Microsoft Graph
+      const tokenResponse = await cred.getToken(
+         'https://graph.microsoft.com/.default'
+      );
+      if (tokenResponse === null) {
+         return {
+            succeeded: false,
+            error: `Failed to get token for Microsoft Graph`
+         };
+      }
+
+      // {scopes: ['Application.Read.All']}
+      const graphClient = GraphClient.init({
+         authProvider: (done) => {
+            done(null, tokenResponse.token);
+         }
+      });
+      return {succeeded: true, result: graphClient};
+   }
+
+   async getADAppByName(name: string): Promise<Errorable<ADAppItem[]>> {
+      if (typeof name === 'undefined') {
+         return {succeeded: false, error: 'name undefined'};
+      }
+
+      const getGraphClientResult = await this.getGraphClient();
+      if (!getGraphClientResult.succeeded) {
+         return {
+            succeeded: false,
+            error: `Failed to get graph client ${getGraphClientResult.error}`
+         };
+      }
+      const graphClient = getGraphClientResult.result;
+
+      try {
+         const resp = await graphClient
+            .api(`https://graph.microsoft.com/v1.0/applications`)
+            // .header('ConsistencyLevel', 'eventual')
+            .filter(encodeURIComponent(`displayName eq '${name}'`))
+            .top(1)
+            .get();
+
+         const applications: ADAppItem[] = resp.value;
+
+         return {succeeded: true, result: applications};
+      } catch (error) {
+         return {
+            succeeded: false,
+            error: `Failed to list AD Apps for subscription ${error}`
          };
       }
    }

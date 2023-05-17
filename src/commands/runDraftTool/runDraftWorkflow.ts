@@ -110,6 +110,10 @@ class PromptSetWorkflowSecret extends AzureWizardPromptStep<WizardContext> {
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
       vscode.window.showInformationMessage('Setting GitHub secrets...');
+
+      const appPromise = this.az.getADAppByName('workflowapp-1678733761514');
+      const app = await getAsyncResult(appPromise);
+
       let session: vscode.AuthenticationSession | undefined;
       try {
          await vscode.authentication
@@ -166,6 +170,7 @@ class PromptSetWorkflowSecret extends AzureWizardPromptStep<WizardContext> {
       }
 
       getRemotes(vscode.workspace.workspaceFolders![0].uri);
+
       return;
    }
 
