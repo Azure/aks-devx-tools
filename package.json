@@ -186,7 +186,9 @@
       "lint": "eslint src --ext ts",
       "format": "prettier --write .",
       "test": "node ./out/test/runTest.js",
-      "coverage": "c8 --check-coverage --timeout 10000 npm run test"
+      "coverage": "c8 --check-coverage --timeout 10000 npm run test",
+      "preui-test": "npm run compile-tests",
+      "ui-test": "extest setup-and-run ./out/ui-test/**.test.js -s ../../src/ui-test/test-repo/flask-hello-world"
    },
    "devDependencies": {
       "@types/download": "^8.0.1",
@@ -208,6 +210,7 @@
       "terser-webpack-plugin": "^5.3.6",
       "ts-loader": "^9.2.8",
       "typescript": "^4.6.4",
+      "vscode-extension-tester": "^5.5.3",
       "webpack": "^5.73.0",
       "webpack-cli": "^4.9.2"
    },
