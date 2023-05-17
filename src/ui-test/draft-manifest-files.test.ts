@@ -278,10 +278,6 @@ describe('Draft Kubernetes Deployment Test', () => {
          'templates/service.yaml'
       ];
       for (let file of generatedFiles) {
-         // await browser.driver.wait(until.elementLocated(
-         //    By.xpath(`.//a[@class='label-name' and text()='${file}']`)
-         // ));
-
          let filepath = path.resolve(
             __dirname,
             '../../src/ui-test/test-repo/flask-hello-world/charts',

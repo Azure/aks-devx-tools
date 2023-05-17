@@ -5,12 +5,10 @@ import {
    until,
    By,
    Notification,
-   Workbench,
-   NotificationsCenter
+   Workbench
 } from 'vscode-extension-tester';
 
 let titleBar: TitleBar;
-let browser: VSBrowser;
 let input: InputBox;
 
 export async function setWorkspace(
