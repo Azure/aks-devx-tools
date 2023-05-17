@@ -1,7 +1,7 @@
 import {Context} from './model/context';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import {downloadDraftBinary, runDraftCommand} from './helper/runDraftHelper';
+import {ensureDraftBinary, runDraftCommand} from './helper/runDraftHelper';
 import {
    AzureWizard,
    AzureWizardExecuteStep,
@@ -14,18 +14,22 @@ import {longRunning} from '../../utils/host';
 import {
    Az,
    AzApi,
-   getAzureAccount,
+   getAzCreds,
    ManagedClusterItem,
    RegistryItem,
    RepositoryItem,
    ResourceGroupItem,
    SubscriptionItem
 } from '../../utils/az';
-import {getAysncResult} from '../../utils/errorable';
+import {getAsyncResult} from '../../utils/errorable';
 import {sort} from '../../utils/sort';
 import {getBranches} from '../../utils/gitExtension';
 import {Branch, Ref} from '../../utils/git';
 import path = require('path');
+import {Octokit} from '@octokit/rest';
+import {createTokenAuth} from '@octokit/auth-token';
+import {getRemotes} from '../../utils/gitExtension';
+import {cat} from 'shelljs';
 
 const title = 'Draft a GitHub Actions Workflow';
 
@@ -50,11 +54,11 @@ export async function runDraftWorkflow({
    actionContext,
    extensionContext
 }: Context) {
-   const az: AzApi = new Az(getAzureAccount());
+   const az: AzApi = new Az(getAzCreds);
 
    // Ensure Draft Binary
    const downloadResult = await longRunning(`Downloading Draft.`, () =>
-      downloadDraftBinary()
+      ensureDraftBinary()
    );
    if (!downloadResult) {
       vscode.window.showErrorMessage('Failed to download Draft');
@@ -69,6 +73,7 @@ export async function runDraftWorkflow({
    }
 
    const promptSteps: IPromptStep[] = [
+      new PromptSetWorkflowSecret(az),
       new PromptAKSSubscriptionSelection(az),
       new PromptAKSResourceGroupSelection(az),
       new PromptAKSClusterSelection(az),
@@ -98,14 +103,83 @@ export async function runDraftWorkflow({
    await wizard.prompt();
    await wizard.execute();
 }
+class PromptSetWorkflowSecret extends AzureWizardPromptStep<WizardContext> {
+   constructor(private az: AzApi) {
+      super();
+   }
 
+   public async prompt(wizardContext: WizardContext): Promise<void> {
+      vscode.window.showInformationMessage('Setting GitHub secrets...');
+      let session: vscode.AuthenticationSession | undefined;
+      try {
+         await vscode.authentication
+            .getSession('github', ['repo', 'read:public_key'], {
+               createIfNone: true
+            })
+            .then(
+               async (s) => {
+                  session = s;
+               },
+               (e) => {
+                  throw new Error(
+                     'error getting github authentication session: ' + e
+                  );
+               }
+            );
+      } catch (e) {
+         console.log(e);
+      }
+
+      if (session === undefined) {
+         vscode.window.showErrorMessage(
+            'Failed to get GitHub authentication session'
+         );
+         return;
+      }
+      const octokit = new Octokit({
+         auth: session.accessToken
+      });
+      try {
+         const ghActionPublicKeyResponse =
+            await octokit.actions.getRepoPublicKey({
+               owner: 'davidgamero',
+               repo: 'ContosoAir'
+            });
+         const ghActionPublicKey = ghActionPublicKeyResponse.data;
+         if (!ghActionPublicKey.key_id) {
+            vscode.window.showErrorMessage(
+               'Failed to get GitHub Action public key'
+            );
+            return;
+         }
+         const res = await octokit.actions.createOrUpdateRepoSecret({
+            owner: 'davidgamero',
+            repo: 'ContosoAir',
+            secret_name: 'AZ_DEVX_SECRET',
+            encrypted_value:
+               Buffer.from('test-secret-value').toString('base64'),
+            key_id: ghActionPublicKey.key_id.toString()
+         });
+         console.log(res);
+      } catch (e) {
+         console.log(e);
+      }
+
+      getRemotes(vscode.workspace.workspaceFolders![0].uri);
+      return;
+   }
+
+   public shouldPrompt(wizardContext: WizardContext): boolean {
+      return true;
+   }
+}
 class PromptAKSSubscriptionSelection extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
       super();
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
+      const subs = getAsyncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
@@ -145,7 +219,7 @@ class PromptAKSResourceGroupSelection extends AzureWizardPromptStep<WizardContex
          throw Error('AKS Subscription is undefined');
       }
 
-      const rgs = getAysncResult(
+      const rgs = getAsyncResult(
          this.az.listResourceGroups(wizardContext.clusterSubscription)
       );
       const rgToItem = (rg: ResourceGroupItem) => ({
@@ -185,8 +259,8 @@ class PromptAKSClusterSelection extends AzureWizardPromptStep<WizardContext> {
          throw Error('AKS Resource Group is undefined');
       }
 
-      const mcs = getAysncResult(
-         this.az.listManagedClustersBySubAndRG(
+      const mcs = getAsyncResult(
+         this.az.listAksClusters(
             wizardContext.clusterSubscription,
             wizardContext.clusterResourceGroup
          )
@@ -220,7 +294,7 @@ class PromptACRSubscriptionSelection extends AzureWizardPromptStep<WizardContext
    }
 
    public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAysncResult(this.az.listSubscriptions());
+      const subs = getAsyncResult(this.az.listSubscriptions());
       const subToItem = (sub: SubscriptionItem) => ({
          label: sub.subscription.displayName || '',
          description: sub.subscription.subscriptionId || ''
@@ -260,7 +334,7 @@ class PromptACRResourceGroupSelection extends AzureWizardPromptStep<WizardContex
          throw Error('AKS Subscription is undefined');
       }
 
-      const rgs = getAysncResult(
+      const rgs = getAsyncResult(
          this.az.listResourceGroups(wizardContext.clusterSubscription)
       );
       const rgToItem = (rg: ResourceGroupItem) => ({
@@ -299,7 +373,7 @@ class PromptACRSelection extends AzureWizardPromptStep<WizardContext> {
          throw Error('ACR Resource Group is undefined');
       }
 
-      const registries = getAysncResult(
+      const registries = getAsyncResult(
          this.az.listContainerRegistries(
             wizardContext.clusterSubscription,
             wizardContext.acrResourceGroup
@@ -344,11 +418,8 @@ class PromptACRRegistrySelection extends AzureWizardPromptStep<WizardContext> {
       }
       const newOption = 'Create new repository';
 
-      const repositories = getAysncResult(
-         this.az.listRegistryRepositories(
-            wizardContext.clusterSubscription,
-            wizardContext.registry
-         )
+      const repositories = getAsyncResult(
+         this.az.listRegistryRepositories(wizardContext.registry)
       );
       const repositoryToItem = (r: RepositoryItem) => ({
          label: r.repositoryName

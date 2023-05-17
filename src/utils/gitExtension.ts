@@ -19,3 +19,15 @@ export async function getBranches(repository: vscode.Uri): Promise<Ref[]> {
       remote: true
    });
 }
+
+export async function getRemotes(repository: vscode.Uri): Promise<Ref[]> {
+   const gitAPI = getGitExtensionAPI();
+   const repo = gitAPI.getRepository(repository);
+   if (repo === null) {
+      throw Error('Repo is null');
+   }
+
+   return await repo.getBranches({
+      remote: true
+   });
+}
