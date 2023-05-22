@@ -7,3 +7,4 @@ dist
 vsix
 *.vsix
 .vscode-test/
+test-resources

@@ -89,10 +89,6 @@
             {
                "command": "aks-draft-extension.runDraftDeployment",
                "group": "draftnavigation@4"
-            },
-            {
-               "command": "aks-draft-extension.runDraftWorkflow",
-               "group": "draftnavigation@5"
             }
          ]
       },
@@ -240,12 +236,8 @@
       "@azure/ms-rest-azure-env": "^2.0.0",
       "@azure/ms-rest-nodeauth": "^3.1.1",
       "@kubernetes/client-node": "^0.17.1",
-      "@microsoft/microsoft-graph-client": "^3.0.5",
       "@microsoft/vscode-azext-azureutils": "^0.3.5",
       "@microsoft/vscode-azext-utils": "^0.3.15",
-      "@octokit/auth-token": "^3.0.3",
-      "@octokit/rest": "^19.0.8",
-      "cross-fetch": "^3.1.6",
       "download": "^8.0.0",
       "handlebars": "^4.7.7",
       "node-fetch": "^3.2.10",

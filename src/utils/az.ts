@@ -39,9 +39,6 @@ import {
 import {parseAzureResourceId} from '@microsoft/vscode-azext-azureutils';
 import {AuthorizationManagementClient} from '@azure/arm-authorization';
 import {RoleAssignment} from '@azure/arm-authorization/esm/models';
-import 'cross-fetch/polyfill';
-import {Client as GraphClient} from '@microsoft/microsoft-graph-client';
-import {TokenCredentialAuthenticationProvider} from '@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials';
 
 const CREATE_CERT_TIMEOUT = 300_000;
 const LATEST_ARM_RESOURCE_VERSION = '2022-01-31-PREVIEW';
@@ -148,11 +145,6 @@ export interface ResourceItem {
 
 export interface VaultAccessPolicyItem {
    policy: VaultAccessPolicyParameters;
-}
-
-export interface ADAppItem {
-   id: string;
-   displayName: string;
 }
 
 type CredGetter = () => TokenCredential;
