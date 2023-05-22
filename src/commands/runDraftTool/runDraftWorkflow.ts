@@ -26,6 +26,7 @@ import {sort} from '../../utils/sort';
 import {getBranches} from '../../utils/gitExtension';
 import {Branch, Ref} from '../../utils/git';
 import path = require('path');
+import {getAsyncOptions} from '../../utils/quickPick';
 
 const title = 'Draft a GitHub Actions Workflow';
 
@@ -567,11 +568,4 @@ function getWorkflowPath(wizardContext: WizardContext): string {
       'workflows',
       fileName
    );
-}
-
-async function getAsyncOptions<T>(
-   arr: Promise<T[]>,
-   callbackfn: (a: T) => vscode.QuickPickItem
-): Promise<vscode.QuickPickItem[]> {
-   return (await arr).map(callbackfn);
 }
