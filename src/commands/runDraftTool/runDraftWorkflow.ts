@@ -97,6 +97,22 @@ export async function runDraftWorkflow({
    });
    await wizard.prompt();
    await wizard.execute();
+   const openOIDCDocs = 'OIDC Docs';
+   const oidcDocsLink =
+      'learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-portal%2Clinux#use-the-azure-login-action-with-openid-connect';
+   vscode.window
+      .showInformationMessage(
+         `Workflow Created. You must set up OIDC on your repository`,
+         openOIDCDocs
+      )
+      .then((input) => {
+         if (input === openOIDCDocs) {
+            vscode.commands.executeCommand(
+               'vscode.open',
+               vscode.Uri.parse(`https://${oidcDocsLink}`)
+            );
+         }
+      });
 }
 class PromptAKSSubscriptionSelection extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
