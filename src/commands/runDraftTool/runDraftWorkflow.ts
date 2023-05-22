@@ -73,7 +73,6 @@ export async function runDraftWorkflow({
    }
 
    const promptSteps: IPromptStep[] = [
-      new PromptSetWorkflowSecret(az),
       new PromptAKSSubscriptionSelection(az),
       new PromptAKSResourceGroupSelection(az),
       new PromptAKSClusterSelection(az),
@@ -102,81 +101,6 @@ export async function runDraftWorkflow({
    });
    await wizard.prompt();
    await wizard.execute();
-}
-class PromptSetWorkflowSecret extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      vscode.window.showInformationMessage('Setting GitHub secrets...');
-
-      const appPromise = this.az.getADAppByName('workflowapp-1678733761514');
-      const app = await getAsyncResult(appPromise);
-
-      let session: vscode.AuthenticationSession | undefined;
-      try {
-         await vscode.authentication
-            .getSession('github', ['repo', 'read:public_key'], {
-               createIfNone: true
-            })
-            .then(
-               async (s) => {
-                  session = s;
-               },
-               (e) => {
-                  throw new Error(
-                     'error getting github authentication session: ' + e
-                  );
-               }
-            );
-      } catch (e) {
-         console.log(e);
-      }
-
-      if (session === undefined) {
-         vscode.window.showErrorMessage(
-            'Failed to get GitHub authentication session'
-         );
-         return;
-      }
-      const octokit = new Octokit({
-         auth: session.accessToken
-      });
-      try {
-         const ghActionPublicKeyResponse =
-            await octokit.actions.getRepoPublicKey({
-               owner: 'davidgamero',
-               repo: 'ContosoAir'
-            });
-         const ghActionPublicKey = ghActionPublicKeyResponse.data;
-         if (!ghActionPublicKey.key_id) {
-            vscode.window.showErrorMessage(
-               'Failed to get GitHub Action public key'
-            );
-            return;
-         }
-         const res = await octokit.actions.createOrUpdateRepoSecret({
-            owner: 'davidgamero',
-            repo: 'ContosoAir',
-            secret_name: 'AZ_DEVX_SECRET',
-            encrypted_value:
-               Buffer.from('test-secret-value').toString('base64'),
-            key_id: ghActionPublicKey.key_id.toString()
-         });
-         console.log(res);
-      } catch (e) {
-         console.log(e);
-      }
-
-      getRemotes(vscode.workspace.workspaceFolders![0].uri);
-
-      return;
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
 }
 class PromptAKSSubscriptionSelection extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
