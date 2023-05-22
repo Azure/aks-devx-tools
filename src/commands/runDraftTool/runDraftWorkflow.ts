@@ -8,7 +8,7 @@ import {
    AzureWizardPromptStep,
    IActionContext
 } from '@microsoft/vscode-azext-utils';
-import {ignoreFocusOut} from './helper/commonPrompts';
+import {PromptSubscription, ignoreFocusOut} from './helper/commonPrompts';
 import {buildGenerateWorkflowCommand} from './helper/draftCommandBuilder';
 import {longRunning} from '../../utils/host';
 import {
@@ -27,6 +27,7 @@ import {getBranches} from '../../utils/gitExtension';
 import {Branch, Ref} from '../../utils/git';
 import path = require('path');
 import {getAsyncOptions} from '../../utils/quickPick';
+import {PromptResourceGroup} from './helper/commonPrompts';
 
 const title = 'Draft a GitHub Actions Workflow';
 
@@ -70,8 +71,19 @@ export async function runDraftWorkflow({
    }
 
    const promptSteps: IPromptStep[] = [
-      new PromptAKSSubscriptionSelection(az),
-      new PromptAKSResourceGroupSelection(az),
+      new PromptSubscription(az, 'clusterSubscription', {
+         stepName: 'Azure Kubernetes Service (AKS) Subscription',
+         placeholder: 'AKS Subscription'
+      }),
+      new PromptResourceGroup(
+         az,
+         'clusterSubscription',
+         'clusterResourceGroup',
+         {
+            stepName: 'AKS Resource Group',
+            placeholder: 'AKS Resource Group'
+         }
+      ),
       new PromptAKSClusterSelection(az),
       // Currently we dont allow seperate sub for ACR selection while generating through draft
       // new PromptACRSubscriptionSelection(az),
@@ -115,77 +127,6 @@ export async function runDraftWorkflow({
          }
       });
 }
-class PromptAKSSubscriptionSelection extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAsyncResult(this.az.listSubscriptions());
-      const subToItem = (sub: SubscriptionItem) => ({
-         label: sub.subscription.displayName || '',
-         description: sub.subscription.subscriptionId || ''
-      });
-      const subPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(subs, subToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'Azure Kubernetes Service (AKS) Subscription',
-            placeHolder: 'AKS Subscription',
-            noPicksMessage: 'No Subscriptions found'
-         }
-      );
-
-      // if something was recently used this text is appened to the description
-      const removeRecentlyUsed = (description: string) =>
-         description.replace(' (recently used)', '');
-      wizardContext.clusterSubscription = (await subs).find(
-         (sub) =>
-            subToItem(sub).description ===
-            removeRecentlyUsed(subPick.description || '')
-      );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
-}
-
-class PromptAKSResourceGroupSelection extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      if (wizardContext.clusterSubscription === undefined) {
-         throw Error('AKS Subscription is undefined');
-      }
-
-      const rgs = getAsyncResult(
-         this.az.listResourceGroups(wizardContext.clusterSubscription)
-      );
-      const rgToItem = (rg: ResourceGroupItem) => ({
-         label: rg.resourceGroup.name || ''
-      });
-      const rgPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(rgs, rgToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'AKS Resource Group',
-            placeHolder: 'AKS Resource Group',
-            noPicksMessage: 'No Resource Groups found'
-         }
-      );
-
-      wizardContext.clusterResourceGroup = (await rgs).find(
-         (rg) => rgToItem(rg).label === rgPick.label
-      );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
-}
 
 class PromptAKSClusterSelection extends AzureWizardPromptStep<WizardContext> {
    constructor(private az: AzApi) {
@@ -222,42 +163,6 @@ class PromptAKSClusterSelection extends AzureWizardPromptStep<WizardContext> {
 
       wizardContext.cluster = (await mcs).find(
          (mc) => mcToItem(mc).label === mcPick.label
-      );
-   }
-
-   public shouldPrompt(wizardContext: WizardContext): boolean {
-      return true;
-   }
-}
-
-class PromptACRSubscriptionSelection extends AzureWizardPromptStep<WizardContext> {
-   constructor(private az: AzApi) {
-      super();
-   }
-
-   public async prompt(wizardContext: WizardContext): Promise<void> {
-      const subs = getAsyncResult(this.az.listSubscriptions());
-      const subToItem = (sub: SubscriptionItem) => ({
-         label: sub.subscription.displayName || '',
-         description: sub.subscription.subscriptionId || ''
-      });
-      const subPick = await wizardContext.ui.showQuickPick(
-         sort(getAsyncOptions(subs, subToItem)),
-         {
-            ignoreFocusOut,
-            stepName: 'Azure Container Registry (ACR) Subscription',
-            placeHolder: 'ACR Subscription',
-            noPicksMessage: 'No Subscriptions found'
-         }
-      );
-
-      // if something was recently used this text is appened to the description
-      const removeRecentlyUsed = (description: string) =>
-         description.replace(' (recently used)', '');
-      wizardContext.acrSubscription = (await subs).find(
-         (sub) =>
-            subToItem(sub).description ===
-            removeRecentlyUsed(subPick.description || '')
       );
    }
 
