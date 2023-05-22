@@ -26,10 +26,6 @@ import {sort} from '../../utils/sort';
 import {getBranches} from '../../utils/gitExtension';
 import {Branch, Ref} from '../../utils/git';
 import path = require('path');
-import {Octokit} from '@octokit/rest';
-import {createTokenAuth} from '@octokit/auth-token';
-import {getRemotes} from '../../utils/gitExtension';
-import {cat} from 'shelljs';
 
 const title = 'Draft a GitHub Actions Workflow';
 
