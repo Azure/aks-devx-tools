@@ -43,6 +43,8 @@ To properly use Draft to containerize your application, create manifest files, a
 
 **Prerequisites** shows you all the steps that you need to get up and running on AKS. By the end of this checklist you will have an application up and running on AKS!
 
+**Draft a GitHub Action Deployment Workflow** for use with AKS, leveraging [GitHub OIDC](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-portal%2Clinux) 
+
 ## Telemetry
 
 This extension collects telemetry data to help us build a better experience for building applications with Azure Kubernetes Service and VS Code. To read more about what we collect, click [here](https://github.com/Microsoft/vscode-azuretools/blob/main/utils/README.md#telemetry-and-error-handling).
