@@ -18,6 +18,7 @@ import {
    noCompletedSteps
 } from './commands/runDraftTool/model/guidedExperience';
 import {runDeploy} from './commands/runDraftTool/runDeploy';
+import {runDraftWorkflow} from './commands/runDraftTool/runDraftWorkflow';
 import {runDraftIngress} from './commands/runDraftTool/runDraftIngress';
 
 // this method is called when your extension is activated
@@ -148,6 +149,14 @@ function registerCommands(
             completedSteps = noCompletedSteps();
          }
          return runDeploy(context, completedSteps, outputChannel);
+      }
+   );
+
+   registerCommand(
+      'aks-draft-extension.runDraftWorkflow',
+      (actionContext: IActionContext) => {
+         const context: Context = {actionContext, extensionContext};
+         return runDraftWorkflow(context);
       }
    );
 }

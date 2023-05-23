@@ -19,6 +19,7 @@
       "onCommand:aks-draft-extension.runDraftDockerfile",
       "onCommand:aks-draft-extension.runDraftDeployment",
       "onCommand:aks-draft-extension.runDraftIngress",
+      "onCommand:aks-draft-extension.runDraftWorkflow",
       "onCommand:aks-draft-extension.runBuildAcrImage"
    ],
    "main": "./dist/extension.js",
@@ -50,6 +51,10 @@
          {
             "command": "aks-draft-extension.runDraftIngress",
             "title": "AKS Developer: Draft a Kubernetes Ingress with Web App Routing"
+         },
+         {
+            "command": "aks-draft-extension.runDraftWorkflow",
+            "title": "AKS Developer: Draft a GitHub Action Deployment Workflow"
          },
          {
             "command": "aks-draft-extension.runBuildAcrImage",
@@ -173,7 +178,8 @@
    },
    "extensionDependencies": [
       "ms-kubernetes-tools.vscode-kubernetes-tools",
-      "ms-azuretools.vscode-docker"
+      "ms-azuretools.vscode-docker",
+      "vscode.git"
    ],
    "scripts": {
       "vscode:prepublish": "npm run package",

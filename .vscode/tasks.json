@@ -32,6 +32,14 @@
          "label": "tasks: watch-tests",
          "dependsOn": ["npm: watch", "npm: watch-tests"],
          "problemMatcher": []
+      },
+      {
+         "type": "npm",
+         "script": "watch-tests",
+         "group": "build",
+         "problemMatcher": [],
+         "label": "npm: watch-tests",
+         "detail": "tsc -p . -w --outDir out"
       }
    ]
 }
