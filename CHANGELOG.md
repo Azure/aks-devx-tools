@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.1.2]
+
+-  New commands
+   -  `Draft a GitHub Action Deployment Workflow`
+
 ## [0.1.1]
 
 -  New commands
